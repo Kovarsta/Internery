@@ -3,6 +3,9 @@ node_modules
 # Temporary documents store
 .tmp
 
+# Agent working space
+.agent
+
 # Output
 .output
 .vercel
