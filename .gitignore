@@ -1,7 +1,7 @@
 node_modules
 
-# Database
-/interneryDB/*
+# Temporary documents store
+.tmp
 
 # Output
 .output
