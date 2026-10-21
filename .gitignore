@@ -4,6 +4,7 @@ node_modules
 .tmp
 
 # Agent working space
+.agents
 .agent
 
 # Output
