@@ -21,7 +21,7 @@ when adopting it.
 | File                 | Role                                                              |
 | -------------------- | ----------------------------------------------------------------- |
 | `.tmp/schema.ts`     | DB contract: 17 tables, 12 enums, constraints, indexes, relations |
-| `.tmp/openapi.yaml`  | API contract: OpenAPI 3.1, 71 operations under `/api/v1`          |
+| `.tmp/openapi.yaml`  | API contract: OpenAPI 3.1, 64 operations under `/api/v1`          |
 | `.tmp/invariants.ts` | Transactional service rules + work-record signing                 |
 | `.tmp/README.md`     | ERD, enforcement matrix, open product decisions                   |
 
@@ -58,6 +58,12 @@ Not present (paths relative to `.tmp/`, referenced by its README, so its checks 
 - Migrations `drizzle/0000_pink_thundra.sql` and `drizzle/0001_fair_lightspeed.sql` have been
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
+- The `/api/v1` route tree exists under `src/routes/api/v1` (52 paths, 65 operations). Handlers are
+  skeletons that return `501` until the service layer lands. Authentication endpoints are Better
+  Auth's `/api/auth/*` and deliberately not duplicated under `/api/v1`. See
+  `src/routes/api/README.md` for route conventions and the implementation checklist.
+- Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
+  returned as raw storage or presigned URLs. See `.agent/decisions/avatar-storage.md`.
 - `.env` exists locally and `node_modules` is installed.
 - Docker Compose provides Postgres, MinIO, and a one-shot `minio-init` job that creates the
   `${S3_BUCKET:-internery-staging}` bucket. MinIO uses the Chainguard image because the upstream
