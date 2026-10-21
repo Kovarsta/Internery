@@ -83,7 +83,9 @@ export const notificationType = pgEnum('notification_type', [
 /**
  * Common profile fields that are not part of Better Auth's user model.
  *
- * Role-specific data lives in `student_profiles` and `employer_profiles`.
+ * A row is created eagerly with the Better Auth user, so reads can rely on it
+ * existing. Role-specific data lives in `student_profiles` and
+ * `employer_profiles`.
  */
 export const userProfiles = pgTable('user_profiles', {
 	userId: uuid()
@@ -96,6 +98,9 @@ export const userProfiles = pgTable('user_profiles', {
 
 /**
  * Auth-adjacent moderation state kept out of Better Auth's generated schema.
+ *
+ * Rows are created lazily on the first moderation event. A missing row means
+ * zero failed logins and no temporary or admin lock.
  *
  * A temporary lockout (`lockedUntil`) is separate from an admin lock
  * (`lockedAt`, `lockedBy`, `lockReason`).

@@ -65,7 +65,12 @@ export const auth = betterAuth({
 						// leave those accounts stuck in PENDING_VERIFICATION.
 						status: user.emailVerified ? 'ACTIVE' : 'PENDING_VERIFICATION'
 					}
-				})
+				}),
+				after: async (user) => {
+					// Create the common profile eagerly so reads never have to
+					// distinguish "no row" from "empty phone/avatar".
+					await db.insert(schema.userProfiles).values({ userId: user.id }).onConflictDoNothing();
+				}
 			}
 		}
 	},
