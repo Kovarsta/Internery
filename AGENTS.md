@@ -21,7 +21,7 @@ when adopting it.
 | File                 | Role                                                              |
 | -------------------- | ----------------------------------------------------------------- |
 | `.tmp/schema.ts`     | DB contract: 17 tables, 12 enums, constraints, indexes, relations |
-| `.tmp/openapi.yaml`  | API contract: OpenAPI 3.1, 64 operations under `/api/v1`          |
+| `.tmp/openapi.yaml`  | API contract: OpenAPI 3.1, 65 operations under `/api/v1`          |
 | `.tmp/invariants.ts` | Transactional service rules + work-record signing                 |
 | `.tmp/README.md`     | ERD, enforcement matrix, open product decisions                   |
 
@@ -212,6 +212,11 @@ source of the app migration.
 ## Known issues to settle before implementation
 
 See `.agent/schema-review.md` for evidence and proposed patches.
+
+**Documentation portability:** committed files currently reference the gitignored `.tmp/` and
+`.agent/` folders. Move durable contracts to `docs/contracts/` and durable decisions to
+`docs/decisions/`, then update the committed references. Keep `.tmp/` and `.agent/` as private
+scratch. The current contract is 65 operations on 52 paths.
 
 The identity conflict is resolved in favour of Better Auth: the app uses the generated `users`,
 `sessions`, `accounts` and `verifications` tables. The contract's `users` and `user_tokens` tables
