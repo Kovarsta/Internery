@@ -10,5 +10,49 @@ services:
       POSTGRES_DB: internery
     volumes:
       - internery:/var/lib/postgresql
+
+  # MinIO stopped publishing community images to Docker Hub and Quay in 2025.
+  # Chainguard maintains a public build of the same server. Pin the digest for
+  # reproducible staging deploys.
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    container_name: minio-staging
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-please}
+      # Alias used by the healthcheck below. URL-encode special characters in
+      # the password, or use a password that is safe in a URL.
+      MC_HOST_local: http://${MINIO_ROOT_USER:-admin}:${MINIO_ROOT_PASSWORD:-change-me-please}@localhost:9000
+      # Public console URL behind a reverse proxy. Leave as localhost for local
+      # development, or set it in .env for staging.
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:-http://localhost:9001}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    ports:
+      - '9000:9000' # S3 API
+      - '9001:9001' # Web console
+    healthcheck:
+      # `mc` ships in the Chainguard image. `curl` does not.
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Creates the staging bucket once, then exits. Safe to re-run.
+  minio-init:
+    image: cgr.dev/chainguard/minio-client:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MC_HOST_local: http://${MINIO_ROOT_USER:-admin}:${MINIO_ROOT_PASSWORD:-change-me-please}@minio:9000
+    entrypoint: ['/usr/bin/mc']
+    command: ['mb', '--ignore-existing', 'local/${S3_BUCKET:-internery-staging}']
+    restart: 'no'
+
 volumes:
   internery:
+  minio-data:

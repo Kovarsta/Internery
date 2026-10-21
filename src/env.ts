@@ -16,5 +16,12 @@ export const variables = defineEnvVars({
 	GITHUB_CLIENT_SECRET: {
 		description:
 			'GitHub OAuth client secret. See [Better Auth GitHub provider](https://www.better-auth.com/docs/authentication/github).'
+	},
+	RESEND_API_KEY: {
+		description: 'Resend API key used to send Better Auth verification emails.'
+	},
+	EMAIL_FROM_ADDRESS: {
+		description:
+			'Verified sender address for transactional email, e.g. `Internery <no-reply@example.com>`.'
 	}
 });
