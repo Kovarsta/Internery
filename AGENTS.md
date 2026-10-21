@@ -38,12 +38,27 @@ Not present (paths relative to `.tmp/`, referenced by its README, so its checks 
 
 ## Current state
 
-- The app is still the `sv create` scaffold: default landing page, Better Auth demo routes under
-  `/demo/better-auth`, and a placeholder `task` table in `src/lib/server/db/schema.ts`.
-- `src/lib/server/db/auth.schema.ts` is a stub. `pnpm auth:schema` has not been run (deferred).
-  The generated `auth-schema.ts` at the repository root is not imported by the app.
-- `.env` does not exist yet. `node_modules` is installed.
-- Product schema, service layer, API routes and real UI are **not implemented**.
+- The app is still the `sv create` scaffold: default landing page and Better Auth demo routes under
+  `/demo/better-auth`. The placeholder `task` table has been replaced by the product schema.
+- Better Auth owns identity. `src/lib/server/db/auth.schema.ts` is generated with UUID ids, plural
+  tables (`users`, `sessions`, `accounts`, `verifications`), and server-owned `role` and `status`
+  fields. `pnpm auth:schema` regenerates and formats it. The root `auth-schema.ts` is stale and
+  unimported; do not use it.
+- Authentication uses Argon2id and Resend, and requires email verification before sign-in. A real
+  Resend key and a verified sender address are required for verification mail.
+- `src/lib/server/db/product.schema.ts` contains the product tables: common profile/moderation
+  tables, student and employer profiles, marketplace, trust, notifications, AI and audit tables.
+  All user foreign keys reference the generated `users.id` as `uuid`.
+- `src/lib/server/db/schema.ts` only re-exports the auth and product schemas; Drizzle and
+  drizzle-kit consume that aggregate.
+- The baseline migration `drizzle/0000_pink_thundra.sql` has been generated and applied to the local
+  database. All 21 tables exist.
+- `.env` exists locally and `node_modules` is installed.
+- Docker Compose provides Postgres, MinIO, and a one-shot `minio-init` job that creates the
+  `${S3_BUCKET:-internery-staging}` bucket. MinIO uses the Chainguard image because the upstream
+  community images were removed from Docker Hub and Quay in 2025.
+- Product **service layer, API routes and real UI are not implemented**. The contract
+  `.tmp/schema.ts` is intentionally unchanged.
 
 ## Commands
 
@@ -53,7 +68,7 @@ pnpm build               # production build
 pnpm check               # svelte-kit sync + svelte-check
 pnpm lint                # prettier --check + eslint
 pnpm format              # prettier --write
-pnpm db:start            # docker compose up (Postgres on :5432)
+pnpm db:start            # docker compose up (Postgres :5432, MinIO :9000/:9001)
 pnpm db:generate         # drizzle-kit generate
 pnpm db:migrate          # drizzle-kit migrate
 pnpm db:push             # drizzle-kit push (prototyping only)
@@ -62,9 +77,10 @@ pnpm auth:schema         # regenerate Better Auth tables into src/lib/server/db/
 ```
 
 Env vars are declared in `src/env.ts` and read from `$app/env/private` in server code:
-`DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`.
+`DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
+`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`.
 `.env.example` still points at `root:mysecretpassword@.../local`, while `docker-compose.yaml` uses
-`internery:internery@.../internery`; fix the URL when creating `.env`.
+`internery:internery@.../internery`; fix the URL in `.env` if it does not match.
 
 ## Readability first
 
@@ -116,6 +132,20 @@ export async function rejectApplication(...) {
 }
 ```
 
+## Installed skills
+
+Project skills live in `.agents/skills/` and are pinned by `skills-lock.json`. Commit both.
+
+| Skill         | Purpose                                                           |
+| ------------- | ----------------------------------------------------------------- |
+| `grill-me`    | Thin wrapper that invokes `grilling`; requires both to be present |
+| `grilling`    | Relentless interview to stress-test a plan or decision            |
+| `find-skills` | Discover and install additional agent skills                      |
+| `git-commit`  | Conventional-commit analysis, staging and message generation      |
+
+Update installed skills with `npx skills update`. Restore them on a fresh checkout with
+`npx skills experimental_install`.
+
 ## Conventions
 
 The readability rules above apply to every change. These are the project-specific conventions:
@@ -135,7 +165,7 @@ The readability rules above apply to every change. These are the project-specifi
 
 | Group       | Tables                                                        |
 | ----------- | ------------------------------------------------------------- |
-| Identity    | `users`, `user_tokens`                                        |
+| Identity    | Contract: `users`, `user_tokens`; app: Better Auth tables     |
 | Profiles    | `student_profiles`, `employer_profiles`                       |
 | Marketplace | `categories`, `jobs`, `applications`, `saved_jobs`            |
 | Trust       | `reviews`, `reports`, `verification_requests`, `work_records` |
@@ -152,26 +182,36 @@ Rules that must be enforced in transactions (`.tmp/invariants.ts`), never by ad-
   recalculate ratings; employer→student also issues the HMAC-signed work record.
 - `signRecord` / `verifyRecord` — HMAC-SHA256 over canonical JSON.
 
-## Deferred decision: snake_case
+## Decision: camelCase product columns
 
-`.tmp/schema.ts` declares columns without explicit names and relies on `casing: 'snake_case'` in
-**both** `drizzle.config.ts` and the runtime client. This project currently sets neither. Do not port
-the schema and generate migrations until this is resolved: either add
-`casing: 'snake_case'` in both places, or give every column an explicit snake_case name. Generating
-without it produces camelCase columns that will not match `.tmp/0000_init.sql`.
+The product schema uses camelCase database column names. Neither `drizzle.config.ts` nor the runtime
+client sets `casing`, so Drizzle's default naming is what creates the columns. TypeScript properties
+are camelCase as well.
+
+The generated auth schema is different: Better Auth declares explicit snake_case column names
+(`email_verified`, `user_id`, ...). The database therefore has mixed naming: auth tables are
+snake_case and product tables are camelCase. That is intentional.
+
+The product schema therefore no longer matches `.tmp/0000_init.sql`, which was generated with
+`casing: 'snake_case'`. Treat the contract SQL as a reference for constraints and indexes, not as the
+source of the app migration.
 
 ## Known issues to settle before implementation
 
-See `.agent/schema-review.md` for evidence and proposed patches. The blocking one is identity:
+See `.agent/schema-review.md` for evidence and proposed patches.
 
-- The contract assumes a credentials-only `users` table (`password_hash NOT NULL`) with its own
-  `user_tokens`. The scaffold uses Better Auth, which generates `user`, `session`, `account` and
-  `verification` tables with text IDs. These must be reconciled before any auth or FK work.
+The identity conflict is resolved in favour of Better Auth: the app uses the generated `users`,
+`sessions`, `accounts` and `verifications` tables. The contract's `users` and `user_tokens` tables
+were not ported; every user foreign key points at `users.id` as `uuid`, and `password_hash`
+responsibilities live in `accounts.password`. Common profile fields are in `user_profiles`; lockout
+and admin-lock fields are in `user_moderation`.
 
 Other findings: the student CV check only guards two of four CV columns; rating recalculation can
 race across jobs; a withdrawn application cannot be re-submitted because the uniqueness constraint is
 unconditional; several `text` columns are stricter in the API than in the DB; hidden-state and
-verification-status fields can drift from their status flags.
+verification-status fields can drift from their status flags. The auth tables use `timestamp`
+without time zone while product timestamps use `timestamptz`, because Better Auth generates that
+column type.
 
 ## Working agreements
 
