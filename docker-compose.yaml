@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: internery
+      POSTGRES_PASSWORD: internery
+      POSTGRES_DB: internery
+    volumes:
+      - internery:/var/lib/postgresql
+volumes:
+  internery:
