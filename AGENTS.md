@@ -42,23 +42,30 @@ Not present (paths relative to `.tmp/`, referenced by its README, so its checks 
   `/demo/better-auth`. The placeholder `task` table has been replaced by the product schema.
 - Better Auth owns identity. `src/lib/server/db/auth.schema.ts` is generated with UUID ids, plural
   tables (`users`, `sessions`, `accounts`, `verifications`), and server-owned `role` and `status`
-  fields. `pnpm auth:schema` regenerates and formats it. The root `auth-schema.ts` is stale and
-  unimported; do not use it.
+  fields. `pnpm auth:schema` regenerates it, then `scripts/normalize-auth-schema.mjs` converts the
+  generated timestamps to `timestamptz` and the role/status text columns to PostgreSQL enums. The
+  root `auth-schema.ts` is stale and unimported; do not use it.
 - Authentication uses Argon2id and Resend, and requires email verification before sign-in. A real
   Resend key and a verified sender address are required for verification mail.
 - `src/lib/server/db/product.schema.ts` contains the product tables: common profile/moderation
   tables, student and employer profiles, marketplace, trust, notifications, AI and audit tables.
   All user foreign keys reference the generated `users.id` as `uuid`.
+- `user_profiles` is created eagerly in the Better Auth user-create hook. `user_moderation` is
+  created lazily through `ensureUserModeration` on the first failed login or admin action; a missing
+  row means zero failures and no lock.
 - `src/lib/server/db/schema.ts` only re-exports the auth and product schemas; Drizzle and
   drizzle-kit consume that aggregate.
-- The baseline migration `drizzle/0000_pink_thundra.sql` has been generated and applied to the local
-  database. All 21 tables exist.
+- Migrations `drizzle/0000_pink_thundra.sql` and `drizzle/0001_fair_lightspeed.sql` have been
+  generated and applied to the local database. All 21 tables exist; auth timestamps are
+  `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
 - `.env` exists locally and `node_modules` is installed.
 - Docker Compose provides Postgres, MinIO, and a one-shot `minio-init` job that creates the
   `${S3_BUCKET:-internery-staging}` bucket. MinIO uses the Chainguard image because the upstream
   community images were removed from Docker Hub and Quay in 2025.
 - Product **service layer, API routes and real UI are not implemented**. The contract
   `.tmp/schema.ts` is intentionally unchanged.
+- File retention and garbage collection are agreed but **not implemented**. See
+  `.agent/decisions/data-retention.md` for the reference-aware cleanup policy and open decisions.
 
 ## Commands
 
@@ -209,9 +216,7 @@ and admin-lock fields are in `user_moderation`.
 Other findings: the student CV check only guards two of four CV columns; rating recalculation can
 race across jobs; a withdrawn application cannot be re-submitted because the uniqueness constraint is
 unconditional; several `text` columns are stricter in the API than in the DB; hidden-state and
-verification-status fields can drift from their status flags. The auth tables use `timestamp`
-without time zone while product timestamps use `timestamptz`, because Better Auth generates that
-column type.
+verification-status fields can drift from their status flags.
 
 ## Working agreements
 
