@@ -66,9 +66,62 @@ Env vars are declared in `src/env.ts` and read from `$app/env/private` in server
 `.env.example` still points at `root:mysecretpassword@.../local`, while `docker-compose.yaml` uses
 `internery:internery@.../internery`; fix the URL when creating `.env`.
 
+## Readability first
+
+Write for the next reader, not for the fewest lines. Clever code is a liability in this project:
+the business rules are already subtle, so the implementation must be obvious.
+
+- **Clear names.** Name things for what they mean: `applicationsForJob`, not `apps` or `data2`.
+  Booleans read as questions: `isHidden`, `hasAcceptedApplicant`, `canReview`. Avoid abbreviations
+  except widely understood ones (`id`, `url`, `db`).
+- **Plain constructs.** Prefer `if`, `for`, `map`, `filter` and early returns over clever one-liners.
+  Do not use nested ternaries, bitwise tricks, implicit coercion, or language features whose value is
+  mainly that they are short. If a line needs a comment to explain _what_ it does, rewrite the line.
+- **Shallow nesting.** Use guard clauses and early returns. If a function needs more than two or
+  three levels of nesting, extract a named helper. Keep each function focused on one job.
+- **Comments explain why.** Use them for business rules, non-obvious constraints, transaction and
+  locking reasons, and workarounds (including why the workaround exists). Do not restate the code.
+  Keep the comment next to the code it describes and update it when the code changes.
+- **Doc comments for contracts.** Every exported service function, public type and non-obvious module
+  gets a short TSDoc block: what it does, the parameters that matter, what it throws, and any
+  transaction guarantee. Business rules and invariants deserve a doc comment even when not exported.
+- **Whitespace is structure.** Put a blank line between logical blocks, group related statements,
+  and separate validation from work from the return. Prefer several short lines over one long
+  expression. Stay within the 100-column Prettier width.
+- **No `any`.** Use `unknown` and narrow it. Keep types explicit at module boundaries and let
+  inference handle local values.
+- **Follow the file.** Match the surrounding style. Do not reformat unrelated code in the same
+  change.
+
+A small example of the intended shape:
+
+```ts
+/** Rejects an application that is no longer pending. */
+export async function rejectApplication(...) {
+	const job = await lockJob(tx, application.jobId);
+
+	if (!job) {
+		throw new DomainError('NOT_FOUND');
+	}
+
+	if (job.employerId !== employerId) {
+		throw new DomainError('FORBIDDEN');
+	}
+
+	if (application.status !== 'PENDING') {
+		throw new DomainError('INVALID_STATE_TRANSITION');
+	}
+
+	// ...
+}
+```
+
 ## Conventions
 
+The readability rules above apply to every change. These are the project-specific conventions:
+
 - Prettier: tabs, single quotes, no trailing comma, width 100. ESLint: flat config.
+- Doc comments use TSDoc (`/** ... */`), not line comments above the declaration.
 - Svelte 5 runes only (`$props`, `$state`, `$derived`, `$effect`); no legacy `export let`.
 - Import app code through `#lib/*` (`#lib/server/...`). Existing imports include the `.ts`
   extension; keep that style.
@@ -123,6 +176,8 @@ verification-status fields can drift from their status flags.
 ## Working agreements
 
 - Do not invent contract details. If a decision is missing, write it down and ask.
+- Prefer the readable version even when a shorter version exists. Before finishing, reread the diff
+  for names, nesting, comments and whitespace.
 - Copy contract files into `src/` deliberately. Keep private notes in `.agent/`; both `.tmp/` and
   `.agent/` are ignored by git and are never published.
 - Run `pnpm check` and `pnpm lint` before calling work finished.
