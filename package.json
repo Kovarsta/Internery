@@ -17,7 +17,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
-		"auth:schema": "auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes && prettier --write src/lib/server/db/auth.schema.ts"
+		"auth:schema": "auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes && node scripts/normalize-auth-schema.mjs && prettier --write src/lib/server/db/auth.schema.ts"
 	},
 	"dependencies": {
 		"@node-rs/argon2": "^2.2.2",
