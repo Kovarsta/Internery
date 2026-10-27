@@ -1,11 +1,16 @@
-import type { User, Session } from 'better-auth';
+import type { Session, User } from 'better-auth';
+
+type AppUser = User & {
+	role: 'STUDENT' | 'EMPLOYER' | 'ADMIN';
+	status: 'PENDING_VERIFICATION' | 'ACTIVE' | 'SUSPENDED' | 'LOCKED' | 'DELETED';
+};
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 declare global {
 	namespace App {
 		interface Locals {
-			user?: User;
+			user?: AppUser;
 			session?: Session;
 		}
 

@@ -58,10 +58,12 @@ Not present (paths relative to `.tmp/`, referenced by its README, so its checks 
 - Migrations `drizzle/0000_pink_thundra.sql` and `drizzle/0001_fair_lightspeed.sql` have been
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
-- The `/api/v1` route tree exists under `src/routes/api/v1` (52 paths, 65 operations). Handlers are
-  skeletons that return `501` until the service layer lands. Authentication endpoints are Better
-  Auth's `/api/auth/*` and deliberately not duplicated under `/api/v1`. See
-  `src/routes/api/README.md` for route conventions and the implementation checklist.
+- The `/api/v1` route tree exists under `src/routes/api/v1` (52 paths, 65 operations). Most handlers
+  are skeletons that return `501`; `GET /me` and `GET /categories` are implemented as reference
+  patterns. Shared API helpers live in `src/lib/server/api/`; services live in
+  `src/lib/server/services/`. Authentication endpoints are Better Auth's `/api/auth/*` and
+  deliberately not duplicated under `/api/v1`. See `src/routes/api/README.md` for route conventions
+  and the implementation checklist.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
   returned as raw storage or presigned URLs. See `.agent/decisions/avatar-storage.md`.
 - `.env` exists locally and `node_modules` is installed.
@@ -79,6 +81,7 @@ Not present (paths relative to `.tmp/`, referenced by its README, so its checks 
 pnpm dev                 # Vite dev server
 pnpm build               # production build
 pnpm check               # svelte-kit sync + svelte-check
+pnpm test                # vitest run
 pnpm lint                # prettier --check + eslint
 pnpm format              # prettier --write
 pnpm db:start            # docker compose up (Postgres :5432, MinIO :9000/:9001)
@@ -236,5 +239,5 @@ verification-status fields can drift from their status flags.
   for names, nesting, comments and whitespace.
 - Copy contract files into `src/` deliberately. Keep private notes in `.agent/`; both `.tmp/` and
   `.agent/` are ignored by git and are never published.
-- Run `pnpm check` and `pnpm lint` before calling work finished.
+- Run `pnpm check`, `pnpm test`, and `pnpm lint` before calling work finished.
 - Keep diffs focused; do not reformat unrelated files.

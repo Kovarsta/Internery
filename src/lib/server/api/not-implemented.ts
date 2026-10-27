@@ -1,4 +1,4 @@
-import { json } from '@sveltejs/kit';
+import { ApiError, handleApiError } from './errors.ts';
 
 /**
  * Temporary response for API route skeletons.
@@ -8,13 +8,5 @@ import { json } from '@sveltejs/kit';
  * exercised before the service layer lands.
  */
 export function notImplemented() {
-	return json(
-		{
-			error: {
-				code: 'NOT_IMPLEMENTED',
-				message: 'This endpoint is not implemented yet.'
-			}
-		},
-		{ status: 501 }
-	);
+	return handleApiError(new ApiError('NOT_IMPLEMENTED', 'This endpoint is not implemented yet.'));
 }

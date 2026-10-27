@@ -3,8 +3,8 @@
 SvelteKit route handlers for the `/api/v1` contract.
 
 The OpenAPI document is the source of truth for paths, methods, request bodies, responses and roles.
-The handlers in this directory are **skeletons**: every operation currently returns `501 Not
-Implemented` until its service logic is written.
+Most handlers are still **skeletons** that return `501 Not Implemented`. `GET /me` and
+`GET /categories` are implemented as the reference pattern for the rest.
 
 ## Layout
 
@@ -22,19 +22,53 @@ OpenAPI path parameters use braces; SvelteKit uses brackets:
 /applications/{applicationId}/cv -> applications/[applicationId]/cv
 ```
 
-Each route file exports the HTTP methods declared in the contract:
+Each route file exports the HTTP methods declared in the contract. The implemented pattern is:
+
+```ts
+import type { RequestHandler } from './$types';
+import { requireActiveAccount } from '#lib/server/api/auth.ts';
+import { handleApiError } from '#lib/server/api/errors.ts';
+import { toUserMe } from '#lib/server/api/mappers.ts';
+import { db } from '#lib/server/db/index.ts';
+import { getUserProfile } from '#lib/server/services/users.ts';
+
+export const GET: RequestHandler = async (event) => {
+	try {
+		const user = requireActiveAccount(event.locals);
+		const profile = await getUserProfile(db, user.id);
+
+		return Response.json(toUserMe(user, profile));
+	} catch (error) {
+		return handleApiError(error);
+	}
+};
+```
+
+Not-yet-implemented handlers still use:
 
 ```ts
 import type { RequestHandler } from './$types';
 import { notImplemented } from '#lib/server/api/not-implemented.ts';
 
-/** GET /me — getMe */
-export const GET: RequestHandler = () => notImplemented();
+export const PATCH: RequestHandler = () => notImplemented();
 ```
 
 `notImplemented()` lives in `src/lib/server/api/not-implemented.ts`. The `501` response is a
 scaffold-only response; it is not part of the API contract. Delete the call when implementing a
 handler.
+
+## Foundation
+
+The shared helpers live in `src/lib/server/api/`:
+
+- `errors.ts` — `ApiError`, `DomainError`, status mapping and the error envelope
+- `validation.ts` — Zod parsing for JSON, params and query strings
+- `auth.ts` — session, role and account-status guards
+- `pagination.ts` — page/pageSize parsing and paged responses
+- `mappers.ts` — database row to API response mapping
+
+Services live in `src/lib/server/services/` and receive the Drizzle `Database` or `Transaction`
+type. Route handlers should stay thin.
 
 ## Authentication
 
@@ -59,7 +93,8 @@ Successful responses must match the OpenAPI schemas. Error responses should use 
 	"error": {
 		"code": "INVALID_STATE_TRANSITION",
 		"message": "Human-readable explanation",
-		"details": []
+		"details": [],
+		"requestId": "..."
 	}
 }
 ```
@@ -96,12 +131,10 @@ ratings belong in the service layer behind the route, not in `+server.ts`.
 
 ```sh
 pnpm check    # SvelteKit sync + svelte-check
+pnpm test     # Vitest
 pnpm build    # production build
 pnpm lint     # Prettier + ESLint
 ```
 
-The OpenAPI contract can be linted with:
-
-```sh
-npx @redocly/cli lint .tmp/openapi.yaml
-```
+Database-backed tests run only when `TEST_DATABASE_URL` is set. Point it at a database with the
+migrations applied; the test suite skips that file otherwise.

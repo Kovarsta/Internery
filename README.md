@@ -18,7 +18,7 @@ Early development. What exists:
 
 Not implemented yet:
 
-- Product service layer and real API handlers
+- Remaining API handlers and the marketplace service layer
 - UI beyond the SvelteKit demo pages
 - Object storage upload/download endpoints
 - File retention and garbage-collection jobs
@@ -175,8 +175,9 @@ the repository and must be committed.
 
 ## API
 
-The API lives under `src/routes/api/v1`. Every operation currently returns `501` from a shared
-skeleton helper. The route tree covers 52 paths and 65 operations.
+The API lives under `src/routes/api/v1`. The route tree covers 52 paths and 65 operations. Most
+handlers still return `501`; `GET /me` and `GET /categories` are implemented as the reference
+pattern.
 
 - Authentication remains on Better Auth's `/api/auth/*`.
 - Route conventions and the implementation checklist are in
@@ -198,19 +199,21 @@ Files are not stored in PostgreSQL. The database stores object keys and metadata
 
 ## Scripts
 
-| Command            | Purpose                                                  |
-| ------------------ | -------------------------------------------------------- |
-| `pnpm dev`         | Start the Vite development server.                       |
-| `pnpm build`       | Build for production.                                    |
-| `pnpm preview`     | Preview the production build.                            |
-| `pnpm check`       | Run SvelteKit sync and `svelte-check`.                   |
-| `pnpm lint`        | Run Prettier check and ESLint.                           |
-| `pnpm format`      | Format the repository with Prettier.                     |
-| `pnpm db:start`    | Start PostgreSQL and MinIO with Docker Compose.          |
-| `pnpm db:generate` | Generate a Drizzle migration.                            |
-| `pnpm db:migrate`  | Apply pending Drizzle migrations.                        |
-| `pnpm db:studio`   | Open Drizzle Studio.                                     |
-| `pnpm auth:schema` | Regenerate and normalise the Better Auth Drizzle schema. |
+| Command            | Purpose                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| `pnpm dev`         | Start the Vite development server.                             |
+| `pnpm build`       | Build for production.                                          |
+| `pnpm preview`     | Preview the production build.                                  |
+| `pnpm check`       | Run SvelteKit sync and `svelte-check`.                         |
+| `pnpm test`        | Run the Vitest suite. Database tests need `TEST_DATABASE_URL`. |
+| `pnpm test:watch`  | Run Vitest in watch mode.                                      |
+| `pnpm lint`        | Run Prettier check and ESLint.                                 |
+| `pnpm format`      | Format the repository with Prettier.                           |
+| `pnpm db:start`    | Start PostgreSQL and MinIO with Docker Compose.                |
+| `pnpm db:generate` | Generate a Drizzle migration.                                  |
+| `pnpm db:migrate`  | Apply pending Drizzle migrations.                              |
+| `pnpm db:studio`   | Open Drizzle Studio.                                           |
+| `pnpm auth:schema` | Regenerate and normalise the Better Auth Drizzle schema.       |
 
 ## Project layout
 
@@ -220,10 +223,11 @@ src/
     auth.ts                 # Better Auth configuration
     email.ts                # Resend verification sender
     moderation.ts           # lazy moderation-row helper
-    api/not-implemented.ts  # temporary 501 response
+    api/                    # errors, validation, auth, pagination, mappers
+    services/               # domain services used by route handlers
     db/                     # Drizzle schema and client
   routes/
-    api/v1/                 # API route skeletons
+    api/v1/                 # API route handlers
     demo/better-auth/       # scaffold auth demo
 drizzle/                    # migrations and snapshots
 scripts/
@@ -240,6 +244,7 @@ Run the relevant checks before opening a pull request:
 
 ```sh
 pnpm check
+pnpm test
 pnpm build
 ```
 
