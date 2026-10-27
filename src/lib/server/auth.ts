@@ -5,7 +5,6 @@ import {
 	GITHUB_CLIENT_SECRET
 } from '$app/env/private';
 
-import { hash, verify, type Options } from '@node-rs/argon2';
 import { and, eq } from 'drizzle-orm';
 import { betterAuth } from 'better-auth/minimal';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
@@ -14,16 +13,7 @@ import { getRequestEvent } from '$app/server';
 import { db } from '#lib/server/db/index.ts';
 import * as schema from '#lib/server/db/schema.ts';
 import { sendVerificationEmail } from '#lib/server/email.ts';
-
-const argon2Options: Options = {
-	memoryCost: 65536,
-	timeCost: 3,
-	parallelism: 4,
-	outputLen: 32,
-	// @node-rs/argon2 exposes Algorithm as a const enum, which cannot be used
-	// with the project's verbatimModuleSyntax setting. 2 is Argon2id.
-	algorithm: 2
-};
+import { hashPassword, verifyPassword } from '#lib/server/password.ts';
 
 export const auth = betterAuth({
 	baseURL: ORIGIN,
@@ -78,8 +68,8 @@ export const auth = betterAuth({
 		enabled: true,
 		requireEmailVerification: true,
 		password: {
-			hash: (password) => hash(password, argon2Options),
-			verify: ({ password, hash: passwordHash }) => verify(passwordHash, password, argon2Options)
+			hash: hashPassword,
+			verify: verifyPassword
 		}
 	},
 	emailVerification: {

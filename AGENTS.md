@@ -36,6 +36,11 @@ Safe to ignore:
 Not present (paths relative to `.tmp/`, referenced by its README, so its checks cannot run):
 `check/`, `docs/SRS.md`, `redocly.yaml`.
 
+**The API contract is provisional.** `.tmp/openapi.yaml` describes the intended API, but response
+shapes and error details may change as handlers land. When behavior and the contract differ, change
+the contract deliberately and record why; do not contort the code to match a draft schema.
+Reconciling the contract with the implemented routes is part of the deferred documentation work.
+
 ## Current state
 
 - The app is still the `sv create` scaffold: default landing page and Better Auth demo routes under
@@ -46,7 +51,9 @@ Not present (paths relative to `.tmp/`, referenced by its README, so its checks 
   generated timestamps to `timestamptz` and the role/status text columns to PostgreSQL enums. The
   root `auth-schema.ts` is stale and unimported; do not use it.
 - Authentication uses Argon2id and Resend, and requires email verification before sign-in. A real
-  Resend key and a verified sender address are required for verification mail.
+  Resend key and a verified sender address are required for verification mail. The Argon2id settings
+  and hash/verify wrappers live in `src/lib/server/password.ts`, shared by Better Auth and the seed
+  script.
 - `src/lib/server/db/product.schema.ts` contains the product tables: common profile/moderation
   tables, student and employer profiles, marketplace, trust, notifications, AI and audit tables.
   All user foreign keys reference the generated `users.id` as `uuid`.
@@ -55,6 +62,10 @@ Not present (paths relative to `.tmp/`, referenced by its README, so its checks 
   row means zero failures and no lock.
 - `src/lib/server/db/schema.ts` only re-exports the auth and product schemas; Drizzle and
   drizzle-kit consume that aggregate.
+- `scripts/seed.ts` (run with `pnpm db:seed`) inserts fixed-id development data: an admin, a student
+  and an employer, five categories, four jobs, three applications and three notifications. It is
+  idempotent, uses `SEED_PASSWORD` (default `Password123!`), and refuses to run when
+  `NODE_ENV=production`.
 - Migrations `drizzle/0000_pink_thundra.sql` and `drizzle/0001_fair_lightspeed.sql` have been
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
@@ -87,6 +98,7 @@ pnpm format              # prettier --write
 pnpm db:start            # docker compose up (Postgres :5432, MinIO :9000/:9001)
 pnpm db:generate         # drizzle-kit generate
 pnpm db:migrate          # drizzle-kit migrate
+pnpm db:seed             # insert development data (requires .env)
 pnpm db:push             # drizzle-kit push (prototyping only)
 pnpm db:studio           # drizzle-kit studio
 pnpm auth:schema         # regenerate Better Auth tables into src/lib/server/db/auth.schema.ts

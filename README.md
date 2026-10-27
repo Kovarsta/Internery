@@ -77,7 +77,17 @@ Not implemented yet:
    pnpm db:migrate
    ```
 
-6. Start the development server:
+6. Seed development data:
+
+   ```sh
+   pnpm db:seed
+   ```
+
+   This creates an admin, a student and an employer, plus categories, jobs, applications and
+   notifications. The accounts share the password from `SEED_PASSWORD`, which defaults to
+   `Password123!`. The script is safe to rerun and refuses to run when `NODE_ENV=production`.
+
+7. Start the development server:
 
    ```sh
    pnpm dev
@@ -166,9 +176,14 @@ Common commands:
 ```sh
 pnpm db:generate     # generate the next migration after a schema change
 pnpm db:migrate      # apply pending migrations
+pnpm db:seed         # insert the development seed data
 pnpm db:studio       # inspect the database
 pnpm db:push         # prototyping only; skips migration history
 ```
+
+The seed script lives in `scripts/seed.ts`. It uses fixed ids and conflict-safe writes, so running
+it again updates the seed rows instead of duplicating them. Seed accounts use the password from
+`SEED_PASSWORD`, defaulting to `Password123!`.
 
 Review generated SQL before applying it. Migrations and their snapshots under `drizzle/` are part of
 the repository and must be committed.
@@ -212,6 +227,7 @@ Files are not stored in PostgreSQL. The database stores object keys and metadata
 | `pnpm db:start`    | Start PostgreSQL and MinIO with Docker Compose.                |
 | `pnpm db:generate` | Generate a Drizzle migration.                                  |
 | `pnpm db:migrate`  | Apply pending Drizzle migrations.                              |
+| `pnpm db:seed`     | Insert the development seed data.                              |
 | `pnpm db:studio`   | Open Drizzle Studio.                                           |
 | `pnpm auth:schema` | Regenerate and normalise the Better Auth Drizzle schema.       |
 
