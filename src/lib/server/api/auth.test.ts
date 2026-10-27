@@ -61,6 +61,14 @@ describe('requireRole', () => {
 
 		expect(error.code).toBe('FORBIDDEN');
 	});
+
+	it('rejects a non-active account even when the role matches', () => {
+		const error = expectApiError(() =>
+			requireRole(makeLocals({ role: 'EMPLOYER', status: 'SUSPENDED' }), ['EMPLOYER'])
+		);
+
+		expect(error.code).toBe('ACCOUNT_LOCKED');
+	});
 });
 
 describe('requireActiveAccount', () => {

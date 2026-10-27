@@ -3,8 +3,9 @@
 SvelteKit route handlers for the `/api/v1` contract.
 
 The OpenAPI document is the source of truth for paths, methods, request bodies, responses and roles.
-Most handlers are still **skeletons** that return `501 Not Implemented`. `GET /me` and
-`GET /categories` are implemented as the reference pattern for the rest.
+Most handlers are still **skeletons** that return `501 Not Implemented`. `GET /me`, `GET /categories`,
+the `/me/notifications` reads and the two own-profile reads are implemented as the reference pattern
+for the rest.
 
 ## Layout
 

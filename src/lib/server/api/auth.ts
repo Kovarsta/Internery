@@ -14,7 +14,7 @@ export function requireUser(locals: App.Locals): CurrentUser {
 
 /** Returns the signed-in user when their role is allowed, otherwise rejects with 403. */
 export function requireRole(locals: App.Locals, allowedRoles: readonly UserRole[]): CurrentUser {
-	const user = requireUser(locals);
+	const user = requireActiveAccount(locals);
 
 	if (!allowedRoles.includes(user.role as UserRole)) {
 		throw new ApiError('FORBIDDEN');

@@ -191,8 +191,8 @@ the repository and must be committed.
 ## API
 
 The API lives under `src/routes/api/v1`. The route tree covers 52 paths and 65 operations. Most
-handlers still return `501`; `GET /me` and `GET /categories` are implemented as the reference
-pattern.
+handlers still return `501`; `GET /me`, `GET /categories`, the `/me/notifications` reads and the two
+own-profile reads are implemented as the reference pattern.
 
 - Authentication remains on Better Auth's `/api/auth/*`.
 - Route conventions and the implementation checklist are in

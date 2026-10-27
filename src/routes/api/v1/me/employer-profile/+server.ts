@@ -1,8 +1,18 @@
 import type { RequestHandler } from './$types';
-import { notImplemented } from '#lib/server/api/not-implemented.ts';
+import { requireRole } from '#lib/server/api/auth.ts';
+import { handleApiError } from '#lib/server/api/errors.ts';
+import { toEmployerProfile } from '#lib/server/api/mappers.ts';
+import { db } from '#lib/server/db/index.ts';
+import { getEmployerProfile } from '#lib/server/services/profiles.ts';
 
 /** GET /me/employer-profile — getEmployerProfile */
-export const GET: RequestHandler = () => notImplemented();
+export const GET: RequestHandler = async (event) => {
+	try {
+		const user = requireRole(event.locals, ['EMPLOYER']);
+		const profile = await getEmployerProfile(db, user.id);
 
-/** PUT /me/employer-profile — saveEmployerProfile */
-export const PUT: RequestHandler = () => notImplemented();
+		return Response.json(toEmployerProfile(profile, user.id));
+	} catch (error) {
+		return handleApiError(error);
+	}
+};

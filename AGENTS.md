@@ -70,11 +70,11 @@ Reconciling the contract with the implemented routes is part of the deferred doc
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
 - The `/api/v1` route tree exists under `src/routes/api/v1` (52 paths, 65 operations). Most handlers
-  are skeletons that return `501`; `GET /me` and `GET /categories` are implemented as reference
-  patterns. Shared API helpers live in `src/lib/server/api/`; services live in
-  `src/lib/server/services/`. Authentication endpoints are Better Auth's `/api/auth/*` and
-  deliberately not duplicated under `/api/v1`. See `src/routes/api/README.md` for route conventions
-  and the implementation checklist.
+  are skeletons that return `501`; `GET /me`, `GET /categories`, the `/me/notifications` reads and
+  the two own-profile reads are implemented as reference patterns. Shared API helpers live in
+  `src/lib/server/api/`; services live in `src/lib/server/services/`. Authentication endpoints are
+  Better Auth's `/api/auth/*` and deliberately not duplicated under `/api/v1`. See
+  `src/routes/api/README.md` for route conventions and the implementation checklist.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
   returned as raw storage or presigned URLs. See `.agent/decisions/avatar-storage.md`.
 - `.env` exists locally and `node_modules` is installed.
