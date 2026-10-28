@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Part-time Job Marketplace API
-  version: 0.2.0
+  version: 0.3.0
   summary: REST API for a two-sided marketplace between students and employers.
   description: |
     **Contract between the SvelteKit front end and the SvelteKit server endpoints
@@ -85,8 +85,9 @@ paths:
       operationId: updateMe
       summary: Edit name, phone or email
       description: |
-        Changing `email` does not apply immediately: a verification email goes to the new
-        address and the change takes effect on `/me/email-change/confirm` (AC-06.3).
+        Name and phone change immediately. Changing `email` asks Better Auth to send a
+        verification link to the new address; the account keeps the old email until that link
+        is opened. Email confirmation lives under `/api/auth/*`, not `/api/v1`.
       x-us: [US-06]
       x-fr: [FR-08]
       x-roles: [STUDENT, EMPLOYER, ADMIN]
@@ -101,23 +102,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/UserMe' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/Invalid' }
-  /me/email-change/confirm:
-    post:
-      tags: [Account]
-      operationId: confirmEmailChange
-      summary: Apply a pending email change
-      x-us: [US-06]
-      x-fr: [FR-08]
-      x-roles: [STUDENT, EMPLOYER, ADMIN]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/TokenRequest' }
-      responses:
-        '204': { description: Email updated. }
         '422': { $ref: '#/components/responses/Invalid' }
   /me/avatar:
     put:
@@ -180,6 +167,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/StudentProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/Invalid' }
   /me/cv:
     put:
@@ -336,6 +325,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/EmployerProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/Invalid' }
   /me/jobs:
     get:
@@ -1622,11 +1613,6 @@ components:
         page: { type: integer, minimum: 1 }
         pageSize: { type: integer, minimum: 1, maximum: 50 }
         total: { type: integer, minimum: 0 }
-    TokenRequest:
-      type: object
-      required: [token]
-      properties:
-        token: { type: string }
     ReasonRequired:
       type: object
       required: [reason]

@@ -20,7 +20,7 @@ application code; copy what is needed into `src/` when adopting it.
 
 | File                                      | Role                                                              |
 | ----------------------------------------- | ----------------------------------------------------------------- |
-| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 65 operations under `/api/v1`          |
+| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 64 operations under `/api/v1`          |
 | `docs/contracts/implementation-status.md` | Implemented vs planned operations                                 |
 | `.tmp/schema.ts`                          | DB contract: 17 tables, 12 enums, constraints, indexes, relations |
 | `.tmp/invariants.ts`                      | Transactional service rules + work-record signing                 |
@@ -70,12 +70,12 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Migrations `drizzle/0000_pink_thundra.sql` and `drizzle/0001_fair_lightspeed.sql` have been
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
-- The `/api/v1` route tree exists under `src/routes/api/v1` (52 paths, 65 operations). Most handlers
-  are skeletons that return `501`; `GET /me`, `GET /categories`, the `/me/notifications` reads and
-  the two own-profile reads are implemented as reference patterns. Shared API helpers live in
-  `src/lib/server/api/`; services live in `src/lib/server/services/`. Authentication endpoints are
-  Better Auth's `/api/auth/*` and deliberately not duplicated under `/api/v1`. See
-  `src/routes/api/README.md` for route conventions and the implementation checklist.
+- The `/api/v1` route tree exists under `src/routes/api/v1` (51 paths, 64 operations). Most handlers
+  are skeletons that return `501`; the account, notification, saved-job and own-profile operations
+  are implemented. Shared API helpers live in `src/lib/server/api/`; services live in
+  `src/lib/server/services/`. Authentication endpoints are Better Auth's `/api/auth/*` and
+  deliberately not duplicated under `/api/v1`. See `src/routes/api/README.md` for route conventions
+  and the implementation checklist.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
   returned as raw storage or presigned URLs. See `docs/decisions/avatar-storage.md`.
 - `.env` exists locally and `node_modules` is installed.
@@ -233,7 +233,7 @@ See `.agent/schema-review.md` for evidence and proposed patches.
 `docs/contracts/openapi.yaml` is the published contract and
 `docs/contracts/implementation-status.md` lists what exists. The DB contract (`schema.ts`), the
 transaction recipes (`invariants.ts`) and the contract README still live in `.tmp/`; move them next.
-Keep `.tmp/` and `.agent/` as private scratch. The current contract is 65 operations on 52 paths.
+Keep `.tmp/` and `.agent/` as private scratch. The current contract is 64 operations on 51 paths.
 
 The identity conflict is resolved in favour of Better Auth: the app uses the generated `users`,
 `sessions`, `accounts` and `verifications` tables. The contract's `users` and `user_tokens` tables

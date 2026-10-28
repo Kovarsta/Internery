@@ -1,6 +1,6 @@
 # Implementation status
 
-Base path: `/api/v1`. The contract lists 65 operations on 52 paths. Operations not listed here
+Base path: `/api/v1`. The contract lists 64 operations on 51 paths. Operations not listed here
 return `501 Not Implemented` from the shared skeleton helper. That `501` uses the internal
 `NOT_IMPLEMENTED` code, which is not part of the public `ErrorCode` enum and disappears as each
 endpoint is implemented.
@@ -21,6 +21,9 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 | `POST /me/notifications/read-all`              | 3     |
 | `PUT /me/saved-jobs/{jobId}`                   | 3     |
 | `DELETE /me/saved-jobs/{jobId}`                | 3     |
+| `PATCH /me`                                    | 3     |
+| `PUT /me/student-profile`                      | 3     |
+| `PUT /me/employer-profile`                     | 3     |
 
 ## Contract changes recorded with the implementation
 
@@ -36,3 +39,9 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   that does not exist or belongs to another user.
 - Saved-job writes are idempotent. Only `PUT` returns `404` (unknown job); `DELETE` succeeds even
   when the bookmark does not exist.
+- `PATCH /me` updates the name and phone directly. An `email` change is delegated to Better Auth,
+  which sends the verification link to the new address; the old email stays until that link is
+  opened. The separate `/me/email-change/confirm` operation is removed, because confirmation lives
+  under `/api/auth/*`.
+- The profile `PUT` operations replace the editable fields only. CV columns, ratings and employer
+  verification state are owned by other flows and are preserved.

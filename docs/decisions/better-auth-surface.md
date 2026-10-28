@@ -17,11 +17,14 @@ Authentication endpoints are provided directly by Better Auth under `/api/auth/*
 - `AccountStatus` now matches the database enum:
   `PENDING_VERIFICATION`, `ACTIVE`, `SUSPENDED`, `LOCKED`, `DELETED`.
 - The `/api/v1/auth/*` SvelteKit skeletons were deleted.
+- Email changes are delegated to Better Auth's `/change-email` endpoint. The
+  `/api/v1/me/email-change/confirm` operation and route were removed; the frontend follows the
+  verification link Better Auth sends to the new address.
 
 ## Consequences
 
-- The frontend calls Better Auth directly for register, login, logout, email verification and
-  password reset.
+- The frontend calls Better Auth directly for register, login, logout, email verification, password
+  reset and email-change confirmation.
 - Better Auth's auth responses use its own envelope, not the `/api/v1` `Error` envelope.
 - `/api/v1` handlers must derive the current user from the Better Auth session and enforce `x-roles`
   themselves.
@@ -31,4 +34,4 @@ Authentication endpoints are provided directly by Better Auth under `/api/auth/*
 ## Avatar URL
 
 Accepted. Avatars follow the same private-storage, application-served approach as CVs. See
-`.agent/decisions/avatar-storage.md` for the URL shape, access policy and upload rules.
+`docs/decisions/avatar-storage.md` for the URL shape, access policy and upload rules.

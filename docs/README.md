@@ -7,7 +7,7 @@ implementation and review.
 
 | File                                 | Purpose                                                  |
 | ------------------------------------ | -------------------------------------------------------- |
-| `contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 65 operations under `/api/v1` |
+| `contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 64 operations under `/api/v1` |
 | `contracts/implementation-status.md` | Which operations exist and which still return `501`      |
 
 The API contract is **provisional**. Update it in the same change that alters a request or response

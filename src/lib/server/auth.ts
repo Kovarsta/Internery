@@ -29,6 +29,11 @@ export const auth = betterAuth({
 		}
 	},
 	user: {
+		changeEmail: {
+			// Better Auth sends the confirmation link; this app does not keep a
+			// second email-change token flow of its own.
+			enabled: true
+		},
 		additionalFields: {
 			role: {
 				type: ['STUDENT', 'EMPLOYER', 'ADMIN'],
