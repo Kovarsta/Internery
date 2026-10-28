@@ -14,7 +14,8 @@ Early development. What exists:
 - PostgreSQL schema for profiles, jobs, applications, reviews, reports, notifications, AI data,
   work records and audit logs
 - Drizzle migrations applied to the local database
-- SvelteKit `/api/v1` route skeletons for the whole API contract
+- SvelteKit `/api/v1` route tree for the whole API contract; the foundation and the first reads and
+  writes are implemented
 
 Not implemented yet:
 
@@ -190,15 +191,17 @@ the repository and must be committed.
 
 ## API
 
-The API lives under `src/routes/api/v1`. The route tree covers 52 paths and 65 operations. Most
-handlers still return `501`; `GET /me`, `GET /categories`, the `/me/notifications` reads and the two
-own-profile reads are implemented as the reference pattern.
+The API lives under `src/routes/api/v1`. The route tree covers 52 paths and 65 operations. The
+request foundation and the first reads and writes are implemented; the rest still return `501`. The
+contract is [`docs/contracts/openapi.yaml`](docs/contracts/openapi.yaml), and
+[`docs/contracts/implementation-status.md`](docs/contracts/implementation-status.md) lists what
+exists.
 
 - Authentication remains on Better Auth's `/api/auth/*`.
 - Route conventions and the implementation checklist are in
   [`src/routes/api/README.md`](src/routes/api/README.md).
 - Parameter names follow the contract: `{jobId}` becomes `[jobId]`.
-- Errors should use the single `{ error: { code, message, details? } }` envelope.
+- Errors use the single `{ error: { code, message, details?, requestId } }` envelope.
 - Role checks are server-side; never rely on the UI.
 
 ## File storage

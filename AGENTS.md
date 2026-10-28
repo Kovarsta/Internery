@@ -14,16 +14,17 @@ pnpm. Adapter is `adapter-auto`; no deployment target chosen yet.
 
 ## Source of truth
 
-The design contracts and private notes live in `.tmp/` and `.agent/`, which are **gitignored**, so
-nothing there is published. Do not treat them as application code; copy what is needed into `src/`
-when adopting it.
+Durable contracts and decisions live in `docs/`. Private scratch notes live in `.tmp/` and
+`.agent/`, which are **gitignored**, so nothing there is published. Do not treat scratch notes as
+application code; copy what is needed into `src/` when adopting it.
 
-| File                 | Role                                                              |
-| -------------------- | ----------------------------------------------------------------- |
-| `.tmp/schema.ts`     | DB contract: 17 tables, 12 enums, constraints, indexes, relations |
-| `.tmp/openapi.yaml`  | API contract: OpenAPI 3.1, 65 operations under `/api/v1`          |
-| `.tmp/invariants.ts` | Transactional service rules + work-record signing                 |
-| `.tmp/README.md`     | ERD, enforcement matrix, open product decisions                   |
+| File                                      | Role                                                              |
+| ----------------------------------------- | ----------------------------------------------------------------- |
+| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 65 operations under `/api/v1`          |
+| `docs/contracts/implementation-status.md` | Implemented vs planned operations                                 |
+| `.tmp/schema.ts`                          | DB contract: 17 tables, 12 enums, constraints, indexes, relations |
+| `.tmp/invariants.ts`                      | Transactional service rules + work-record signing                 |
+| `.tmp/README.md`                          | ERD, enforcement matrix, open product decisions                   |
 
 Safe to ignore:
 
@@ -36,10 +37,10 @@ Safe to ignore:
 Not present (paths relative to `.tmp/`, referenced by its README, so its checks cannot run):
 `check/`, `docs/SRS.md`, `redocly.yaml`.
 
-**The API contract is provisional.** `.tmp/openapi.yaml` describes the intended API, but response
-shapes and error details may change as handlers land. When behavior and the contract differ, change
-the contract deliberately and record why; do not contort the code to match a draft schema.
-Reconciling the contract with the implemented routes is part of the deferred documentation work.
+**The API contract is provisional.** `docs/contracts/openapi.yaml` describes the intended API, but
+response shapes and error details may change as handlers land. When behavior and the contract
+differ, change the contract deliberately and record why; do not contort the code to match a draft
+schema. `docs/contracts/implementation-status.md` lists what exists.
 
 ## Current state
 
@@ -76,15 +77,15 @@ Reconciling the contract with the implemented routes is part of the deferred doc
   Better Auth's `/api/auth/*` and deliberately not duplicated under `/api/v1`. See
   `src/routes/api/README.md` for route conventions and the implementation checklist.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
-  returned as raw storage or presigned URLs. See `.agent/decisions/avatar-storage.md`.
+  returned as raw storage or presigned URLs. See `docs/decisions/avatar-storage.md`.
 - `.env` exists locally and `node_modules` is installed.
 - Docker Compose provides Postgres, MinIO, and a one-shot `minio-init` job that creates the
   `${S3_BUCKET:-internery-staging}` bucket. MinIO uses the Chainguard image because the upstream
   community images were removed from Docker Hub and Quay in 2025.
-- Product **service layer, API routes and real UI are not implemented**. The contract
-  `.tmp/schema.ts` is intentionally unchanged.
+- Product services and API handlers cover the request foundation and the first reads/writes; the
+  real UI is not implemented. The contract `.tmp/schema.ts` is intentionally unchanged.
 - File retention and garbage collection are agreed but **not implemented**. See
-  `.agent/decisions/data-retention.md` for the reference-aware cleanup policy and open decisions.
+  `docs/decisions/data-retention.md` for the reference-aware cleanup policy and open decisions.
 
 ## Commands
 
@@ -186,7 +187,7 @@ The readability rules above apply to every change. These are the project-specifi
 - Server-only code lives under `src/lib/server/` and must never be imported into client code.
   Environment access belongs in server modules.
 - Tailwind 4 utilities; the CSS entry point is `src/routes/layout.css`.
-- Keep API field names, enum values and length limits aligned with `.tmp/openapi.yaml`.
+- Keep API field names, enum values and length limits aligned with `docs/contracts/openapi.yaml`.
 - Money is an integer VND amount. Timestamps are `timestamptz`; job dates are `date`.
 
 ## Domain map
@@ -228,10 +229,11 @@ source of the app migration.
 
 See `.agent/schema-review.md` for evidence and proposed patches.
 
-**Documentation portability:** committed files currently reference the gitignored `.tmp/` and
-`.agent/` folders. Move durable contracts to `docs/contracts/` and durable decisions to
-`docs/decisions/`, then update the committed references. Keep `.tmp/` and `.agent/` as private
-scratch. The current contract is 65 operations on 52 paths.
+**Documentation portability:** the API contract and durable decisions now live in `docs/`.
+`docs/contracts/openapi.yaml` is the published contract and
+`docs/contracts/implementation-status.md` lists what exists. The DB contract (`schema.ts`), the
+transaction recipes (`invariants.ts`) and the contract README still live in `.tmp/`; move them next.
+Keep `.tmp/` and `.agent/` as private scratch. The current contract is 65 operations on 52 paths.
 
 The identity conflict is resolved in favour of Better Auth: the app uses the generated `users`,
 `sessions`, `accounts` and `verifications` tables. The contract's `users` and `user_tokens` tables
@@ -249,7 +251,7 @@ verification-status fields can drift from their status flags.
 - Do not invent contract details. If a decision is missing, write it down and ask.
 - Prefer the readable version even when a shorter version exists. Before finishing, reread the diff
   for names, nesting, comments and whitespace.
-- Copy contract files into `src/` deliberately. Keep private notes in `.agent/`; both `.tmp/` and
-  `.agent/` are ignored by git and are never published.
+- Copy contract files into `src/` deliberately. Publish durable documentation in `docs/`; keep
+  scratch notes in `.tmp/` and `.agent/`, which are ignored by git.
 - Run `pnpm check`, `pnpm test`, and `pnpm lint` before calling work finished.
 - Keep diffs focused; do not reformat unrelated files.

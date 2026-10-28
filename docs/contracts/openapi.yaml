@@ -1,0 +1,2250 @@
+openapi: 3.1.0
+info:
+  title: Part-time Job Marketplace API
+  version: 0.2.0
+  summary: REST API for a two-sided marketplace between students and employers.
+  description: |
+    **Contract between the SvelteKit front end and the SvelteKit server endpoints
+    (`src/routes/api/v1/**/+server.ts`).** Data model: see `src/lib/server/db/schema.ts`.
+
+    ## Status
+    This contract is provisional and is updated in the same change that alters a request or
+    response shape. Operations marked as implemented in `implementation-status.md` exist in the
+    application; the rest are planned and currently return `501 Not Implemented`.
+
+    ## Conventions
+    - **Base path** `/api/v1`. JSON in and out, except where a file is involved.
+    - **Auth**: Better Auth owns registration, login, logout, email verification and password
+      reset. Those endpoints live under `/api/auth/*` and are outside this `/api/v1` contract.
+      Protected `/api/v1` operations use Better Auth's httpOnly session cookie. Operations
+      without `security: []` need a signed-in user; `x-roles` says which roles may call them
+      (FR-07, enforced server-side for every call, never only in the UI). Operations marked
+      `security: [{}, ...]` work signed-out and add personal fields when signed in.
+    - **Errors** always use the `Error` envelope. `error.code` is a stable machine-readable
+      value from `ErrorCode`; `message` is for humans. Validation failures are `422` with
+      `details[]` naming each field (AC-xx.y "báo lỗi cạnh trường").
+    - **Pagination**: `page` (from 1) and `pageSize` (default 20, max 50, NFR-06).
+      Responses carry `items`, `page`, `pageSize`, `total`.
+    - **Ids** are UUIDs. **Timestamps** are RFC 3339 UTC. **Dates** are `YYYY-MM-DD`.
+      **Money** is an integer amount in VND.
+    - **Traceability**: `x-us`, `x-fr` on each operation reference the SRS (sections 3.1 and 4.2).
+    - **Side effects** that are not visible in a response (notifications, emails via Resend)
+      are listed in the operation description.
+
+    ## Rate limits and lockouts
+    - Login: 5 consecutive failures lock the account for 15 minutes (`429 TOO_MANY_ATTEMPTS`, `Retry-After`) (NFR-16).
+    - AI endpoints: 10 calls per user per day (`429 AI_RATE_LIMITED`) (NFR-25).
+  x-auth:
+    provider: Better Auth
+    basePath: /api/auth
+    description: Authentication endpoints are provided by Better Auth directly and are not part of the /api/v1 contract.
+  x-internal-fr:
+    FR-34: Email delivery through Resend is triggered by events inside the operations below (see "Side effects"); it has no endpoint of its own.
+  x-cross-cutting-fr:
+    FR-07: Role checks are applied to every operation through `x-roles`.
+  license:
+    name: Coursework, not for redistribution
+    identifier: LicenseRef-Coursework
+servers:
+  - url: /api/v1
+    description: Relative to the application origin
+security:
+  - cookieAuth: []
+tags:
+  - { name: Account, description: Current user and account settings }
+  - { name: Student, description: 'Student profile, CV, applications, bookmarks' }
+  - { name: Jobs, description: 'Public job browsing, employer job management' }
+  - { name: Applications, description: 'Apply, withdraw, decide' }
+  - { name: Reviews, description: Two-way ratings }
+  - { name: Notifications, description: In-app notifications }
+  - { name: Admin, description: 'Moderation, accounts, categories, statistics' }
+  - { name: Trust, description: 'Extra (Could): employer verification, reports' }
+  - { name: AI, description: 'Extra (Could): AI job suggestions and fit explanations' }
+  - { name: WorkRecords, description: 'Extra (Could): signed work records and public directory' }
+
+paths:
+  # --------------------------------------------------------------- Account
+  /me:
+    get:
+      tags: [Account]
+      operationId: getMe
+      summary: Current user
+      x-us: [US-06]
+      x-fr: [FR-08]
+      x-roles: [STUDENT, EMPLOYER, ADMIN]
+      responses:
+        '200':
+          description: The signed-in user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserMe' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      tags: [Account]
+      operationId: updateMe
+      summary: Edit name, phone or email
+      description: |
+        Changing `email` does not apply immediately: a verification email goes to the new
+        address and the change takes effect on `/me/email-change/confirm` (AC-06.3).
+      x-us: [US-06]
+      x-fr: [FR-08]
+      x-roles: [STUDENT, EMPLOYER, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserUpdate' }
+      responses:
+        '200':
+          description: Updated user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserMe' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /me/email-change/confirm:
+    post:
+      tags: [Account]
+      operationId: confirmEmailChange
+      summary: Apply a pending email change
+      x-us: [US-06]
+      x-fr: [FR-08]
+      x-roles: [STUDENT, EMPLOYER, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TokenRequest' }
+      responses:
+        '204': { description: Email updated. }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /me/avatar:
+    put:
+      tags: [Account]
+      operationId: uploadAvatar
+      summary: Upload or replace the avatar image
+      x-us: [US-06]
+      x-fr: [FR-08]
+      x-roles: [STUDENT, EMPLOYER, ADMIN]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary, description: 'PNG or JPEG, up to 2 MB' }
+      responses:
+        '200':
+          description: Updated user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserMe' }
+        '413': { $ref: '#/components/responses/FileTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMedia' }
+
+  # --------------------------------------------------------------- Student
+  /me/student-profile:
+    get:
+      tags: [Student]
+      operationId: getStudentProfile
+      summary: Own student profile
+      x-us: [US-07]
+      x-fr: [FR-09]
+      x-roles: [STUDENT]
+      responses:
+        '200':
+          description: Profile (empty fields until completed).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Student]
+      operationId: saveStudentProfile
+      summary: Create or replace the student profile
+      x-us: [US-07]
+      x-fr: [FR-09]
+      x-roles: [STUDENT]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StudentProfileInput' }
+      responses:
+        '200':
+          description: Saved profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentProfile' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /me/cv:
+    put:
+      tags: [Student]
+      operationId: uploadCv
+      summary: Upload or replace the CV
+      description: |
+        PDF or DOCX, at most 5 MB (NFR-18). A new upload replaces the current CV (AC-08.3).
+        Files already attached to earlier applications are kept.
+      x-us: [US-08]
+      x-fr: [FR-10, FR-11]
+      x-roles: [STUDENT]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: Updated profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentProfile' }
+        '413': { $ref: '#/components/responses/FileTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMedia' }
+    get:
+      tags: [Student]
+      operationId: downloadOwnCv
+      summary: Download own CV
+      x-us: [US-08]
+      x-fr: [FR-10]
+      x-roles: [STUDENT]
+      responses:
+        '200': { $ref: '#/components/responses/CvFile' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Student]
+      operationId: deleteCv
+      summary: Remove the CV from the profile
+      x-us: [US-08]
+      x-fr: [FR-11]
+      x-roles: [STUDENT]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '204': { description: CV removed from the profile. }
+  /me/applications:
+    get:
+      tags: [Student]
+      operationId: listMyApplications
+      summary: Applications I submitted, newest first
+      x-us: [US-13]
+      x-fr: [FR-16]
+      x-roles: [STUDENT]
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ApplicationStatus' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Page of applications.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedApplications' }
+  /me/saved-jobs:
+    get:
+      tags: [Student]
+      operationId: listSavedJobs
+      summary: Bookmarked jobs
+      description: Closed jobs stay in the list with their `status` (AC-15.2).
+      x-us: [US-15]
+      x-fr: [FR-18]
+      x-roles: [STUDENT]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Page of jobs.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedJobs' }
+  /me/saved-jobs/{jobId}:
+    parameters:
+      - { $ref: '#/components/parameters/JobId' }
+    put:
+      tags: [Student]
+      operationId: saveJob
+      summary: Bookmark a job (idempotent)
+      x-us: [US-15]
+      x-fr: [FR-18]
+      x-roles: [STUDENT]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
+        '204': { description: Saved. }
+    delete:
+      tags: [Student]
+      operationId: unsaveJob
+      summary: Remove a bookmark (idempotent)
+      x-us: [US-15]
+      x-fr: [FR-18]
+      x-roles: [STUDENT]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Invalid' }
+        '204': { description: Removed. }
+
+  # ----------------------------------------------------- Employer profile
+  /me/employer-profile:
+    get:
+      tags: [Jobs]
+      operationId: getEmployerProfile
+      summary: Own employer profile
+      x-us: [US-16]
+      x-fr: [FR-19]
+      x-roles: [EMPLOYER]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployerProfile' }
+    put:
+      tags: [Jobs]
+      operationId: saveEmployerProfile
+      summary: Create or replace the employer profile
+      x-us: [US-16]
+      x-fr: [FR-19]
+      x-roles: [EMPLOYER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmployerProfileInput' }
+      responses:
+        '200':
+          description: Saved profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployerProfile' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /me/jobs:
+    get:
+      tags: [Jobs]
+      operationId: listMyJobs
+      summary: My jobs with status and applicant count
+      x-us: [US-21]
+      x-fr: [FR-24]
+      x-roles: [EMPLOYER]
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/JobStatus' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Page of the employer's own jobs.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedMyJobs' }
+
+  # ------------------------------------------------------------------ Jobs
+  /categories:
+    get:
+      tags: [Jobs]
+      operationId: listCategories
+      summary: Active job categories
+      security: []
+      responses:
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '200':
+          description: Categories available for new jobs and filters.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+  /jobs:
+    get:
+      tags: [Jobs]
+      operationId: searchJobs
+      summary: Search, filter and sort open jobs
+      description: |
+        Only jobs with `status = HIRING` and not hidden are returned (AC-09.1).
+        All filters combine with AND (AC-10.1). Keyword search is full text over title and description.
+      security: [{}, { cookieAuth: [] }]
+      x-us: [US-09, US-10, US-41]
+      x-fr: [FR-12, FR-13, FR-47]
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 100 }, description: Keyword }
+        - { name: categoryId, in: query, schema: { type: string, format: uuid } }
+        - {
+            name: location,
+            in: query,
+            schema: { type: string, maxLength: 100 },
+            description: Substring match
+          }
+        - { name: salaryMin, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: salaryMax, in: query, schema: { type: integer, minimum: 0 } }
+        - {
+            name: startFrom,
+            in: query,
+            schema: { type: string, format: date },
+            description: Jobs starting on or after this date
+          }
+        - {
+            name: endTo,
+            in: query,
+            schema: { type: string, format: date },
+            description: Jobs ending on or before this date
+          }
+        - {
+            name: verifiedOnly,
+            in: query,
+            schema: { type: boolean, default: false },
+            description: Only verified employers (AC-41.2)
+          }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, salary_desc], default: newest }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: Page of jobs. An empty `items` array means no match (AC-09.2).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedJobs' }
+        '422': { $ref: '#/components/responses/Invalid' }
+    post:
+      tags: [Jobs]
+      operationId: createJob
+      summary: Post a job
+      description: |
+        Created as `HIRING` and visible in search immediately (AC-17.1).
+        The server scans title and description for scam keywords; a hit sets `scamWarning`
+        and puts the job in the admin queue but never blocks posting (AC-43.1).
+      x-us: [US-17, US-43]
+      x-fr: [FR-20, FR-50]
+      x-roles: [EMPLOYER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JobInput' }
+      responses:
+        '201':
+          description: Created job.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobDetail' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /jobs/{jobId}:
+    parameters:
+      - { $ref: '#/components/parameters/JobId' }
+    get:
+      tags: [Jobs]
+      operationId: getJob
+      summary: Job details
+      description: |
+        Visible to anyone for `HIRING` jobs; closed jobs still open and report that they no
+        longer accept applications (AC-11.2). Hidden jobs return 404 except to the owner and admins.
+      security: [{}, { cookieAuth: [] }]
+      x-us: [US-11, US-41, US-43]
+      x-fr: [FR-14, FR-47, FR-50]
+      responses:
+        '200':
+          description: Job details.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Jobs]
+      operationId: updateJob
+      summary: Edit own job
+      description: Only while `HIRING` (AC-18.2). Re-runs the scam keyword scan.
+      x-us: [US-18, US-43]
+      x-fr: [FR-21, FR-50]
+      x-roles: [EMPLOYER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JobUpdate' }
+      responses:
+        '200':
+          description: Updated job.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobDetail' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+    delete:
+      tags: [Jobs]
+      operationId: deleteJob
+      summary: Delete own job
+      description: Allowed only when no application is `ACCEPTED`; otherwise `409 JOB_HAS_ACCEPTED_APPLICANTS` and the job must be cancelled instead (AC-20.2).
+      x-us: [US-20]
+      x-fr: [FR-23]
+      x-roles: [EMPLOYER]
+      responses:
+        '204': { description: Deleted (cascades to pending applications). }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /jobs/{jobId}/cancel:
+    post:
+      tags: [Jobs]
+      operationId: cancelJob
+      summary: Cancel a job
+      description: |
+        `HIRING` or `FILLED` to `CANCELLED`. `COMPLETED` jobs cannot be cancelled (AC-19.2).
+        The job leaves search. The UI must confirm first (AC-19.3).
+      x-us: [US-19]
+      x-fr: [FR-22]
+      x-roles: [EMPLOYER]
+      parameters:
+        - { $ref: '#/components/parameters/JobId' }
+      responses:
+        '200':
+          description: Job after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobDetail' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /jobs/{jobId}/complete:
+    post:
+      tags: [Jobs]
+      operationId: completeJob
+      summary: Mark a job completed
+      description: Only from `FILLED` (AC-25.2). Unlocks reviews for both sides.
+      x-us: [US-25]
+      x-fr: [FR-29]
+      x-roles: [EMPLOYER]
+      parameters:
+        - { $ref: '#/components/parameters/JobId' }
+      responses:
+        '200':
+          description: Job after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobDetail' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # ---------------------------------------------------------- Applications
+  /jobs/{jobId}/applications:
+    parameters:
+      - { $ref: '#/components/parameters/JobId' }
+    post:
+      tags: [Applications]
+      operationId: applyToJob
+      summary: Apply to a job
+      description: |
+        Creates a `PENDING` application. With `attachCv: true` (default) the student's current
+        CV is copied onto the application. Side effects: in-app notification and email to the employer.
+      x-us: [US-12]
+      x-fr: [FR-15]
+      x-roles: [STUDENT]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApplyRequest' }
+      responses:
+        '201':
+          description: Application created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: '`ALREADY_APPLIED` (AC-12.3) or `JOB_NOT_HIRING` (AC-12.4).'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    get:
+      tags: [Applications]
+      operationId: listJobApplications
+      summary: Applicants of one of my jobs
+      x-us: [US-21]
+      x-fr: [FR-24]
+      x-roles: [EMPLOYER]
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ApplicationStatus' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: Page of applicants.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedApplicants' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /applications/{applicationId}/withdraw:
+    post:
+      tags: [Applications]
+      operationId: withdrawApplication
+      summary: Withdraw a pending application
+      description: Only from `PENDING` (AC-14.2). Notifies the employer.
+      x-us: [US-14]
+      x-fr: [FR-17]
+      x-roles: [STUDENT]
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+      responses:
+        '200':
+          description: Application after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /applications/{applicationId}/accept:
+    post:
+      tags: [Applications]
+      operationId: acceptApplication
+      summary: Accept an applicant
+      description: |
+        Runs in one transaction holding a row lock on the job (see `db/invariants.ts`).
+        Fails with `POSITIONS_FULL` when the job is already full (AC-24.3).
+        When accepted applicants reach `positionsNeeded` the job becomes `FILLED`
+        and `jobFilled` is true (AC-24.4). Notifies the student (in-app and email).
+      x-us: [US-24]
+      x-fr: [FR-27, FR-28]
+      x-roles: [EMPLOYER]
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+      responses:
+        '200':
+          description: Decision recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [application, jobFilled]
+                properties:
+                  application: { $ref: '#/components/schemas/Application' }
+                  jobFilled: { type: boolean }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: '`INVALID_STATE_TRANSITION` (AC-24.5), `POSITIONS_FULL` or `JOB_NOT_HIRING`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /applications/{applicationId}/reject:
+    post:
+      tags: [Applications]
+      operationId: rejectApplication
+      summary: Reject an applicant
+      description: Only from `PENDING`. The optional reason is shown to the student. Notifies the student.
+      x-us: [US-24]
+      x-fr: [FR-27]
+      x-roles: [EMPLOYER]
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RejectRequest' }
+      responses:
+        '200':
+          description: Application after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /applications/{applicationId}/student-profile:
+    get:
+      tags: [Applications]
+      operationId: getApplicantProfile
+      summary: Profile of the applicant (employer view)
+      description: |
+        Reachable only through an application to one of the caller's jobs. Any other caller
+        gets 403, even with a guessed id (AC-22.2).
+      x-us: [US-22]
+      x-fr: [FR-25]
+      x-roles: [EMPLOYER]
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+      responses:
+        '200':
+          description: Applicant profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentProfile' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /applications/{applicationId}/cv:
+    get:
+      tags: [Applications]
+      operationId: downloadApplicationCv
+      summary: Download the CV attached to an application
+      description: |
+        Allowed for the employer who owns the job and for the student who submitted it;
+        everyone else gets 403 (AC-23.2). 404 when the application has no CV (AC-23.3).
+      x-us: [US-23]
+      x-fr: [FR-26]
+      x-roles: [EMPLOYER, STUDENT]
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+      responses:
+        '200': { $ref: '#/components/responses/CvFile' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # --------------------------------------------------------------- Reviews
+  /jobs/{jobId}/reviews:
+    post:
+      tags: [Reviews]
+      operationId: createReview
+      summary: Review the other party of a completed job
+      description: |
+        Student reviews the employer, or employer reviews an accepted student. The job must be
+        `COMPLETED` (AC-26.3), the caller a participant, and one review per (job, reviewer, reviewee).
+        The reviewee's average is recalculated in the same transaction.
+        When the employer reviews a student, a signed work record is issued (`workRecordId`).
+        Side effects: notification to the reviewee (and for work records, to the student).
+      x-us: [US-26, US-27, US-44]
+      x-fr: [FR-30, FR-31, FR-51]
+      x-roles: [STUDENT, EMPLOYER]
+      parameters:
+        - { $ref: '#/components/parameters/JobId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewInput' }
+      responses:
+        '201':
+          description: Review saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [review]
+                properties:
+                  review: { $ref: '#/components/schemas/Review' }
+                  workRecordId:
+                    type: [string, 'null']
+                    format: uuid
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: '`JOB_NOT_COMPLETED`, `NOT_A_PARTICIPANT` or `ALREADY_REVIEWED`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /users/{userId}/reviews:
+    get:
+      tags: [Reviews]
+      operationId: listUserReviews
+      summary: Average rating and review history of a user
+      description: Hidden (removed) reviews are excluded from both the list and the average (AC-28.2).
+      x-us: [US-28]
+      x-fr: [FR-32]
+      x-roles: [STUDENT, EMPLOYER, ADMIN]
+      parameters:
+        - { $ref: '#/components/parameters/UserId' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: Summary plus newest-first page of reviews.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedReviews' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /users/{userId}/avatar:
+    get:
+      tags: [Account]
+      operationId: getUserAvatar
+      summary: Download a user's uploaded avatar
+      description: |
+        Public profile image. Returns the uploaded avatar only; when the user has no uploaded
+        avatar, `UserMe.avatarUrl` falls back to the OAuth provider image or null.
+      security: []
+      x-us: [US-06]
+      x-fr: [FR-08]
+      parameters:
+        - { $ref: '#/components/parameters/UserId' }
+      responses:
+        '200':
+          description: Avatar image.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+            image/jpeg:
+              schema: { type: string, format: binary }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # --------------------------------------------------------- Notifications
+  /me/notifications:
+    get:
+      tags: [Notifications]
+      operationId: listNotifications
+      summary: My notifications, newest first
+      x-us: [US-29]
+      x-fr: [FR-33]
+      x-roles: [STUDENT, EMPLOYER, ADMIN]
+      parameters:
+        - { name: unread, in: query, schema: { type: boolean, default: false } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Invalid' }
+        '200':
+          description: Page of notifications.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedNotifications' }
+  /me/notifications/unread-count:
+    get:
+      tags: [Notifications]
+      operationId: getUnreadCount
+      summary: Number for the bell badge
+      description: The client polls this at most every 30 seconds (NFR-08).
+      x-us: [US-29]
+      x-fr: [FR-33]
+      x-roles: [STUDENT, EMPLOYER, ADMIN]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Unread count.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [unread]
+                properties:
+                  unread: { type: integer, minimum: 0 }
+  /me/notifications/{notificationId}/read:
+    post:
+      tags: [Notifications]
+      operationId: markNotificationRead
+      summary: Mark one notification read
+      x-us: [US-29]
+      x-fr: [FR-33]
+      x-roles: [STUDENT, EMPLOYER, ADMIN]
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
+        '204': { description: Marked read. }
+  /me/notifications/read-all:
+    post:
+      tags: [Notifications]
+      operationId: markAllNotificationsRead
+      summary: Mark all notifications read
+      x-us: [US-29]
+      x-fr: [FR-33]
+      x-roles: [STUDENT, EMPLOYER, ADMIN]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '204': { description: All marked read. }
+
+  # ----------------------------------------------------------------- Admin
+  /admin/users:
+    get:
+      tags: [Admin]
+      operationId: adminListUsers
+      summary: Search users
+      x-us: [US-31]
+      x-fr: [FR-35]
+      x-roles: [ADMIN]
+      parameters:
+        - {
+            name: q,
+            in: query,
+            schema: { type: string, maxLength: 100 },
+            description: Name or email substring
+          }
+        - { name: role, in: query, schema: { $ref: '#/components/schemas/UserRole' } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/AccountStatus' } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Page of users.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedAdminUsers' }
+  /admin/users/{userId}/lock:
+    post:
+      tags: [Admin]
+      operationId: adminLockUser
+      summary: Lock an account
+      description: The user can no longer sign in (AC-31.2). Writes an audit-log entry with admin and time (AC-31.4).
+      x-us: [US-31]
+      x-fr: [FR-36]
+      x-roles: [ADMIN]
+      parameters:
+        - { $ref: '#/components/parameters/UserId' }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReasonOptional' }
+      responses:
+        '200':
+          description: Updated user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUser' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/users/{userId}/unlock:
+    post:
+      tags: [Admin]
+      operationId: adminUnlockUser
+      summary: Unlock an account
+      description: Writes an audit-log entry (AC-31.4).
+      x-us: [US-31]
+      x-fr: [FR-36]
+      x-roles: [ADMIN]
+      parameters:
+        - { $ref: '#/components/parameters/UserId' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Updated user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUser' }
+  /admin/moderation-queue:
+    get:
+      tags: [Admin]
+      operationId: adminModerationQueue
+      summary: Jobs needing attention
+      description: |
+        Jobs that are hidden, reported, auto-hidden, or flagged by the scam keyword scan.
+        Open reports are resolved when the job is restored or its flag cleared.
+      x-us: [US-32, US-42, US-43]
+      x-fr: [FR-37, FR-49, FR-50]
+      x-roles: [ADMIN]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Page of moderation items.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedModeration' }
+  /admin/jobs/{jobId}/hide:
+    post:
+      tags: [Admin]
+      operationId: adminHideJob
+      summary: Hide a job with a reason
+      description: The job leaves search and the employer is notified with the reason (AC-32.1). Audited.
+      x-us: [US-32]
+      x-fr: [FR-37]
+      x-roles: [ADMIN]
+      parameters:
+        - { $ref: '#/components/parameters/JobId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReasonRequired' }
+      responses:
+        '200':
+          description: Job after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobDetail' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /admin/jobs/{jobId}/restore:
+    post:
+      tags: [Admin]
+      operationId: adminRestoreJob
+      summary: Restore a hidden job
+      description: |
+        Clears the hidden state. The job shows in search again only if still `HIRING` (AC-32.2).
+        Open reports on the job are marked resolved (AC-42.4). Audited.
+      x-us: [US-32, US-42]
+      x-fr: [FR-37, FR-49]
+      x-roles: [ADMIN]
+      parameters:
+        - { $ref: '#/components/parameters/JobId' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Job after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobDetail' }
+  /admin/jobs/{jobId}/clear-flag:
+    post:
+      tags: [Admin]
+      operationId: adminClearJobFlag
+      summary: Remove the scam warning after checking
+      description: Sets `needsReview` to false so the banner disappears (AC-43.3). Audited.
+      x-us: [US-43]
+      x-fr: [FR-50]
+      x-roles: [ADMIN]
+      parameters:
+        - { $ref: '#/components/parameters/JobId' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Job after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobDetail' }
+  /admin/reviews/{reviewId}/remove:
+    post:
+      tags: [Admin]
+      operationId: adminRemoveReview
+      summary: Remove a spam or abusive review
+      description: |
+        Sets `isHidden`; the review disappears and the average is recalculated in the same
+        transaction (AC-33.1, AC-33.2). Audited.
+      x-us: [US-33]
+      x-fr: [FR-38]
+      x-roles: [ADMIN]
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReasonOptional' }
+      responses:
+        '204': { description: Removed. }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /admin/categories:
+    post:
+      tags: [Admin]
+      operationId: adminCreateCategory
+      summary: Add a category
+      x-us: [US-34]
+      x-fr: [FR-39]
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryInput' }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /admin/categories/{categoryId}:
+    parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateCategory
+      summary: Rename or deactivate a category
+      description: A deactivated category disappears from `/categories` and from new-job forms but stays on existing jobs (AC-34.3).
+      x-us: [US-34]
+      x-fr: [FR-39]
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryUpdate' }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [Admin]
+      operationId: adminDeleteCategory
+      summary: Delete an unused category
+      description: A category used by any job returns `409 CATEGORY_IN_USE`; deactivate it instead (AC-34.2).
+      x-us: [US-34]
+      x-fr: [FR-39]
+      x-roles: [ADMIN]
+      responses:
+        '204': { description: Deleted. }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/stats:
+    get:
+      tags: [Admin]
+      operationId: adminStats
+      summary: Basic platform statistics
+      x-us: [US-35]
+      x-fr: [FR-40]
+      x-roles: [ADMIN]
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Counts within the date range (all time when omitted).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Stats' }
+
+  # ----------------------------------------------------------------- Trust
+  /me/verification-request:
+    get:
+      tags: [Trust]
+      operationId: getMyVerificationRequest
+      summary: Latest verification request of the employer
+      x-us: [US-39]
+      x-fr: [FR-45]
+      x-roles: [EMPLOYER]
+      responses:
+        '200':
+          description: Latest request, or 404 when none.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VerificationRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Trust]
+      operationId: submitVerificationRequest
+      summary: Ask for the Verified badge
+      description: One `PENDING` request at a time (`409 VERIFICATION_PENDING`, AC-39.2). A rejected employer may submit again.
+      x-us: [US-39]
+      x-fr: [FR-45]
+      x-roles: [EMPLOYER]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/VerificationInput' }
+      responses:
+        '201':
+          description: Request created as PENDING.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VerificationRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/FileTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMedia' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /admin/verification-requests:
+    get:
+      tags: [Trust]
+      operationId: adminListVerificationRequests
+      summary: Verification queue
+      x-us: [US-40]
+      x-fr: [FR-46]
+      x-roles: [ADMIN]
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/VerificationRequestStatus' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Page of requests, oldest first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedVerification' }
+  /admin/verification-requests/{requestId}/approve:
+    post:
+      tags: [Trust]
+      operationId: adminApproveVerification
+      summary: Approve a request
+      description: Employer becomes `VERIFIED` and is notified (AC-40.2).
+      x-us: [US-40]
+      x-fr: [FR-46]
+      x-roles: [ADMIN]
+      parameters:
+        - { $ref: '#/components/parameters/RequestId' }
+      responses:
+        '200':
+          description: Request after the decision.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VerificationRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/verification-requests/{requestId}/reject:
+    post:
+      tags: [Trust]
+      operationId: adminRejectVerification
+      summary: Reject a request with a reason
+      description: Employer is notified with the reason and may submit again (AC-40.3).
+      x-us: [US-40]
+      x-fr: [FR-46]
+      x-roles: [ADMIN]
+      parameters:
+        - { $ref: '#/components/parameters/RequestId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReasonRequired' }
+      responses:
+        '200':
+          description: Request after the decision.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VerificationRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /jobs/{jobId}/reports:
+    post:
+      tags: [Trust]
+      operationId: reportJob
+      summary: Report a suspicious job
+      description: |
+        One report per student per job (`409 ALREADY_REPORTED`, AC-42.2). When 3 different
+        students have open reports the job is hidden automatically, the employer is notified
+        and the job enters the admin queue (AC-42.3).
+      x-us: [US-42]
+      x-fr: [FR-48, FR-49]
+      x-roles: [STUDENT]
+      parameters:
+        - { $ref: '#/components/parameters/JobId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReasonRequired' }
+      responses:
+        '201':
+          description: Report stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [autoHidden]
+                properties:
+                  autoHidden:
+                    { type: boolean, description: True when this report triggered the auto-hide. }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+
+  # -------------------------------------------------------------------- AI
+  /me/ai/consent:
+    get:
+      tags: [AI]
+      operationId: getAiConsent
+      summary: Current AI consent
+      x-us: [US-38]
+      x-fr: [FR-44]
+      x-roles: [STUDENT]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Consent state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiConsent' }
+    put:
+      tags: [AI]
+      operationId: setAiConsent
+      summary: Grant or withdraw consent for AI to read the CV
+      description: |
+        Withdrawing stops all CV sharing and deletes the student's cached explanations (AC-38.3).
+        Before sending, the server removes name, phone and email from the CV text (AC-38.2).
+      x-us: [US-38]
+      x-fr: [FR-44]
+      x-roles: [STUDENT]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [granted]
+              properties:
+                granted: { type: boolean }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: New consent state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiConsent' }
+  /me/ai/suggestions:
+    get:
+      tags: [AI]
+      operationId: getAiSuggestions
+      summary: Up to 5 suggested jobs
+      description: |
+        The server pre-filters open jobs by the student's major and skills (at most 20) and the
+        model ranks them; the model never queries the database. Jobs that are no longer open
+        are dropped from the answer (AC-36.4). If the model fails, times out (15 s) or the daily limit is
+        hit, the response still succeeds with `source: FALLBACK` (AC-36.3).
+      x-us: [US-36]
+      x-fr: [FR-41, FR-42]
+      x-roles: [STUDENT]
+      responses:
+        '200':
+          description: Suggestions.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiSuggestions' }
+        '422':
+          description: '`PROFILE_INCOMPLETE`: no major in the profile, AI not called (AC-36.2).'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /jobs/{jobId}/ai/fit:
+    get:
+      tags: [AI]
+      operationId: getAiFit
+      summary: Why this job fits (or might fit) my CV
+      description: |
+        Requires active consent (`403 AI_CONSENT_REQUIRED`, AC-38.1) and a readable text CV
+        (`422 CV_UNREADABLE`, AC-37.3). Every reason must carry a `cvQuote` that the server
+        verified appears in the CV; reasons that fail the check are dropped (AC-37.2).
+        Results are cached per (student, job, CV hash) (AC-37.4); cache hits do not count toward the daily limit.
+      x-us: [US-37, US-38]
+      x-fr: [FR-43, FR-44]
+      x-roles: [STUDENT]
+      parameters:
+        - { $ref: '#/components/parameters/JobId' }
+      responses:
+        '200':
+          description: Explanation.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiFit' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  # ----------------------------------------------------------- WorkRecords
+  /me/work-records:
+    get:
+      tags: [WorkRecords]
+      operationId: listMyWorkRecords
+      summary: My signed work records
+      x-us: [US-44]
+      x-fr: [FR-51]
+      x-roles: [STUDENT]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: Page of records.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedWorkRecords' }
+  /me/work-records/{recordId}:
+    patch:
+      tags: [WorkRecords]
+      operationId: setWorkRecordVisibility
+      summary: Make a record public or private
+      description: |
+        Records start private (AC-45.1). Revoking removes the record from the directory and the
+        public verify page stops returning personal data (AC-45.3).
+      x-us: [US-45]
+      x-fr: [FR-53]
+      x-roles: [STUDENT]
+      parameters:
+        - { $ref: '#/components/parameters/RecordId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isPublic]
+              properties:
+                isPublic: { type: boolean }
+      responses:
+        '200':
+          description: Updated record.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkRecord' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /me/work-records/{recordId}/card:
+    get:
+      tags: [WorkRecords]
+      operationId: downloadWorkRecordCard
+      summary: Shareable card image
+      description: Rendered on the server with a decorative background, the comment, the rating and the signature (AC-44.2).
+      x-us: [US-44]
+      x-fr: [FR-52]
+      x-roles: [STUDENT]
+      parameters:
+        - { $ref: '#/components/parameters/RecordId' }
+      responses:
+        '200':
+          description: PNG image.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /work-records:
+    get:
+      tags: [WorkRecords]
+      operationId: browseWorkRecordDirectory
+      summary: Public directory of work records
+      description: Only records the student made public, newest first (AC-46.1).
+      security: []
+      x-us: [US-46]
+      x-fr: [FR-54]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '200':
+          description: Page of public cards.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PagedPublicRecords' }
+  /work-records/{recordId}/verify:
+    get:
+      tags: [WorkRecords]
+      operationId: verifyWorkRecord
+      summary: Check a record's signature
+      description: |
+        Recomputes the HMAC over the stored payload and compares it with the stored signature.
+        Always HTTP 200 for an existing public record with `valid: true|false` (AC-46.2, AC-46.3).
+        Private or unknown ids return 404 with no information.
+      security: []
+      x-us: [US-46]
+      x-fr: [FR-55]
+      parameters:
+        - { $ref: '#/components/parameters/RecordId' }
+      responses:
+        '200':
+          description: Verification result.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VerifyResult' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: Better Auth session cookie (`__Secure-better-auth.session_token` over HTTPS).
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+    JobId:
+      name: jobId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ApplicationId:
+      name: applicationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RecordId:
+      name: recordId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Not signed in, session expired (AC-03.4), or wrong credentials.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Signed in but not allowed (wrong role, not the owner, not a participant, or the
+        account is locked, suspended or deleted).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource does not exist or is not visible to the caller.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: The request is valid but conflicts with the current state (see `error.code`).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Invalid:
+      description: Validation failed; `details[]` lists each field.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    TooManyRequests:
+      description: Rate limited or temporarily locked; see `Retry-After`.
+      headers:
+        Retry-After:
+          description: Seconds to wait.
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    FileTooLarge:
+      description: 'File exceeds the size limit (CV: 5 MB).'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UnsupportedMedia:
+      description: 'File type not allowed (CV: PDF or DOCX only).'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    CvFile:
+      description: The CV file.
+      content:
+        application/pdf:
+          schema: { type: string, format: binary }
+        application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+          schema: { type: string, format: binary }
+
+  schemas:
+    # ------------------------------------------------------------- common
+    ErrorCode:
+      type: string
+      description: Stable machine-readable error codes. `DomainError` in `db/invariants.ts` is a subset.
+      enum:
+        - UNAUTHENTICATED
+        - INVALID_CREDENTIALS
+        - EMAIL_NOT_VERIFIED
+        - ACCOUNT_LOCKED
+        - TOO_MANY_ATTEMPTS
+        - FORBIDDEN
+        - NOT_FOUND
+        - VALIDATION_ERROR
+        - TOKEN_INVALID
+        - EMAIL_TAKEN
+        - ALREADY_APPLIED
+        - JOB_NOT_HIRING
+        - POSITIONS_FULL
+        - INVALID_STATE_TRANSITION
+        - JOB_HAS_ACCEPTED_APPLICANTS
+        - JOB_NOT_COMPLETED
+        - NOT_A_PARTICIPANT
+        - ALREADY_REVIEWED
+        - ALREADY_REPORTED
+        - VERIFICATION_PENDING
+        - CATEGORY_IN_USE
+        - NAME_TAKEN
+        - FILE_TOO_LARGE
+        - INVALID_FILE_TYPE
+        - PROFILE_INCOMPLETE
+        - AI_CONSENT_REQUIRED
+        - AI_RATE_LIMITED
+        - CV_UNREADABLE
+        - RATE_LIMITED
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, requestId]
+          properties:
+            code: { $ref: '#/components/schemas/ErrorCode' }
+            message: { type: string }
+            details:
+              type: array
+              items:
+                type: object
+                required: [field, message]
+                properties:
+                  field: { type: string, examples: [salaryAmount] }
+                  message: { type: string }
+            requestId: { type: string }
+    PageMeta:
+      type: object
+      required: [page, pageSize, total]
+      properties:
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 50 }
+        total: { type: integer, minimum: 0 }
+    TokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+    ReasonRequired:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 500 }
+    ReasonOptional:
+      type: object
+      properties:
+        reason: { type: string, maxLength: 500 }
+    # -------------------------------------------------------------- enums
+    UserRole: { type: string, enum: [STUDENT, EMPLOYER, ADMIN] }
+    AccountStatus:
+      { type: string, enum: [PENDING_VERIFICATION, ACTIVE, SUSPENDED, LOCKED, DELETED] }
+    OrgType: { type: string, enum: [COMPANY, INDIVIDUAL] }
+    EmployerVerification: { type: string, enum: [UNVERIFIED, PENDING, VERIFIED, REJECTED] }
+    SalaryType: { type: string, enum: [HOURLY, DAILY, FIXED] }
+    JobStatus: { type: string, enum: [HIRING, FILLED, COMPLETED, CANCELLED] }
+    ApplicationStatus: { type: string, enum: [PENDING, ACCEPTED, REJECTED, WITHDRAWN] }
+    VerificationRequestStatus: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+    NotificationType:
+      type: string
+      enum:
+        - APPLICATION_RECEIVED
+        - APPLICATION_WITHDRAWN
+        - APPLICATION_ACCEPTED
+        - APPLICATION_REJECTED
+        - JOB_FILLED
+        - JOB_COMPLETED
+        - JOB_CANCELLED
+        - JOB_HIDDEN
+        - JOB_AUTO_HIDDEN
+        - VERIFICATION_APPROVED
+        - VERIFICATION_REJECTED
+        - REVIEW_RECEIVED
+        - WORK_RECORD_CREATED
+
+    # ------------------------------------------------------ users/profiles
+    UserMe:
+      type: object
+      required: [id, email, role, status, fullName, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/UserRole' }
+        status: { $ref: '#/components/schemas/AccountStatus' }
+        fullName: { type: string }
+        phone: { type: [string, 'null'] }
+        avatarUrl:
+          type: [string, 'null']
+          description: Application-served avatar URL or OAuth provider image; never a raw storage URL.
+        createdAt: { type: string, format: date-time }
+    UserUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        fullName: { type: string, minLength: 1, maxLength: 120 }
+        phone: { type: [string, 'null'], maxLength: 20 }
+        email: { type: string, format: email, maxLength: 255 }
+    StudentProfileInput:
+      type: object
+      required: [university, major]
+      properties:
+        university: { type: string, minLength: 1, maxLength: 160 }
+        major: { type: string, minLength: 1, maxLength: 160 }
+        skills:
+          type: array
+          maxItems: 30
+          items: { type: string, maxLength: 50 }
+        availability: { type: [string, 'null'], maxLength: 500 }
+        bio: { type: [string, 'null'], maxLength: 2000 }
+    StudentProfile:
+      type: object
+      required:
+        [userId, fullName, university, major, skills, availability, bio, cv, ratingAvg, ratingCount]
+      properties:
+        userId: { type: string, format: uuid }
+        fullName: { type: string }
+        university:
+          type: string
+          maxLength: 160
+          description: Empty string until the student saves the profile.
+        major:
+          type: string
+          maxLength: 160
+          description: Empty string until the student saves the profile.
+        skills:
+          type: array
+          maxItems: 30
+          items: { type: string, maxLength: 50 }
+        availability: { type: [string, 'null'], maxLength: 500 }
+        bio: { type: [string, 'null'], maxLength: 2000 }
+        cv:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/CvInfo'
+        ratingAvg: { type: number, minimum: 0, maximum: 5 }
+        ratingCount: { type: integer, minimum: 0 }
+    CvInfo:
+      type: object
+      required: [fileName, mimeType, sizeBytes]
+      properties:
+        fileName: { type: string }
+        mimeType: { type: string }
+        sizeBytes: { type: integer, maximum: 5242880 }
+    EmployerProfileInput:
+      type: object
+      required: [orgName, orgType]
+      properties:
+        orgName: { type: string, minLength: 1, maxLength: 200 }
+        orgType: { $ref: '#/components/schemas/OrgType' }
+        description: { type: [string, 'null'], maxLength: 2000 }
+        address: { type: [string, 'null'], maxLength: 300 }
+        contactPhone: { type: [string, 'null'], maxLength: 20 }
+    EmployerProfile:
+      type: object
+      required:
+        [
+          userId,
+          orgName,
+          orgType,
+          description,
+          address,
+          contactPhone,
+          verificationStatus,
+          ratingAvg,
+          ratingCount
+        ]
+      properties:
+        userId: { type: string, format: uuid }
+        orgName:
+          type: string
+          maxLength: 200
+          description: Empty string until the employer saves the profile.
+        orgType: { $ref: '#/components/schemas/OrgType' }
+        description: { type: [string, 'null'], maxLength: 2000 }
+        address: { type: [string, 'null'], maxLength: 300 }
+        contactPhone: { type: [string, 'null'], maxLength: 20 }
+        verificationStatus: { $ref: '#/components/schemas/EmployerVerification' }
+        ratingAvg: { type: number, minimum: 0, maximum: 5 }
+        ratingCount: { type: integer, minimum: 0 }
+    EmployerSummary:
+      type: object
+      required: [userId, orgName, orgType, verified, ratingAvg, ratingCount]
+      properties:
+        userId: { type: string, format: uuid }
+        orgName: { type: string }
+        orgType: { $ref: '#/components/schemas/OrgType' }
+        verified:
+          {
+            type: boolean,
+            description: 'True only for VERIFIED (reviewed by an admin), not a legal guarantee.'
+          }
+        ratingAvg: { type: number }
+        ratingCount: { type: integer }
+
+    # ---------------------------------------------------------------- jobs
+    Category:
+      type: object
+      required: [id, name, isActive]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        isActive: { type: boolean }
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+    CategoryUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        isActive: { type: boolean }
+    JobFields:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        categoryId: { type: string, format: uuid }
+        description: { type: string, minLength: 1 }
+        location: { type: string, minLength: 1, maxLength: 300 }
+        schedule: { type: string, minLength: 1, description: 'Working time, free text.' }
+        salaryAmount: { type: integer, exclusiveMinimum: 0, description: 'VND, greater than 0' }
+        salaryType: { $ref: '#/components/schemas/SalaryType' }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date, description: Must be after startDate. }
+        positionsNeeded: { type: integer, minimum: 1 }
+    JobInput:
+      allOf:
+        - $ref: '#/components/schemas/JobFields'
+        - type: object
+          required:
+            [
+              title,
+              categoryId,
+              description,
+              location,
+              schedule,
+              salaryAmount,
+              salaryType,
+              startDate,
+              endDate,
+              positionsNeeded
+            ]
+    JobUpdate:
+      allOf:
+        - $ref: '#/components/schemas/JobFields'
+        - type: object
+          minProperties: 1
+    JobSummary:
+      type: object
+      required:
+        [
+          id,
+          title,
+          category,
+          location,
+          salaryAmount,
+          salaryType,
+          startDate,
+          endDate,
+          positionsNeeded,
+          positionsRemaining,
+          status,
+          employer,
+          scamWarning,
+          createdAt
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        category: { $ref: '#/components/schemas/CategoryRef' }
+        location: { type: string }
+        salaryAmount: { type: integer }
+        salaryType: { $ref: '#/components/schemas/SalaryType' }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        positionsNeeded: { type: integer }
+        positionsRemaining: { type: integer, minimum: 0 }
+        status: { $ref: '#/components/schemas/JobStatus' }
+        employer: { $ref: '#/components/schemas/EmployerSummary' }
+        scamWarning: { type: boolean, description: Show the warning banner (AC-43.2). }
+        createdAt: { type: string, format: date-time }
+    CategoryRef:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+    JobDetail:
+      allOf:
+        - $ref: '#/components/schemas/JobSummary'
+        - type: object
+          required: [description, schedule, acceptingApplications]
+          properties:
+            description: { type: string }
+            schedule: { type: string }
+            acceptingApplications:
+              { type: boolean, description: False when the job is not HIRING (AC-11.2). }
+            saved: { type: boolean, description: Present for signed-in students. }
+            myApplication:
+              oneOf:
+                - type: 'null'
+                - $ref: '#/components/schemas/Application'
+    MyJob:
+      allOf:
+        - $ref: '#/components/schemas/JobSummary'
+        - type: object
+          required: [applicantCount, acceptedCount, isHidden]
+          properties:
+            applicantCount: { type: integer }
+            acceptedCount: { type: integer }
+            isHidden: { type: boolean }
+            hiddenReason: { type: [string, 'null'] }
+    PagedJobs:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/JobSummary' }
+    PagedMyJobs:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/MyJob' }
+
+    # ------------------------------------------------------- applications
+    ApplyRequest:
+      type: object
+      properties:
+        message: { type: [string, 'null'], maxLength: 1000 }
+        attachCv: { type: boolean, default: true }
+    RejectRequest:
+      type: object
+      properties:
+        reason: { type: [string, 'null'], maxLength: 500 }
+    Application:
+      type: object
+      required: [id, jobId, jobTitle, employerName, status, hasCv, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        jobTitle: { type: string }
+        employerName: { type: string }
+        status: { $ref: '#/components/schemas/ApplicationStatus' }
+        message: { type: [string, 'null'] }
+        rejectReason: { type: [string, 'null'] }
+        hasCv: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        decidedAt: { type: [string, 'null'], format: date-time }
+    Applicant:
+      type: object
+      required: [id, status, hasCv, createdAt, student]
+      properties:
+        id: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/ApplicationStatus' }
+        message: { type: [string, 'null'] }
+        hasCv: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        student:
+          type: object
+          required: [fullName, ratingAvg, ratingCount]
+          properties:
+            fullName: { type: string }
+            university: { type: [string, 'null'] }
+            major: { type: [string, 'null'] }
+            ratingAvg: { type: number }
+            ratingCount: { type: integer }
+    PagedApplications:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/Application' }
+    PagedApplicants:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/Applicant' }
+
+    # ------------------------------------------------------------ reviews
+    ReviewInput:
+      type: object
+      required: [revieweeId, rating]
+      properties:
+        revieweeId: { type: string, format: uuid }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: [string, 'null'], maxLength: 500 }
+    Review:
+      type: object
+      required: [id, jobId, reviewer, rating, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        reviewer:
+          type: object
+          required: [id, fullName]
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+    PagedReviews:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [ratingAvg, ratingCount, items]
+          properties:
+            ratingAvg: { type: number, minimum: 0, maximum: 5 }
+            ratingCount: { type: integer, minimum: 0 }
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/Review' }
+
+    # ------------------------------------------------------ notifications
+    Notification:
+      type: object
+      required: [id, type, title, read, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/NotificationType' }
+        title: { type: string }
+        body: { type: [string, 'null'] }
+        jobId: { type: [string, 'null'], format: uuid, description: Deep link target (AC-29.2). }
+        applicationId: { type: [string, 'null'], format: uuid }
+        read: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    PagedNotifications:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/Notification' }
+
+    # -------------------------------------------------------------- admin
+    AdminUser:
+      type: object
+      required: [id, email, role, status, fullName, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/UserRole' }
+        status: { $ref: '#/components/schemas/AccountStatus' }
+        fullName: { type: string }
+        lockedAt: { type: [string, 'null'], format: date-time }
+        lockReason: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+    PagedAdminUsers:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/AdminUser' }
+    ModerationItem:
+      type: object
+      required: [job, isHidden, openReportCount, flaggedTerms, causes]
+      properties:
+        job: { $ref: '#/components/schemas/JobSummary' }
+        isHidden: { type: boolean }
+        hiddenReason: { type: [string, 'null'] }
+        openReportCount: { type: integer, minimum: 0 }
+        flaggedTerms: { type: array, items: { type: string } }
+        causes:
+          type: array
+          items: { type: string, enum: [REPORTED, AUTO_HIDDEN, ADMIN_HIDDEN, SCAM_FLAG] }
+    PagedModeration:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/ModerationItem' }
+    Stats:
+      type: object
+      required: [users, jobs, applicationsTotal, completedJobs]
+      properties:
+        from: { type: [string, 'null'], format: date }
+        to: { type: [string, 'null'], format: date }
+        users:
+          type: object
+          required: [students, employers, admins]
+          properties:
+            students: { type: integer }
+            employers: { type: integer }
+            admins: { type: integer }
+        jobs:
+          type: object
+          required: [hiring, filled, completed, cancelled]
+          properties:
+            hiring: { type: integer }
+            filled: { type: integer }
+            completed: { type: integer }
+            cancelled: { type: integer }
+        applicationsTotal: { type: integer }
+        completedJobs: { type: integer }
+
+    # -------------------------------------------------------------- trust
+    VerificationInput:
+      type: object
+      required: [orgName, contactInfo]
+      properties:
+        orgName: { type: string, minLength: 1, maxLength: 200 }
+        websiteUrl: { type: string, format: uri, maxLength: 500 }
+        contactInfo: { type: string, minLength: 1, maxLength: 300 }
+        license:
+          {
+            type: string,
+            format: binary,
+            description: 'Optional business license. PDF, PNG or JPEG, up to 5 MB.'
+          }
+    VerificationRequest:
+      type: object
+      required: [id, employerId, orgName, contactInfo, status, hasLicense, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        employerId: { type: string, format: uuid }
+        orgName: { type: string }
+        websiteUrl: { type: [string, 'null'] }
+        contactInfo: { type: string }
+        hasLicense: { type: boolean }
+        licenseUrl:
+          { type: [string, 'null'], description: 'Signed, short-lived link; admins only.' }
+        status: { $ref: '#/components/schemas/VerificationRequestStatus' }
+        rejectReason: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: [string, 'null'], format: date-time }
+    PagedVerification:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/VerificationRequest' }
+
+    # ----------------------------------------------------------------- AI
+    AiConsent:
+      type: object
+      required: [granted]
+      properties:
+        granted: { type: boolean }
+        consentedAt: { type: [string, 'null'], format: date-time }
+        withdrawnAt: { type: [string, 'null'], format: date-time }
+        dataSent:
+          type: string
+          description: Plain-language statement of what is sent to the AI service (AC-38.1).
+    AiVerdict: { type: string, enum: [FIT, MAYBE_FIT] }
+    AiSuggestions:
+      type: object
+      required: [source, items]
+      properties:
+        source:
+          type: string
+          enum: [AI, FALLBACK]
+          description: FALLBACK means plain filtering was used because AI was unavailable (AC-36.3).
+        notice: { type: [string, 'null'], description: Message to show when source is FALLBACK. }
+        items:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            required: [job]
+            properties:
+              job: { $ref: '#/components/schemas/JobSummary' }
+              verdict:
+                oneOf:
+                  - type: 'null'
+                  - $ref: '#/components/schemas/AiVerdict'
+    AiFit:
+      type: object
+      required: [verdict, reasons, gaps, cached, model]
+      properties:
+        verdict: { $ref: '#/components/schemas/AiVerdict' }
+        reasons:
+          type: array
+          items:
+            type: object
+            required: [text, cvQuote]
+            properties:
+              text: { type: string }
+              cvQuote: { type: string, description: Verbatim text found in the CV. }
+        gaps:
+          type: array
+          items: { type: string }
+        cached: { type: boolean }
+        model: { type: string }
+
+    # -------------------------------------------------------- work records
+    WorkRecordCard:
+      type: object
+      required: [id, studentName, employerName, jobTitle, startDate, endDate, rating, issuedAt]
+      properties:
+        id: { type: string, format: uuid }
+        studentName: { type: string }
+        employerName: { type: string }
+        jobTitle: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: [string, 'null'] }
+        issuedAt: { type: string, format: date-time }
+    WorkRecord:
+      allOf:
+        - $ref: '#/components/schemas/WorkRecordCard'
+        - type: object
+          required: [isPublic, verifyUrl]
+          properties:
+            isPublic: { type: boolean }
+            publishedAt: { type: [string, 'null'], format: date-time }
+            verifyUrl: { type: string, description: Shareable link to the verify page. }
+    PagedWorkRecords:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/WorkRecord' }
+    PagedPublicRecords:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/WorkRecordCard' }
+    VerifyResult:
+      type: object
+      required: [valid]
+      properties:
+        valid: { type: boolean }
+        record:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/WorkRecordCard'
