@@ -101,6 +101,7 @@ export type Category = {
 
 export type SalaryType = 'HOURLY' | 'DAILY' | 'FIXED';
 export type JobStatus = 'HIRING' | 'FILLED' | 'COMPLETED' | 'CANCELLED';
+export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
 
 export type JobSummarySource = {
 	id: string;
@@ -147,6 +148,33 @@ export type JobSummary = {
 	};
 	scamWarning: boolean;
 	createdAt: string;
+};
+
+export type ApplicationSource = {
+	id: string;
+	jobId: string;
+	jobTitle: string;
+	employerOrgName: string | null;
+	employerUserName: string;
+	status: ApplicationStatus;
+	message: string | null;
+	rejectReason: string | null;
+	cvKey: string | null;
+	createdAt: Date | string;
+	decidedAt: Date | null;
+};
+
+export type Application = {
+	id: string;
+	jobId: string;
+	jobTitle: string;
+	employerName: string;
+	status: ApplicationStatus;
+	message: string | null;
+	rejectReason: string | null;
+	hasCv: boolean;
+	createdAt: string;
+	decidedAt: string | null;
 };
 
 export type NotificationType =
@@ -242,6 +270,22 @@ export function toJobSummary(job: JobSummarySource): JobSummary {
 		},
 		scamWarning: job.needsReview,
 		createdAt: toIsoString(job.createdAt)
+	};
+}
+
+/** Maps an application projection to the student's public application shape. */
+export function toApplication(application: ApplicationSource): Application {
+	return {
+		id: application.id,
+		jobId: application.jobId,
+		jobTitle: application.jobTitle,
+		employerName: application.employerOrgName ?? application.employerUserName,
+		status: application.status,
+		message: application.message,
+		rejectReason: application.rejectReason,
+		hasCv: application.cvKey !== null,
+		createdAt: toIsoString(application.createdAt),
+		decidedAt: application.decidedAt === null ? null : toIsoString(application.decidedAt)
 	};
 }
 

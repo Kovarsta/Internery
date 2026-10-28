@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+	toApplication,
 	toCategory,
 	toEmployerProfile,
 	toJobSummary,
 	toNotification,
 	toStudentProfile,
 	toUserMe,
+	type ApplicationSource,
 	type EmployerProfileSource,
 	type JobSummarySource,
 	type NotificationSource,
@@ -143,6 +145,57 @@ describe('toJobSummary', () => {
 
 	it('never returns a negative remaining count', () => {
 		expect(toJobSummary({ ...job, acceptedCount: 3 }).positionsRemaining).toBe(0);
+	});
+});
+
+describe('toApplication', () => {
+	const application: ApplicationSource = {
+		id: '8a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d',
+		jobId: '9b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e',
+		jobTitle: 'Part-time barista',
+		employerOrgName: 'Acme Coffee',
+		employerUserName: 'Tran Thi Binh',
+		status: 'PENDING',
+		message: 'I can start next week.',
+		rejectReason: null,
+		cvKey: 'cv/student.pdf',
+		createdAt: new Date('2026-10-01T08:00:00Z'),
+		decidedAt: null
+	};
+
+	it('maps the student application shape', () => {
+		expect(toApplication(application)).toEqual({
+			id: application.id,
+			jobId: application.jobId,
+			jobTitle: 'Part-time barista',
+			employerName: 'Acme Coffee',
+			status: 'PENDING',
+			message: 'I can start next week.',
+			rejectReason: null,
+			hasCv: true,
+			createdAt: '2026-10-01T08:00:00.000Z',
+			decidedAt: null
+		});
+	});
+
+	it('falls back to the employer user name without a profile', () => {
+		expect(toApplication({ ...application, employerOrgName: null }).employerName).toBe(
+			'Tran Thi Binh'
+		);
+	});
+
+	it('derives hasCv and keeps the decision fields', () => {
+		const decided = toApplication({
+			...application,
+			status: 'REJECTED',
+			rejectReason: 'The position was filled.',
+			cvKey: null,
+			decidedAt: new Date('2026-10-02T09:00:00Z')
+		});
+
+		expect(decided.hasCv).toBe(false);
+		expect(decided.rejectReason).toBe('The position was filled.');
+		expect(decided.decidedAt).toBe('2026-10-02T09:00:00.000Z');
 	});
 });
 

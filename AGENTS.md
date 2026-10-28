@@ -71,8 +71,8 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
 - The `/api/v1` route tree exists under `src/routes/api/v1` (51 paths, 64 operations). Most handlers
-  are skeletons that return `501`; the account, notification, saved-job and own-profile operations
-  are implemented. Shared API helpers live in `src/lib/server/api/`; services live in
+  are skeletons that return `501`; the account, notification, saved-job, application and own-profile
+  operations are implemented. Shared API helpers live in `src/lib/server/api/`; services live in
   `src/lib/server/services/`. Authentication endpoints are Better Auth's `/api/auth/*` and
   deliberately not duplicated under `/api/v1`. See `src/routes/api/README.md` for route conventions
   and the implementation checklist.
