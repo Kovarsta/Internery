@@ -246,7 +246,8 @@ paths:
       tags: [Student]
       operationId: listSavedJobs
       summary: Bookmarked jobs
-      description: Closed jobs stay in the list with their `status` (AC-15.2).
+      description: |
+        Closed jobs stay in the list with their `status` (AC-15.2). Hidden jobs are omitted.
       x-us: [US-15]
       x-fr: [FR-18]
       x-roles: [STUDENT]

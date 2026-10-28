@@ -1,7 +1,18 @@
-import { and, eq } from 'drizzle-orm';
+import { and, count, desc, eq } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
 import type { Database } from '#lib/server/db/types.ts';
-import { jobs, savedJobs } from '#lib/server/db/product.schema.ts';
+import { categories, employerProfiles, jobs, savedJobs } from '#lib/server/db/product.schema.ts';
+import { jobSummarySelection, type JobSummaryRecord } from './jobs.ts';
+
+export type SavedJobListOptions = {
+	limit: number;
+	offset: number;
+};
+
+export type SavedJobPage = {
+	items: JobSummaryRecord[];
+	total: number;
+};
 
 /**
  * Saves a job for a student.
@@ -27,4 +38,40 @@ export async function unsaveJob(database: Database, userId: string, jobId: strin
 	await database
 		.delete(savedJobs)
 		.where(and(eq(savedJobs.userId, userId), eq(savedJobs.jobId, jobId)));
+}
+
+/**
+ * Returns one page of the student's saved jobs, newest save first.
+ *
+ * Hidden jobs are omitted; closed jobs stay in the list with their status.
+ */
+export async function listSavedJobs(
+	database: Database,
+	userId: string,
+	options: SavedJobListOptions
+): Promise<SavedJobPage> {
+	const filters = and(eq(savedJobs.userId, userId), eq(jobs.isHidden, false));
+
+	const [items, totalRows] = await Promise.all([
+		database
+			.select(jobSummarySelection)
+			.from(savedJobs)
+			.innerJoin(jobs, eq(savedJobs.jobId, jobs.id))
+			.innerJoin(categories, eq(categories.id, jobs.categoryId))
+			.leftJoin(employerProfiles, eq(employerProfiles.userId, jobs.employerId))
+			.where(filters)
+			.orderBy(desc(savedJobs.createdAt), desc(jobs.id))
+			.limit(options.limit)
+			.offset(options.offset),
+		database
+			.select({ total: count() })
+			.from(savedJobs)
+			.innerJoin(jobs, eq(savedJobs.jobId, jobs.id))
+			.where(filters)
+	]);
+
+	return {
+		items,
+		total: totalRows[0]?.total ?? 0
+	};
 }

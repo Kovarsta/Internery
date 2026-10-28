@@ -17,6 +17,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 | `GET /me/employer-profile`                     | 2     |
 | `GET /me/notifications`                        | 2     |
 | `GET /me/notifications/unread-count`           | 2     |
+| `GET /me/saved-jobs`                           | 2     |
 | `POST /me/notifications/{notificationId}/read` | 3     |
 | `POST /me/notifications/read-all`              | 3     |
 | `PUT /me/saved-jobs/{jobId}`                   | 3     |
@@ -39,6 +40,8 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   that does not exist or belongs to another user.
 - Saved-job writes are idempotent. Only `PUT` returns `404` (unknown job); `DELETE` succeeds even
   when the bookmark does not exist.
+- `GET /me/saved-jobs` keeps closed jobs with their status and omits hidden jobs. The list is
+  ordered by save time, newest first.
 - `PATCH /me` updates the name and phone directly. An `email` change is delegated to Better Auth,
   which sends the verification link to the new address; the old email stays until that link is
   opened. The separate `/me/email-change/confirm` operation is removed, because confirmation lives

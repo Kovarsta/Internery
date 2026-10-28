@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
-import { saveJob, unsaveJob } from './saved-jobs.ts';
+import { listSavedJobs, saveJob, unsaveJob } from './saved-jobs.ts';
 
 // Set TEST_DATABASE_URL to run the database-backed tests.
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -47,6 +47,13 @@ describe.skipIf(!testDatabase)('saved jobs', () => {
 			name: `Saved jobs ${categoryId}`
 		});
 
+		await testDatabase.insert(schema.employerProfiles).values({
+			userId: employerId,
+			orgName: 'Saved Job Employer',
+			orgType: 'COMPANY',
+			verificationStatus: 'VERIFIED'
+		});
+
 		await testDatabase.insert(schema.jobs).values({
 			id: jobId,
 			employerId,
@@ -75,7 +82,7 @@ describe.skipIf(!testDatabase)('saved jobs', () => {
 		await testDatabase.$client.end();
 	});
 
-	it('saves a job and is idempotent', async () => {
+	it('saves a job, is idempotent and lists it', async () => {
 		if (!testDatabase) {
 			return;
 		}
@@ -84,6 +91,39 @@ describe.skipIf(!testDatabase)('saved jobs', () => {
 		await saveJob(testDatabase, studentId, jobId);
 
 		await expect(bookmarkOwners(jobId)).resolves.toEqual([studentId]);
+
+		const page = await listSavedJobs(testDatabase, studentId, { limit: 20, offset: 0 });
+
+		expect(page.total).toBe(1);
+		expect(page.items).toHaveLength(1);
+		expect(page.items[0]).toMatchObject({
+			id: jobId,
+			title: 'Saved job fixture',
+			positionsNeeded: 1,
+			acceptedCount: 0,
+			status: 'HIRING',
+			categoryName: `Saved jobs ${categoryId}`,
+			employerId,
+			employerOrgName: 'Saved Job Employer',
+			employerVerificationStatus: 'VERIFIED'
+		});
+	});
+
+	it('omits hidden jobs from the list', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		await testDatabase.update(schema.jobs).set({ isHidden: true }).where(eq(schema.jobs.id, jobId));
+
+		const page = await listSavedJobs(testDatabase, studentId, { limit: 20, offset: 0 });
+
+		expect(page).toEqual({ items: [], total: 0 });
+
+		await testDatabase
+			.update(schema.jobs)
+			.set({ isHidden: false })
+			.where(eq(schema.jobs.id, jobId));
 	});
 
 	it('removes a bookmark and is idempotent', async () => {

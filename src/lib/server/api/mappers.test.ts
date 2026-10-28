@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
 	toCategory,
 	toEmployerProfile,
+	toJobSummary,
 	toNotification,
 	toStudentProfile,
 	toUserMe,
 	type EmployerProfileSource,
+	type JobSummarySource,
 	type NotificationSource,
 	type StudentProfileSource,
 	type UserMeSource
@@ -66,6 +68,81 @@ describe('toCategory', () => {
 			name: 'Retail',
 			isActive: true
 		});
+	});
+});
+
+describe('toJobSummary', () => {
+	const job: JobSummarySource = {
+		id: '5f0f2f5e-3a0b-4b0e-9f5a-1c2d3e4f5a6b',
+		title: 'Part-time barista',
+		location: 'Hanoi',
+		salaryAmount: 30_000,
+		salaryType: 'HOURLY',
+		startDate: '2026-11-01',
+		endDate: '2026-11-30',
+		positionsNeeded: 2,
+		acceptedCount: 1,
+		status: 'HIRING',
+		needsReview: false,
+		createdAt: new Date('2026-10-28T08:00:00Z'),
+		categoryId: '6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
+		categoryName: 'Food & Beverage',
+		employerId: '7b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e',
+		employerOrgName: 'Acme Coffee',
+		employerOrgType: 'COMPANY',
+		employerVerificationStatus: 'VERIFIED',
+		employerRatingAvg: 4.5,
+		employerRatingCount: 2
+	};
+
+	it('maps the summary and derives remaining positions', () => {
+		expect(toJobSummary(job)).toEqual({
+			id: job.id,
+			title: 'Part-time barista',
+			category: { id: job.categoryId, name: 'Food & Beverage' },
+			location: 'Hanoi',
+			salaryAmount: 30_000,
+			salaryType: 'HOURLY',
+			startDate: '2026-11-01',
+			endDate: '2026-11-30',
+			positionsNeeded: 2,
+			positionsRemaining: 1,
+			status: 'HIRING',
+			employer: {
+				userId: job.employerId,
+				orgName: 'Acme Coffee',
+				orgType: 'COMPANY',
+				verified: true,
+				ratingAvg: 4.5,
+				ratingCount: 2
+			},
+			scamWarning: false,
+			createdAt: '2026-10-28T08:00:00.000Z'
+		});
+	});
+
+	it('uses employer defaults when the profile is missing', () => {
+		const summary = toJobSummary({
+			...job,
+			employerOrgName: null,
+			employerOrgType: null,
+			employerVerificationStatus: null,
+			employerRatingAvg: null,
+			employerRatingCount: null
+		});
+
+		expect(summary.employer).toEqual({
+			userId: job.employerId,
+			orgName: '',
+			orgType: 'INDIVIDUAL',
+			verified: false,
+			ratingAvg: 0,
+			ratingCount: 0
+		});
+	});
+
+	it('never returns a negative remaining count', () => {
+		expect(toJobSummary({ ...job, acceptedCount: 3 }).positionsRemaining).toBe(0);
 	});
 });
 

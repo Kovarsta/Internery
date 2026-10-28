@@ -99,6 +99,56 @@ export type Category = {
 	isActive: boolean;
 };
 
+export type SalaryType = 'HOURLY' | 'DAILY' | 'FIXED';
+export type JobStatus = 'HIRING' | 'FILLED' | 'COMPLETED' | 'CANCELLED';
+
+export type JobSummarySource = {
+	id: string;
+	title: string;
+	location: string;
+	salaryAmount: number;
+	salaryType: SalaryType;
+	startDate: string;
+	endDate: string;
+	positionsNeeded: number;
+	acceptedCount: number;
+	status: JobStatus;
+	needsReview: boolean;
+	createdAt: Date | string;
+	categoryId: string;
+	categoryName: string;
+	employerId: string;
+	employerOrgName: string | null;
+	employerOrgType: OrgType | null;
+	employerVerificationStatus: EmployerVerification | null;
+	employerRatingAvg: number | null;
+	employerRatingCount: number | null;
+};
+
+export type JobSummary = {
+	id: string;
+	title: string;
+	category: { id: string; name: string };
+	location: string;
+	salaryAmount: number;
+	salaryType: SalaryType;
+	startDate: string;
+	endDate: string;
+	positionsNeeded: number;
+	positionsRemaining: number;
+	status: JobStatus;
+	employer: {
+		userId: string;
+		orgName: string;
+		orgType: OrgType;
+		verified: boolean;
+		ratingAvg: number;
+		ratingCount: number;
+	};
+	scamWarning: boolean;
+	createdAt: string;
+};
+
 export type NotificationType =
 	| 'APPLICATION_RECEIVED'
 	| 'APPLICATION_WITHDRAWN'
@@ -162,6 +212,36 @@ export function toCategory(category: CategorySource): Category {
 		id: category.id,
 		name: category.name,
 		isActive: category.isActive
+	};
+}
+
+/** Maps a job projection row to the public summary shape. */
+export function toJobSummary(job: JobSummarySource): JobSummary {
+	return {
+		id: job.id,
+		title: job.title,
+		category: {
+			id: job.categoryId,
+			name: job.categoryName
+		},
+		location: job.location,
+		salaryAmount: job.salaryAmount,
+		salaryType: job.salaryType,
+		startDate: job.startDate,
+		endDate: job.endDate,
+		positionsNeeded: job.positionsNeeded,
+		positionsRemaining: Math.max(job.positionsNeeded - job.acceptedCount, 0),
+		status: job.status,
+		employer: {
+			userId: job.employerId,
+			orgName: job.employerOrgName ?? '',
+			orgType: job.employerOrgType ?? 'INDIVIDUAL',
+			verified: job.employerVerificationStatus === 'VERIFIED',
+			ratingAvg: job.employerRatingAvg ?? 0,
+			ratingCount: job.employerRatingCount ?? 0
+		},
+		scamWarning: job.needsReview,
+		createdAt: toIsoString(job.createdAt)
 	};
 }
 
