@@ -56,14 +56,14 @@ describe('parseJson', () => {
 
 describe('parseParams', () => {
 	it('validates route parameters', () => {
-		const schema = z.object({ jobId: z.string().uuid() });
+		const schema = z.object({ jobId: z.uuid() });
 		const params = { jobId: '8f14e45f-ceea-4f15-9c0f-2d1d3e5c9a11' };
 
 		expect(parseParams(params, schema)).toEqual(params);
 	});
 
 	it('rejects invalid route parameters', async () => {
-		const schema = z.object({ jobId: z.string().uuid() });
+		const schema = z.object({ jobId: z.uuid() });
 		const error = await expectApiError(
 			Promise.resolve().then(() => parseParams({ jobId: 'bad' }, schema))
 		);

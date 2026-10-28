@@ -1,4 +1,5 @@
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { DomainError } from '#lib/server/api/errors.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { notifications } from '#lib/server/db/product.schema.ts';
 
@@ -58,4 +59,50 @@ export async function countUnreadNotifications(
 		.where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
 
 	return row?.total ?? 0;
+}
+
+/**
+ * Marks one of the user's notifications as read.
+ *
+ * Idempotent. A notification that does not exist or belongs to another user
+ * throws `NOT_FOUND`, so ownership is not leaked.
+ */
+export async function markNotificationRead(
+	database: Database,
+	userId: string,
+	notificationId: string
+): Promise<void> {
+	const updated = await database
+		.update(notifications)
+		.set({ readAt: new Date() })
+		.where(
+			and(
+				eq(notifications.id, notificationId),
+				eq(notifications.userId, userId),
+				isNull(notifications.readAt)
+			)
+		)
+		.returning({ id: notifications.id });
+
+	if (updated.length > 0) {
+		return;
+	}
+
+	const [existing] = await database
+		.select({ id: notifications.id })
+		.from(notifications)
+		.where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)))
+		.limit(1);
+
+	if (!existing) {
+		throw new DomainError('NOT_FOUND');
+	}
+}
+
+/** Marks every unread notification of the user as read. */
+export async function markAllNotificationsRead(database: Database, userId: string): Promise<void> {
+	await database
+		.update(notifications)
+		.set({ readAt: new Date() })
+		.where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
 }
