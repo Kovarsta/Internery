@@ -69,17 +69,32 @@ export function signWorkRecord(payload: WorkRecordPayload, secret: string): stri
 }
 
 /**
+ * Signature format produced by `signWorkRecord`.
+ *
+ * Bump this when the payload shape or the hashing changes, so existing rows
+ * keep verifying under the version they were issued with.
+ */
+export const CURRENT_SIGNATURE_VERSION = 1;
+
+/**
  * Checks a stored signature against the payload it claims to sign.
  *
- * Comparison is constant time. A malformed signature is simply invalid rather
- * than an error, because the endpoint always answers `200` with `valid: false`
- * for a record whose content no longer matches (AC-46.3).
+ * Comparison is constant time. A malformed signature or an unknown version is
+ * simply invalid rather than an error, because the endpoint always answers `200`
+ * with `valid: false` for a record whose content no longer matches (AC-46.3).
  */
 export function verifyWorkRecordSignature(
 	payload: WorkRecordPayload,
 	signature: string,
-	secret: string
+	secret: string,
+	version: number
 ): boolean {
+	// A version this build cannot produce has no known hashing rule, so it must
+	// fail closed rather than be verified as if it were the current one.
+	if (version !== CURRENT_SIGNATURE_VERSION) {
+		return false;
+	}
+
 	const expected = Buffer.from(signWorkRecord(payload, secret), 'hex');
 	const actual = Buffer.from(signature, 'hex');
 

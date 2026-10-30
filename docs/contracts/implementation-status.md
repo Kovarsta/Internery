@@ -74,7 +74,10 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - `WorkRecord.verifyUrl` points at `/api/v1/work-records/{recordId}/verify`; the public verify page is
   frontend work and does not exist yet.
 - `GET /work-records/{recordId}/verify` returns `record: null` when the signature does not match.
+  A `signatureVersion` this build cannot produce is reported as `valid: false` instead of being
+  checked against the current rule.
 - `GET /me/verification-request` returns `licenseUrl: null` to the owner. The signed, short-lived
   link is reserved for the admin review screen.
 - Work records are signed with HMAC-SHA256 over canonical JSON with recursively sorted keys. The
-  secret is `WORK_RECORD_SECRET`; rotating it invalidates every existing signature.
+  secret is `WORK_RECORD_SECRET`. Rotation is a re-sign with a bumped `signatureVersion`; old keys
+  are not archived, so records issued under a removed version stop verifying by design.

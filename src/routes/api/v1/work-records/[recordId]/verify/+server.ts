@@ -30,7 +30,12 @@ export const GET: RequestHandler = async (event) => {
 			throw new ApiError('NOT_FOUND');
 		}
 
-		const valid = verifyWorkRecordSignature(record.payload, record.signature, WORK_RECORD_SECRET);
+		const valid = verifyWorkRecordSignature(
+			record.payload,
+			record.signature,
+			WORK_RECORD_SECRET,
+			record.signatureVersion
+		);
 
 		// A tampered payload must not be echoed back as if it were trustworthy.
 		return Response.json({

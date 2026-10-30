@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { WorkRecordPayload } from '#lib/server/db/product.schema.ts';
 import {
 	canonicalJson,
+	CURRENT_SIGNATURE_VERSION,
 	signWorkRecord,
 	verifyWorkRecordSignature
 } from './work-record-signature.ts';
@@ -54,20 +55,52 @@ describe('signWorkRecord', () => {
 
 describe('verifyWorkRecordSignature', () => {
 	it('accepts a matching signature', () => {
-		expect(verifyWorkRecordSignature(payload, expectedSignature, 'test-secret')).toBe(true);
+		expect(
+			verifyWorkRecordSignature(
+				payload,
+				expectedSignature,
+				'test-secret',
+				CURRENT_SIGNATURE_VERSION
+			)
+		).toBe(true);
 	});
 
 	it('rejects a changed payload', () => {
 		expect(
-			verifyWorkRecordSignature({ ...payload, rating: 4 }, expectedSignature, 'test-secret')
+			verifyWorkRecordSignature(
+				{ ...payload, rating: 4 },
+				expectedSignature,
+				'test-secret',
+				CURRENT_SIGNATURE_VERSION
+			)
 		).toBe(false);
 	});
 
 	it('rejects a wrong secret', () => {
-		expect(verifyWorkRecordSignature(payload, expectedSignature, 'other-secret')).toBe(false);
+		expect(
+			verifyWorkRecordSignature(
+				payload,
+				expectedSignature,
+				'other-secret',
+				CURRENT_SIGNATURE_VERSION
+			)
+		).toBe(false);
 	});
 
 	it('rejects a malformed signature without throwing', () => {
-		expect(verifyWorkRecordSignature(payload, 'not-hex', 'test-secret')).toBe(false);
+		expect(
+			verifyWorkRecordSignature(payload, 'not-hex', 'test-secret', CURRENT_SIGNATURE_VERSION)
+		).toBe(false);
+	});
+
+	it('rejects an unknown signature version even when the signature matches', () => {
+		expect(
+			verifyWorkRecordSignature(
+				payload,
+				expectedSignature,
+				'test-secret',
+				CURRENT_SIGNATURE_VERSION + 1
+			)
+		).toBe(false);
 	});
 });
