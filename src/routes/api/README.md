@@ -6,9 +6,9 @@ The OpenAPI document is the source of truth for paths, methods, request bodies, 
 It lives in [`docs/contracts/openapi.yaml`](../../../docs/contracts/openapi.yaml); the implemented
 operations are listed in
 [`docs/contracts/implementation-status.md`](../../../docs/contracts/implementation-status.md).
-Most handlers are still **skeletons** that return `501 Not Implemented`. `GET /me`, `GET /categories`,
-the `/me/notifications` reads and the two own-profile reads are implemented as the reference pattern
-for the rest.
+Most handlers are still **skeletons** that return `501 Not Implemented`. The account, notification,
+saved-job, application, profile and job-read operations are implemented and show the reference
+pattern for the rest.
 
 ## Layout
 

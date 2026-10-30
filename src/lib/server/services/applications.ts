@@ -31,6 +31,26 @@ export type ApplicationPage = {
 	total: number;
 };
 
+/**
+ * Columns shared by every application read.
+ *
+ * `employerUserName` is the fallback for `employerName` when the employer never
+ * created a company profile.
+ */
+export const applicationSelection = {
+	id: applications.id,
+	jobId: applications.jobId,
+	jobTitle: jobs.title,
+	employerOrgName: employerProfiles.orgName,
+	employerUserName: users.name,
+	status: applications.status,
+	message: applications.message,
+	rejectReason: applications.rejectReason,
+	cvKey: applications.cvKey,
+	createdAt: applications.createdAt,
+	decidedAt: applications.decidedAt
+};
+
 /** Returns one page of a student's applications, newest first. */
 export async function listMyApplications(
 	database: Database,
@@ -43,19 +63,7 @@ export async function listMyApplications(
 
 	const [items, totalRows] = await Promise.all([
 		database
-			.select({
-				id: applications.id,
-				jobId: applications.jobId,
-				jobTitle: jobs.title,
-				employerOrgName: employerProfiles.orgName,
-				employerUserName: users.name,
-				status: applications.status,
-				message: applications.message,
-				rejectReason: applications.rejectReason,
-				cvKey: applications.cvKey,
-				createdAt: applications.createdAt,
-				decidedAt: applications.decidedAt
-			})
+			.select(applicationSelection)
 			.from(applications)
 			.innerJoin(jobs, eq(jobs.id, applications.jobId))
 			.innerJoin(users, eq(users.id, jobs.employerId))
@@ -71,4 +79,22 @@ export async function listMyApplications(
 		items,
 		total: totalRows[0]?.total ?? 0
 	};
+}
+
+/** Returns the student's application to one job, or null when they have not applied. */
+export async function findStudentApplicationForJob(
+	database: Database,
+	studentId: string,
+	jobId: string
+): Promise<ApplicationListRecord | null> {
+	const [application] = await database
+		.select(applicationSelection)
+		.from(applications)
+		.innerJoin(jobs, eq(jobs.id, applications.jobId))
+		.innerJoin(users, eq(users.id, jobs.employerId))
+		.leftJoin(employerProfiles, eq(employerProfiles.userId, jobs.employerId))
+		.where(and(eq(applications.studentId, studentId), eq(applications.jobId, jobId)))
+		.limit(1);
+
+	return application ?? null;
 }

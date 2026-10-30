@@ -19,6 +19,14 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 | `GET /me/notifications/unread-count`           | 2     |
 | `GET /me/saved-jobs`                           | 2     |
 | `GET /me/applications`                         | 2     |
+| `GET /me/jobs`                                 | 2     |
+| `GET /jobs`                                    | 2     |
+| `GET /jobs/{jobId}`                            | 2     |
+| `GET /users/{userId}/reviews`                  | 2     |
+| `GET /me/work-records`                         | 2     |
+| `GET /work-records`                            | 2     |
+| `GET /work-records/{recordId}/verify`          | 2     |
+| `GET /me/verification-request`                 | 2     |
 | `POST /me/notifications/{notificationId}/read` | 3     |
 | `POST /me/notifications/read-all`              | 3     |
 | `PUT /me/saved-jobs/{jobId}`                   | 3     |
@@ -52,3 +60,21 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   under `/api/auth/*`.
 - The profile `PUT` operations replace the editable fields only. CV columns, ratings and employer
   verification state are owned by other flows and are preserved.
+- `GET /me/jobs` reports `applicantCount` without `WITHDRAWN` applications and `acceptedCount` with
+  accepted ones. Hidden jobs stay in the list with `isHidden` and `hiddenReason`.
+- `GET /jobs` excludes hidden jobs, treats `location` as a literal case-insensitive substring, and
+  matches keywords with PostgreSQL `websearch_to_tsquery` over the `simple` configuration. Both sort
+  orders break ties on job id so pagination is stable.
+- `GET /jobs/{jobId}` omits `saved` and `myApplication` for anonymous and non-student viewers rather
+  than sending defaults. Hidden jobs return `404` to everyone except the owner and admins.
+- `GET /users/{userId}/reviews` computes `ratingAvg` and `ratingCount` from the visible reviews
+  instead of reading the profile columns, so a hidden review never affects the summary.
+- Work-record responses are built from the signed `payload`, not from joined job or user rows, so the
+  card shows exactly the content that was signed.
+- `WorkRecord.verifyUrl` points at `/api/v1/work-records/{recordId}/verify`; the public verify page is
+  frontend work and does not exist yet.
+- `GET /work-records/{recordId}/verify` returns `record: null` when the signature does not match.
+- `GET /me/verification-request` returns `licenseUrl: null` to the owner. The signed, short-lived
+  link is reserved for the admin review screen.
+- Work records are signed with HMAC-SHA256 over canonical JSON with recursively sorted keys. The
+  secret is `WORK_RECORD_SECRET`; rotating it invalidates every existing signature.

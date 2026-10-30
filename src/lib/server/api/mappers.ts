@@ -1,3 +1,4 @@
+import type { WorkRecordPayload } from '#lib/server/db/product.schema.ts';
 import type { UserRole } from './auth.ts';
 
 export type AccountStatus = 'PENDING_VERIFICATION' | 'ACTIVE' | 'SUSPENDED' | 'LOCKED' | 'DELETED';
@@ -177,6 +178,109 @@ export type Application = {
 	decidedAt: string | null;
 };
 
+export type MyJobSource = JobSummarySource & {
+	applicantCount: number;
+	isHidden: boolean;
+	hiddenReason: string | null;
+};
+
+export type MyJob = JobSummary & {
+	applicantCount: number;
+	acceptedCount: number;
+	isHidden: boolean;
+	hiddenReason: string | null;
+};
+
+export type JobDetailSource = JobSummarySource & {
+	description: string;
+	schedule: string;
+	isHidden: boolean;
+};
+
+export type JobDetail = JobSummary & {
+	description: string;
+	schedule: string;
+	acceptingApplications: boolean;
+	saved?: boolean;
+	myApplication?: Application | null;
+};
+
+export type ReviewSource = {
+	id: string;
+	jobId: string;
+	reviewerId: string;
+	reviewerName: string;
+	rating: number;
+	comment: string | null;
+	createdAt: Date | string;
+};
+
+export type Review = {
+	id: string;
+	jobId: string;
+	reviewer: { id: string; fullName: string };
+	rating: number;
+	comment: string | null;
+	createdAt: string;
+};
+
+export type WorkRecordCardSource = {
+	id: string;
+	payload: WorkRecordPayload;
+};
+
+export type WorkRecordCard = {
+	id: string;
+	studentName: string;
+	employerName: string;
+	jobTitle: string;
+	startDate: string;
+	endDate: string;
+	rating: number;
+	comment: string | null;
+	issuedAt: string;
+};
+
+export type WorkRecordSource = WorkRecordCardSource & {
+	isPublic: boolean;
+	publishedAt: Date | null;
+};
+
+export type WorkRecord = WorkRecordCard & {
+	isPublic: boolean;
+	publishedAt: string | null;
+	verifyUrl: string;
+};
+
+export type VerificationRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export type VerificationRequestSource = {
+	id: string;
+	employerId: string;
+	orgName: string;
+	websiteUrl: string | null;
+	contactInfo: string;
+	licenseKey: string | null;
+	status: VerificationRequestStatus;
+	rejectReason: string | null;
+	createdAt: Date | string;
+	reviewedAt: Date | null;
+};
+
+export type VerificationRequest = {
+	id: string;
+	employerId: string;
+	orgName: string;
+	websiteUrl: string | null;
+	contactInfo: string;
+	hasLicense: boolean;
+	licenseUrl: string | null;
+	status: VerificationRequestStatus;
+	rejectReason: string | null;
+	createdAt: string;
+	reviewedAt: string | null;
+};
+
 export type NotificationType =
 	| 'APPLICATION_RECEIVED'
 	| 'APPLICATION_WITHDRAWN'
@@ -258,6 +362,8 @@ export function toJobSummary(job: JobSummarySource): JobSummary {
 		startDate: job.startDate,
 		endDate: job.endDate,
 		positionsNeeded: job.positionsNeeded,
+		// An edit can lower `positionsNeeded` below the accepted count, and the
+		// contract forbids a negative remaining count.
 		positionsRemaining: Math.max(job.positionsNeeded - job.acceptedCount, 0),
 		status: job.status,
 		employer: {
@@ -273,6 +379,42 @@ export function toJobSummary(job: JobSummarySource): JobSummary {
 	};
 }
 
+/** Maps an employer's own job row to the shape with applicant counts. */
+export function toMyJob(job: MyJobSource): MyJob {
+	return {
+		...toJobSummary(job),
+		applicantCount: job.applicantCount,
+		acceptedCount: job.acceptedCount,
+		isHidden: job.isHidden,
+		hiddenReason: job.hiddenReason
+	};
+}
+
+/**
+ * Maps a job row to the detail shape.
+ *
+ * `student` is null for anonymous visitors and non-students. The student-only
+ * fields are then left out rather than filled with misleading defaults.
+ */
+export function toJobDetail(
+	job: JobDetailSource,
+	student: { saved: boolean; myApplication: Application | null } | null
+): JobDetail {
+	const detail: JobDetail = {
+		...toJobSummary(job),
+		description: job.description,
+		schedule: job.schedule,
+		acceptingApplications: job.status === 'HIRING'
+	};
+
+	if (student !== null) {
+		detail.saved = student.saved;
+		detail.myApplication = student.myApplication;
+	}
+
+	return detail;
+}
+
 /** Maps an application projection to the student's public application shape. */
 export function toApplication(application: ApplicationSource): Application {
 	return {
@@ -286,6 +428,70 @@ export function toApplication(application: ApplicationSource): Application {
 		hasCv: application.cvKey !== null,
 		createdAt: toIsoString(application.createdAt),
 		decidedAt: application.decidedAt === null ? null : toIsoString(application.decidedAt)
+	};
+}
+
+/** Maps a review row with its reviewer to the public review shape. */
+export function toReview(review: ReviewSource): Review {
+	return {
+		id: review.id,
+		jobId: review.jobId,
+		reviewer: {
+			id: review.reviewerId,
+			fullName: review.reviewerName
+		},
+		rating: review.rating,
+		comment: review.comment,
+		createdAt: toIsoString(review.createdAt)
+	};
+}
+
+/**
+ * Maps a work record to the card content.
+ *
+ * The fields come from the signed payload, not from the joined tables, so what
+ * the verify page shows is exactly what was signed.
+ */
+export function toWorkRecordCard(record: WorkRecordCardSource): WorkRecordCard {
+	return {
+		id: record.id,
+		studentName: record.payload.studentName,
+		employerName: record.payload.employerName,
+		jobTitle: record.payload.jobTitle,
+		startDate: record.payload.startDate,
+		endDate: record.payload.endDate,
+		rating: record.payload.rating,
+		comment: record.payload.comment,
+		issuedAt: record.payload.issuedAt
+	};
+}
+
+/** Maps a work record for its owner, including the shareable verify link. */
+export function toWorkRecord(record: WorkRecordSource, origin: string): WorkRecord {
+	return {
+		...toWorkRecordCard(record),
+		isPublic: record.isPublic,
+		publishedAt: record.publishedAt === null ? null : toIsoString(record.publishedAt),
+		// Points at the JSON endpoint until the public verify page exists; the link
+		// has to resolve today, so a route that 404s would be worse.
+		verifyUrl: `${origin}/api/v1/work-records/${record.id}/verify`
+	};
+}
+
+/** Maps a verification request for its owner; the licence link is admin-only. */
+export function toVerificationRequest(request: VerificationRequestSource): VerificationRequest {
+	return {
+		id: request.id,
+		employerId: request.employerId,
+		orgName: request.orgName,
+		websiteUrl: request.websiteUrl,
+		contactInfo: request.contactInfo,
+		hasLicense: request.licenseKey !== null,
+		licenseUrl: null,
+		status: request.status,
+		rejectReason: request.rejectReason,
+		createdAt: toIsoString(request.createdAt),
+		reviewedAt: request.reviewedAt === null ? null : toIsoString(request.reviewedAt)
 	};
 }
 

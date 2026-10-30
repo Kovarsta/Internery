@@ -71,11 +71,14 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
 - The `/api/v1` route tree exists under `src/routes/api/v1` (51 paths, 64 operations). Most handlers
-  are skeletons that return `501`; the account, notification, saved-job, application and own-profile
-  operations are implemented. Shared API helpers live in `src/lib/server/api/`; services live in
-  `src/lib/server/services/`. Authentication endpoints are Better Auth's `/api/auth/*` and
+  are skeletons that return `501`; the account, notification, saved-job, application, own-profile and
+  job-read operations are implemented. Shared API helpers live in `src/lib/server/api/`; services
+  live in `src/lib/server/services/`. Authentication endpoints are Better Auth's `/api/auth/*` and
   deliberately not duplicated under `/api/v1`. See `src/routes/api/README.md` for route conventions
   and the implementation checklist.
+- Work-record signatures are HMAC-SHA256 over canonical JSON with sorted keys. The helpers live in
+  `src/lib/server/work-record-signature.ts`; the secret is `WORK_RECORD_SECRET`. Phase 4's
+  `createReview` still has to call the signer when it creates a record.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
   returned as raw storage or presigned URLs. See `docs/decisions/avatar-storage.md`.
 - `.env` exists locally and `node_modules` is installed.
@@ -107,7 +110,7 @@ pnpm auth:schema         # regenerate Better Auth tables into src/lib/server/db/
 
 Env vars are declared in `src/env.ts` and read from `$app/env/private` in server code:
 `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
-`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`.
+`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `WORK_RECORD_SECRET`.
 `.env.example` still points at `root:mysecretpassword@.../local`, while `docker-compose.yaml` uses
 `internery:internery@.../internery`; fix the URL in `.env` if it does not match.
 

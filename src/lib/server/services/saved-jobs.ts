@@ -40,6 +40,21 @@ export async function unsaveJob(database: Database, userId: string, jobId: strin
 		.where(and(eq(savedJobs.userId, userId), eq(savedJobs.jobId, jobId)));
 }
 
+/** Reports whether the student has bookmarked this job. */
+export async function isJobSaved(
+	database: Database,
+	userId: string,
+	jobId: string
+): Promise<boolean> {
+	const [bookmark] = await database
+		.select({ jobId: savedJobs.jobId })
+		.from(savedJobs)
+		.where(and(eq(savedJobs.userId, userId), eq(savedJobs.jobId, jobId)))
+		.limit(1);
+
+	return bookmark !== undefined;
+}
+
 /**
  * Returns one page of the student's saved jobs, newest save first.
  *

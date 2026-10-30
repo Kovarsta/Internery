@@ -23,5 +23,9 @@ export const variables = defineEnvVars({
 	EMAIL_FROM_ADDRESS: {
 		description:
 			'Verified sender address for transactional email, e.g. `Internery <no-reply@example.com>`.'
+	},
+	WORK_RECORD_SECRET: {
+		description:
+			'Secret used to sign and verify work records with HMAC-SHA256. Rotating it invalidates every existing signature.'
 	}
 });

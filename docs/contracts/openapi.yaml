@@ -335,6 +335,9 @@ paths:
       tags: [Jobs]
       operationId: listMyJobs
       summary: My jobs with status and applicant count
+      description: |
+        `applicantCount` excludes `WITHDRAWN` applications, matching the employer's applicant
+        list. Hidden jobs stay in the list with `isHidden` and `hiddenReason`.
       x-us: [US-21]
       x-fr: [FR-24]
       x-roles: [EMPLOYER]
@@ -347,6 +350,7 @@ paths:
       responses:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Invalid' }
         '200':
           description: Page of the employer's own jobs.
           content:
@@ -377,6 +381,8 @@ paths:
       description: |
         Only jobs with `status = HIRING` and not hidden are returned (AC-09.1).
         All filters combine with AND (AC-10.1). Keyword search is full text over title and description.
+        `location` is a case-insensitive literal substring, not a pattern. `sort=newest` orders by
+        creation time and `sort=salary_desc` by salary; both break ties on job id so paging is stable.
       security: [{}, { cookieAuth: [] }]
       x-us: [US-09, US-10, US-41]
       x-fr: [FR-12, FR-13, FR-47]
@@ -454,6 +460,8 @@ paths:
       description: |
         Visible to anyone for `HIRING` jobs; closed jobs still open and report that they no
         longer accept applications (AC-11.2). Hidden jobs return 404 except to the owner and admins.
+        `saved` and `myApplication` are present only for signed-in students; `myApplication` is
+        null when the student has not applied.
       security: [{}, { cookieAuth: [] }]
       x-us: [US-11, US-41, US-43]
       x-fr: [FR-14, FR-47, FR-50]
@@ -464,6 +472,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/JobDetail' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
     patch:
       tags: [Jobs]
       operationId: updateJob
@@ -750,7 +759,10 @@ paths:
       tags: [Reviews]
       operationId: listUserReviews
       summary: Average rating and review history of a user
-      description: Hidden (removed) reviews are excluded from both the list and the average (AC-28.2).
+      description: |
+        Hidden (removed) reviews are excluded from both the list and the average (AC-28.2).
+        The summary is computed from the stored reviews, so it stays correct even before the
+        profile rating columns are recalculated.
       x-us: [US-28]
       x-fr: [FR-32]
       x-roles: [STUDENT, EMPLOYER, ADMIN]
@@ -765,6 +777,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/PagedReviews' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
   /users/{userId}/avatar:
     get:
       tags: [Account]
@@ -1443,7 +1456,8 @@ paths:
       description: |
         Recomputes the HMAC over the stored payload and compares it with the stored signature.
         Always HTTP 200 for an existing public record with `valid: true|false` (AC-46.2, AC-46.3).
-        Private or unknown ids return 404 with no information.
+        Private or unknown ids return 404 with no information. When the signature does not match,
+        `record` is null so tampered content is never echoed back.
       security: []
       x-us: [US-46]
       x-fr: [FR-55]
@@ -1456,6 +1470,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/VerifyResult' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
 
 components:
   securitySchemes:
