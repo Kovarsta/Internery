@@ -32,10 +32,40 @@ export type JobSummaryRecord = {
 };
 
 /**
+ * Accepted applications for the job in the current row.
+ *
+ * A correlated subquery keeps the projection flat; aggregating in the main query
+ * would need a GROUP BY over every job column. `applications_job_status_idx`
+ * covers `(jobId, status)`, so each row costs one short index lookup.
+ */
+function acceptedCountExpression(): SQL<number> {
+	return sql<number>`(
+		select count(*)::int
+		from ${applications}
+		where ${applications.jobId} = ${jobs.id}
+			and ${applications.status} = 'ACCEPTED'
+	)`;
+}
+
+/**
+ * How many people applied to the job in the current row.
+ *
+ * Withdrawn applications are not counted, because they no longer appear in the
+ * employer's applicant list.
+ */
+function applicantCountExpression(): SQL<number> {
+	return sql<number>`(
+		select count(*)::int
+		from ${applications}
+		where ${applications.jobId} = ${jobs.id}
+			and ${applications.status} <> 'WITHDRAWN'
+	)`;
+}
+
+/**
  * Columns that build the shared job summary.
  *
- * `acceptedCount` is a correlated subquery so the projection does not need a
- * GROUP BY over every job column. Mappers derive `positionsRemaining` from it.
+ * Mappers derive `positionsRemaining` from `acceptedCount`.
  */
 export const jobSummarySelection = {
 	id: jobs.id,
@@ -46,12 +76,7 @@ export const jobSummarySelection = {
 	startDate: jobs.startDate,
 	endDate: jobs.endDate,
 	positionsNeeded: jobs.positionsNeeded,
-	acceptedCount: sql<number>`(
-		select count(*)::int
-		from ${applications}
-		where ${applications.jobId} = ${jobs.id}
-			and ${applications.status} = 'ACCEPTED'
-	)`,
+	acceptedCount: acceptedCountExpression(),
 	status: jobs.status,
 	needsReview: jobs.needsReview,
 	createdAt: jobs.createdAt,
@@ -73,12 +98,7 @@ export const jobSummarySelection = {
  */
 export const myJobSelection = {
 	...jobSummarySelection,
-	applicantCount: sql<number>`(
-		select count(*)::int
-		from ${applications}
-		where ${applications.jobId} = ${jobs.id}
-			and ${applications.status} <> 'WITHDRAWN'
-	)`,
+	applicantCount: applicantCountExpression(),
 	isHidden: jobs.isHidden,
 	hiddenReason: jobs.hiddenReason
 };
@@ -141,10 +161,13 @@ export async function listEmployerJobs(
 	database: Database,
 	options: MyJobListOptions
 ): Promise<MyJobPage> {
-	const filters = and(
-		eq(jobs.employerId, options.employerId),
-		options.status === undefined ? undefined : eq(jobs.status, options.status)
-	);
+	const conditions: SQL[] = [eq(jobs.employerId, options.employerId)];
+
+	if (options.status !== undefined) {
+		conditions.push(eq(jobs.status, options.status));
+	}
+
+	const filters = and(...conditions);
 
 	const [items, totalRows] = await Promise.all([
 		database
@@ -246,12 +269,7 @@ export async function createJob(
 	const category = await findActiveCategory(database, input.categoryId);
 
 	if (!category) {
-		throw new DomainError('VALIDATION_ERROR', 'Request validation failed.', [
-			{
-				field: 'categoryId',
-				message: 'The category does not exist or is no longer active.'
-			}
-		]);
+		throw validationError('categoryId', 'The category does not exist or is no longer active.');
 	}
 
 	const flaggedTerms = findScamTerms(`${input.title} ${input.description}`);
@@ -289,27 +307,178 @@ export async function createJob(
 	return job;
 }
 
-function buildSearchConditions(filters: JobSearchFilters): (SQL | undefined)[] {
-	// `and()` ignores `undefined`, so every optional filter can stay on one line
-	// instead of growing a chain of `if` statements.
-	return [
-		eq(jobs.status, 'HIRING'),
-		eq(jobs.isHidden, false),
-		// Matches `jobs_fts_idx`. The 'simple' configuration has no Vietnamese
-		// stemmer, and `websearch_to_tsquery` tolerates quoted phrases and OR.
-		filters.query === undefined
-			? undefined
-			: sql`to_tsvector('simple', ${jobs.title} || ' ' || ${jobs.description}) @@ websearch_to_tsquery('simple', ${filters.query})`,
-		filters.categoryId === undefined ? undefined : eq(jobs.categoryId, filters.categoryId),
-		filters.location === undefined
-			? undefined
-			: sql`${jobs.location} ilike ${toLikePattern(filters.location)} escape '\\'`,
-		filters.salaryMin === undefined ? undefined : gte(jobs.salaryAmount, filters.salaryMin),
-		filters.salaryMax === undefined ? undefined : lte(jobs.salaryAmount, filters.salaryMax),
-		filters.startFrom === undefined ? undefined : gte(jobs.startDate, filters.startFrom),
-		filters.endTo === undefined ? undefined : lte(jobs.endDate, filters.endTo),
-		filters.verifiedOnly ? eq(employerProfiles.verificationStatus, 'VERIFIED') : undefined
-	];
+export type JobUpdateInput = Partial<NewJobInput>;
+
+/**
+ * Updates an employer's own job while it is still `HIRING` (AC-18.2).
+ *
+ * Ownership is checked before the status, so a non-owner learns nothing beyond
+ * "forbidden". The row is locked across the check and the write so an acceptance
+ * cannot flip the job to `FILLED` in between. The scam scan runs again on the
+ * effective title and description.
+ */
+export async function updateJob(
+	database: Database,
+	employerId: string,
+	jobId: string,
+	input: JobUpdateInput
+): Promise<JobDetailRecord> {
+	// The category check runs outside the transaction because the row lock is
+	// only needed for the job and the scan, and a category rarely disappears.
+	if (input.categoryId !== undefined) {
+		const category = await findActiveCategory(database, input.categoryId);
+
+		if (!category) {
+			throw validationError('categoryId', 'The category does not exist or is no longer active.');
+		}
+	}
+
+	await database.transaction(async (tx) => {
+		const [job] = await tx
+			.select({
+				employerId: jobs.employerId,
+				status: jobs.status,
+				title: jobs.title,
+				description: jobs.description,
+				startDate: jobs.startDate,
+				endDate: jobs.endDate
+			})
+			.from(jobs)
+			.where(eq(jobs.id, jobId))
+			.for('update');
+
+		if (!job) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		if (job.employerId !== employerId) {
+			throw new DomainError('FORBIDDEN');
+		}
+
+		if (job.status !== 'HIRING') {
+			throw new DomainError('INVALID_STATE_TRANSITION');
+		}
+
+		// A partial update can move one side of the date range past the other, so
+		// the check has to use the stored value when a field is omitted.
+		const startDate = input.startDate ?? job.startDate;
+		const endDate = input.endDate ?? job.endDate;
+
+		if (endDate <= startDate) {
+			throw validationError('endDate', 'endDate must be after startDate.');
+		}
+
+		const title = input.title ?? job.title;
+		const description = input.description ?? job.description;
+		const flaggedTerms = findScamTerms(`${title} ${description}`);
+
+		await tx
+			.update(jobs)
+			.set({
+				...input,
+				needsReview: flaggedTerms.length > 0,
+				flaggedTerms
+			})
+			.where(eq(jobs.id, jobId));
+	});
+
+	const job = await findJobDetail(database, jobId);
+
+	if (!job) {
+		throw new Error('The updated job could not be read back.');
+	}
+
+	return job;
+}
+
+/**
+ * Deletes an employer's own job.
+ *
+ * A job with an accepted application cannot be deleted, because those students
+ * need the job history; the employer has to cancel it instead (AC-20.2). The row
+ * is locked so an acceptance cannot land between the check and the delete.
+ * Pending applications and saved bookmarks cascade.
+ */
+export async function deleteJob(
+	database: Database,
+	employerId: string,
+	jobId: string
+): Promise<void> {
+	await database.transaction(async (tx) => {
+		const [job] = await tx
+			.select({ employerId: jobs.employerId })
+			.from(jobs)
+			.where(eq(jobs.id, jobId))
+			.for('update');
+
+		if (!job) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		if (job.employerId !== employerId) {
+			throw new DomainError('FORBIDDEN');
+		}
+
+		const [acceptedApplication] = await tx
+			.select({ id: applications.id })
+			.from(applications)
+			.where(and(eq(applications.jobId, jobId), eq(applications.status, 'ACCEPTED')))
+			.limit(1);
+
+		if (acceptedApplication) {
+			throw new DomainError('JOB_HAS_ACCEPTED_APPLICANTS');
+		}
+
+		await tx.delete(jobs).where(eq(jobs.id, jobId));
+	});
+}
+
+/** Builds a `422` with the field that failed a service-level rule. */
+function validationError(field: string, message: string): DomainError {
+	return new DomainError('VALIDATION_ERROR', 'Request validation failed.', [{ field, message }]);
+}
+
+/** Builds the search conditions; every filter combines with AND. */
+function buildSearchConditions(filters: JobSearchFilters): SQL[] {
+	const conditions: SQL[] = [eq(jobs.status, 'HIRING'), eq(jobs.isHidden, false)];
+
+	// Matches `jobs_fts_idx`. The 'simple' configuration has no Vietnamese
+	// stemmer, and `websearch_to_tsquery` tolerates quoted phrases and OR.
+	if (filters.query !== undefined) {
+		conditions.push(
+			sql`to_tsvector('simple', ${jobs.title} || ' ' || ${jobs.description}) @@ websearch_to_tsquery('simple', ${filters.query})`
+		);
+	}
+
+	if (filters.categoryId !== undefined) {
+		conditions.push(eq(jobs.categoryId, filters.categoryId));
+	}
+
+	if (filters.location !== undefined) {
+		conditions.push(sql`${jobs.location} ilike ${toLikePattern(filters.location)} escape '\\'`);
+	}
+
+	if (filters.salaryMin !== undefined) {
+		conditions.push(gte(jobs.salaryAmount, filters.salaryMin));
+	}
+
+	if (filters.salaryMax !== undefined) {
+		conditions.push(lte(jobs.salaryAmount, filters.salaryMax));
+	}
+
+	if (filters.startFrom !== undefined) {
+		conditions.push(gte(jobs.startDate, filters.startFrom));
+	}
+
+	if (filters.endTo !== undefined) {
+		conditions.push(lte(jobs.endDate, filters.endTo));
+	}
+
+	if (filters.verifiedOnly) {
+		conditions.push(eq(employerProfiles.verificationStatus, 'VERIFIED'));
+	}
+
+	return conditions;
 }
 
 function orderFor(sort: JobSortOrder): SQL[] {

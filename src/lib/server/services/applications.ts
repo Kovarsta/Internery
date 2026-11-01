@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, type SQL } from 'drizzle-orm';
 import type { Database } from '#lib/server/db/types.ts';
 import { users } from '#lib/server/db/auth.schema.ts';
 import { applications, employerProfiles, jobs } from '#lib/server/db/product.schema.ts';
@@ -56,10 +56,13 @@ export async function listMyApplications(
 	database: Database,
 	options: ApplicationListOptions
 ): Promise<ApplicationPage> {
-	const filters = and(
-		eq(applications.studentId, options.studentId),
-		options.status === undefined ? undefined : eq(applications.status, options.status)
-	);
+	const conditions: SQL[] = [eq(applications.studentId, options.studentId)];
+
+	if (options.status !== undefined) {
+		conditions.push(eq(applications.status, options.status));
+	}
+
+	const filters = and(...conditions);
 
 	const [items, totalRows] = await Promise.all([
 		database

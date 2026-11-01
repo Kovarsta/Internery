@@ -479,7 +479,9 @@ paths:
       tags: [Jobs]
       operationId: updateJob
       summary: Edit own job
-      description: Only while `HIRING` (AC-18.2). Re-runs the scam keyword scan.
+      description: |
+        Only while `HIRING` (AC-18.2). Re-runs the scam keyword scan.
+        A partial date update is checked against the stored other bound.
       x-us: [US-18, US-43]
       x-fr: [FR-21, FR-50]
       x-roles: [EMPLOYER]
@@ -495,6 +497,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/JobDetail' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/Invalid' }
     delete:
@@ -508,6 +511,7 @@ paths:
       responses:
         '204': { description: Deleted (cascades to pending applications). }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
   /jobs/{jobId}/cancel:
     post:

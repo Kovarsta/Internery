@@ -4,7 +4,14 @@ import { eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
-import { createJob, findJobDetail, listEmployerJobs, searchOpenJobs } from './jobs.ts';
+import {
+	createJob,
+	deleteJob,
+	findJobDetail,
+	listEmployerJobs,
+	searchOpenJobs,
+	updateJob
+} from './jobs.ts';
 
 // Set TEST_DATABASE_URL to run the database-backed tests.
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -434,4 +441,154 @@ describe.skipIf(!testDatabase)('job reads', () => {
 			details: [{ field: 'categoryId' }]
 		});
 	});
+
+	it('updates an own job and re-runs the scam scan', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const job = await createJob(testDatabase, unverifiedEmployerId, draftJob());
+
+		const updated = await updateJob(testDatabase, unverifiedEmployerId, job.id, {
+			title: 'Đặt cọc rồi nhận việc',
+			positionsNeeded: 3
+		});
+
+		expect(updated.title).toBe('Đặt cọc rồi nhận việc');
+		expect(updated.positionsNeeded).toBe(3);
+		expect(updated.needsReview).toBe(true);
+
+		const [row] = await testDatabase
+			.select({ flaggedTerms: schema.jobs.flaggedTerms })
+			.from(schema.jobs)
+			.where(eq(schema.jobs.id, job.id));
+
+		expect(row?.flaggedTerms).toEqual(['đặt cọc']);
+	});
+
+	it('rejects editing another employer job', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const job = await createJob(testDatabase, unverifiedEmployerId, draftJob());
+
+		await expect(
+			updateJob(testDatabase, verifiedEmployerId, job.id, { title: 'Hijacked' })
+		).rejects.toMatchObject({ code: 'FORBIDDEN' });
+	});
+
+	it('rejects editing a job that is no longer hiring', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const job = await createJob(testDatabase, unverifiedEmployerId, draftJob());
+
+		await testDatabase
+			.update(schema.jobs)
+			.set({ status: 'FILLED' })
+			.where(eq(schema.jobs.id, job.id));
+
+		await expect(
+			updateJob(testDatabase, unverifiedEmployerId, job.id, { title: 'Too late' })
+		).rejects.toMatchObject({ code: 'INVALID_STATE_TRANSITION' });
+	});
+
+	it('checks a partial date update against the stored other side', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const job = await createJob(testDatabase, unverifiedEmployerId, draftJob());
+
+		await expect(
+			updateJob(testDatabase, unverifiedEmployerId, job.id, { endDate: '2026-11-01' })
+		).rejects.toMatchObject({
+			code: 'VALIDATION_ERROR',
+			details: [{ field: 'endDate' }]
+		});
+	});
+
+	it('deletes an own job and cascades its applications', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const job = await createJob(testDatabase, unverifiedEmployerId, draftJob());
+
+		await testDatabase.insert(schema.applications).values({
+			jobId: job.id,
+			studentId: verifiedEmployerId,
+			status: 'PENDING'
+		});
+
+		await deleteJob(testDatabase, unverifiedEmployerId, job.id);
+
+		const [row] = await testDatabase
+			.select({ id: schema.jobs.id })
+			.from(schema.jobs)
+			.where(eq(schema.jobs.id, job.id));
+
+		const applications = await testDatabase
+			.select({ id: schema.applications.id })
+			.from(schema.applications)
+			.where(eq(schema.applications.jobId, job.id));
+
+		expect(row).toBeUndefined();
+		expect(applications).toEqual([]);
+	});
+
+	it('refuses to delete a job with an accepted application', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const job = await createJob(testDatabase, unverifiedEmployerId, draftJob());
+
+		await testDatabase.insert(schema.applications).values({
+			jobId: job.id,
+			studentId: verifiedEmployerId,
+			status: 'ACCEPTED'
+		});
+
+		await expect(deleteJob(testDatabase, unverifiedEmployerId, job.id)).rejects.toMatchObject({
+			code: 'JOB_HAS_ACCEPTED_APPLICANTS'
+		});
+
+		const [row] = await testDatabase
+			.select({ id: schema.jobs.id })
+			.from(schema.jobs)
+			.where(eq(schema.jobs.id, job.id));
+
+		expect(row?.id).toBe(job.id);
+	});
+
+	it('rejects deleting another employer job', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const job = await createJob(testDatabase, unverifiedEmployerId, draftJob());
+
+		await expect(deleteJob(testDatabase, verifiedEmployerId, job.id)).rejects.toMatchObject({
+			code: 'FORBIDDEN'
+		});
+	});
 });
+
+/** A clean job used by the write tests so one test cannot affect another. */
+function draftJob() {
+	return {
+		title: 'Stock assistant',
+		categoryId: draftCategoryId,
+		description: 'Arrange shelves on Saturday mornings.',
+		location: 'Da Nang',
+		schedule: 'Saturday 8:00-12:00',
+		salaryAmount: 40_000,
+		salaryType: 'HOURLY' as const,
+		startDate: '2026-12-01',
+		endDate: '2026-12-20',
+		positionsNeeded: 1
+	};
+}

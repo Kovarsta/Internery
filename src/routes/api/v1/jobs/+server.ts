@@ -2,6 +2,7 @@ import type { RequestHandler } from './$types';
 import { z } from 'zod';
 import { requireRole } from '#lib/server/api/auth.ts';
 import { handleApiError } from '#lib/server/api/errors.ts';
+import { hasOrderedDates, jobFields } from '#lib/server/api/job-fields.ts';
 import { toJobDetail, toJobSummary } from '#lib/server/api/mappers.ts';
 import { paged, parsePagination } from '#lib/server/api/pagination.ts';
 import { parseJson, parseQuery } from '#lib/server/api/validation.ts';
@@ -51,22 +52,8 @@ const querySchema = z
 
 /** Job fields enforced by the contract; `endDate` must be strictly after `startDate`. */
 const createJobSchema = z
-	.object({
-		title: z.string().trim().min(1).max(200),
-		categoryId: z.uuid(),
-		description: z.string().trim().min(1),
-		location: z.string().trim().min(1).max(300),
-		schedule: z.string().trim().min(1),
-		salaryAmount: z.number().int().positive(),
-		salaryType: z.enum(['HOURLY', 'DAILY', 'FIXED']),
-		startDate: z.iso.date(),
-		endDate: z.iso.date(),
-		positionsNeeded: z.number().int().min(1)
-	})
-	.refine((job) => job.endDate > job.startDate, {
-		path: ['endDate'],
-		message: 'endDate must be after startDate.'
-	});
+	.object(jobFields)
+	.refine(hasOrderedDates, { path: ['endDate'], message: 'endDate must be after startDate.' });
 
 /** GET /jobs — searchJobs */
 export const GET: RequestHandler = async (event) => {

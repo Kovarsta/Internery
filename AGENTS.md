@@ -71,11 +71,11 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
 - The `/api/v1` route tree exists under `src/routes/api/v1` (51 paths, 64 operations). Most handlers
-  are skeletons that return `501`; the account, notification, saved-job, application, own-profile,
-  job-read and job-create operations are implemented. Shared API helpers live in
-  `src/lib/server/api/`; services live in `src/lib/server/services/`. Authentication endpoints are
-  Better Auth's `/api/auth/*` and deliberately not duplicated under `/api/v1`. See
-  `src/routes/api/README.md` for route conventions and the implementation checklist.
+  are skeletons that return `501`; the account, notification, saved-job, application, own-profile and
+  job read/write operations are implemented. Shared API helpers live in `src/lib/server/api/`;
+  services live in `src/lib/server/services/`. Authentication endpoints are Better Auth's
+  `/api/auth/*` and deliberately not duplicated under `/api/v1`. See `src/routes/api/README.md` for
+  route conventions and the implementation checklist.
 - Work-record signatures are HMAC-SHA256 over canonical JSON with sorted keys. The helpers live in
   `src/lib/server/work-record-signature.ts`; the secret is `WORK_RECORD_SECRET`. Phase 4's
   `createReview` still has to call the signer when it creates a record.

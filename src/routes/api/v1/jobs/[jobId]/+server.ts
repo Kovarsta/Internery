@@ -1,17 +1,31 @@
 import type { RequestHandler } from './$types';
 import { z } from 'zod';
+import { requireRole } from '#lib/server/api/auth.ts';
 import { ApiError, handleApiError } from '#lib/server/api/errors.ts';
+import { hasOrderedDates, jobFields } from '#lib/server/api/job-fields.ts';
 import { toApplication, toJobDetail } from '#lib/server/api/mappers.ts';
-import { notImplemented } from '#lib/server/api/not-implemented.ts';
-import { parseParams } from '#lib/server/api/validation.ts';
+import { parseJson, parseParams } from '#lib/server/api/validation.ts';
 import { db } from '#lib/server/db/index.ts';
 import { findStudentApplicationForJob } from '#lib/server/services/applications.ts';
-import { findJobDetail, type JobDetailRecord } from '#lib/server/services/jobs.ts';
+import {
+	deleteJob,
+	findJobDetail,
+	updateJob,
+	type JobDetailRecord
+} from '#lib/server/services/jobs.ts';
 import { isJobSaved } from '#lib/server/services/saved-jobs.ts';
 
 const paramsSchema = z.object({
 	jobId: z.uuid()
 });
+
+const updateJobSchema = z
+	.object(jobFields)
+	.partial()
+	.refine((job) => Object.keys(job).length > 0, {
+		message: 'Provide at least one field to update.'
+	})
+	.refine(hasOrderedDates, { path: ['endDate'], message: 'endDate must be after startDate.' });
 
 /** GET /jobs/{jobId} — getJob */
 export const GET: RequestHandler = async (event) => {
@@ -34,10 +48,33 @@ export const GET: RequestHandler = async (event) => {
 };
 
 /** PATCH /jobs/{jobId} — updateJob */
-export const PATCH: RequestHandler = () => notImplemented();
+export const PATCH: RequestHandler = async (event) => {
+	try {
+		const user = requireRole(event.locals, ['EMPLOYER']);
+		const { jobId } = parseParams(event.params, paramsSchema);
+		const body = await parseJson(event.request, updateJobSchema);
+
+		const job = await updateJob(db, user.id, jobId, body);
+
+		return Response.json(toJobDetail(job, null));
+	} catch (error) {
+		return handleApiError(error);
+	}
+};
 
 /** DELETE /jobs/{jobId} — deleteJob */
-export const DELETE: RequestHandler = () => notImplemented();
+export const DELETE: RequestHandler = async (event) => {
+	try {
+		const user = requireRole(event.locals, ['EMPLOYER']);
+		const { jobId } = parseParams(event.params, paramsSchema);
+
+		await deleteJob(db, user.id, jobId);
+
+		return new Response(null, { status: 204 });
+	} catch (error) {
+		return handleApiError(error);
+	}
+};
 
 /**
  * Hidden jobs are only visible to their owner and admins (AC-11.2, FR-50).

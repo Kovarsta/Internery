@@ -28,6 +28,8 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 | `GET /work-records/{recordId}/verify`          | 2     |
 | `GET /me/verification-request`                 | 2     |
 | `POST /jobs`                                   | 3     |
+| `PATCH /jobs/{jobId}`                          | 3     |
+| `DELETE /jobs/{jobId}`                         | 3     |
 | `POST /me/notifications/{notificationId}/read` | 3     |
 | `POST /me/notifications/read-all`              | 3     |
 | `PUT /me/saved-jobs/{jobId}`                   | 3     |
@@ -87,3 +89,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - The scam scan sets `needsReview` and `flaggedTerms` from a starter keyword list. A hit never blocks
   or hides the posting; it only queues the job for admin review. The list lives in
   `src/lib/server/services/scam-terms.ts` and needs product sign-off.
+- `PATCH /jobs/{jobId}` only edits `HIRING` jobs, re-runs the scam scan, and checks a partial date
+  update against the stored other bound. A non-owner gets `403`, an unknown job `404`.
+- `DELETE /jobs/{jobId}` locks the job row and refuses when any application is `ACCEPTED`, returning
+  `409 JOB_HAS_ACCEPTED_APPLICANTS`. Pending applications and saved bookmarks cascade.
