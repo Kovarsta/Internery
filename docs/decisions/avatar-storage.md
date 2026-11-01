@@ -83,6 +83,10 @@ The reset action is `DELETE /me/avatar`. It answers `204` whether or not the use
 repeating the call is safe. Adding it took the contract from 64 to 65 operations; no existing
 operation changed.
 
+Local provisioning is the compose `minio-blank-avatar` job, which copies
+`docker/minio/blank-avatar.png` into the bucket after `minio-init` creates it. A real deployment must
+provision the same object once.
+
 ## Open decisions
 
 - Whether avatars stay public or become authenticated later.
@@ -93,8 +97,6 @@ operation changed.
 ## Implementation TODOs
 
 - Add avatar upload validation and storage-service calls.
-- Provision the reserved `avatars/_blank.png` object with the bucket.
-- Add the reset path that points `avatarKey` at the reserved key.
 - Version the `avatarUrl` with `?v=` so the route can cache immutably.
 - Answer `304` when the request's `If-None-Match` matches the object ETag.
 

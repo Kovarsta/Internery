@@ -9,7 +9,7 @@ endpoint is implemented.
 
 Authentication is provided by Better Auth under `/api/auth/*` and is outside this contract.
 
-**36 of 65 operations implemented.**
+**37 of 65 operations implemented.**
 
 ## Checklist
 
@@ -18,7 +18,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - [x] `GET /me` — Current user
 - [x] `PATCH /me` — Edit name, phone or email
 - [ ] `PUT /me/avatar` - Upload or replace the avatar image
-- [ ] `DELETE /me/avatar` - Reset the avatar to the blank placeholder
+- [x] `DELETE /me/avatar` - Reset the avatar to the blank placeholder
 - [x] `GET /users/{userId}/avatar` - Download a user's uploaded avatar
 
 ### Student
@@ -193,3 +193,6 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   avatar key and a missing object both answer `404`, so an account without a picture is not
   distinguishable from an unknown id. The response carries the object's `Content-Type`, `ETag` and
   `Cache-Control: public, max-age=86400`.
+- `DELETE /me/avatar` points `avatarKey` at the reserved `avatars/_blank.png` key instead of clearing
+  it, which keeps the OAuth provider image shadowed. It upserts the profile row and answers `204`
+  every time, so a repeated call changes nothing.
