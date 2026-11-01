@@ -1,7 +1,19 @@
+import { randomUUID } from 'node:crypto';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { DomainError } from '#lib/server/api/errors.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { users } from '#lib/server/db/auth.schema.ts';
-import { reviews } from '#lib/server/db/product.schema.ts';
+import {
+	applications,
+	employerProfiles,
+	jobs,
+	notifications,
+	reviews,
+	studentProfiles,
+	workRecords,
+	type WorkRecordPayload
+} from '#lib/server/db/product.schema.ts';
+import { CURRENT_SIGNATURE_VERSION, signWorkRecord } from '#lib/server/work-record-signature.ts';
 
 export type ReviewListRecord = {
 	id: string;
@@ -85,4 +97,222 @@ export async function listReviewsForUser(
 		ratingAvg: rating?.ratingAvg ?? 0,
 		ratingCount: rating?.ratingCount ?? 0
 	};
+}
+
+export type CreateReviewInput = {
+	jobId: string;
+	reviewerId: string;
+	revieweeId: string;
+	rating: number;
+	comment: string | null;
+};
+
+export type CreatedReview = {
+	review: ReviewListRecord;
+	workRecordId: string | null;
+};
+
+/**
+ * Records a review of the other party of a completed job.
+ *
+ * The reviewer must be the employer or an accepted student of the job, and the
+ * reviewee must be the other side. The job row and then the reviewee's user row
+ * are locked, so two reviews for the same person on different jobs cannot each
+ * recalculate an average that misses the other.
+ *
+ * When the employer reviews a student, the review also issues the student's
+ * signed work record. Both rows are written in the same transaction, so a work
+ * record always has the review it was issued from.
+ *
+ * Throws `NOT_FOUND` for an unknown job, `JOB_NOT_COMPLETED` before the job is
+ * completed, `NOT_A_PARTICIPANT` for a pair that is not employer and accepted
+ * student, and `ALREADY_REVIEWED` for a repeated review.
+ */
+export async function createReview(
+	database: Database,
+	secret: string,
+	input: CreateReviewInput
+): Promise<CreatedReview> {
+	let workRecordId: string | null = null;
+
+	const review = await database.transaction(async (tx) => {
+		const [job] = await tx
+			.select({
+				id: jobs.id,
+				employerId: jobs.employerId,
+				title: jobs.title,
+				startDate: jobs.startDate,
+				endDate: jobs.endDate,
+				status: jobs.status
+			})
+			.from(jobs)
+			.where(eq(jobs.id, input.jobId))
+			.for('update');
+
+		if (!job) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		if (job.status !== 'COMPLETED') {
+			throw new DomainError('JOB_NOT_COMPLETED');
+		}
+
+		const acceptedStudents = await tx
+			.select({ studentId: applications.studentId })
+			.from(applications)
+			.where(and(eq(applications.jobId, job.id), eq(applications.status, 'ACCEPTED')));
+
+		const isStudentReviewingEmployer =
+			input.revieweeId === job.employerId &&
+			acceptedStudents.some(({ studentId }) => studentId === input.reviewerId);
+
+		const isEmployerReviewingStudent =
+			input.reviewerId === job.employerId &&
+			acceptedStudents.some(({ studentId }) => studentId === input.revieweeId);
+
+		if (!isStudentReviewingEmployer && !isEmployerReviewingStudent) {
+			throw new DomainError('NOT_A_PARTICIPANT');
+		}
+
+		// Locking the reviewee serialises the duplicate check and the rating
+		// recalculation for this person. Without the lock, two reviews on
+		// different jobs could both pass the check and each write an average
+		// computed without the other.
+		const [reviewee] = await tx
+			.select({ name: users.name })
+			.from(users)
+			.where(eq(users.id, input.revieweeId))
+			.for('update');
+
+		if (!reviewee) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		const [existingReview] = await tx
+			.select({ id: reviews.id })
+			.from(reviews)
+			.where(
+				and(
+					eq(reviews.jobId, job.id),
+					eq(reviews.reviewerId, input.reviewerId),
+					eq(reviews.revieweeId, input.revieweeId)
+				)
+			)
+			.limit(1);
+
+		if (existingReview) {
+			throw new DomainError('ALREADY_REVIEWED');
+		}
+
+		const [created] = await tx
+			.insert(reviews)
+			.values({
+				jobId: job.id,
+				reviewerId: input.reviewerId,
+				revieweeId: input.revieweeId,
+				rating: input.rating,
+				comment: input.comment
+			})
+			.returning({
+				id: reviews.id,
+				jobId: reviews.jobId,
+				reviewerId: reviews.reviewerId,
+				rating: reviews.rating,
+				comment: reviews.comment,
+				createdAt: reviews.createdAt
+			});
+
+		if (!created) {
+			throw new Error('The review could not be written.');
+		}
+
+		// Hidden reviews are excluded, matching the public list (AC-28.2). The
+		// `float8` cast keeps the average a JSON number and the rounding matches
+		// the two decimals of the profile rating columns.
+		const [rating] = await tx
+			.select({
+				ratingAvg: sql<number>`coalesce(round(avg(${reviews.rating})::numeric, 2), 0)::float8`,
+				ratingCount: count()
+			})
+			.from(reviews)
+			.where(and(eq(reviews.revieweeId, input.revieweeId), eq(reviews.isHidden, false)));
+
+		const ratingPatch = {
+			ratingAvg: rating?.ratingAvg ?? 0,
+			ratingCount: rating?.ratingCount ?? 0
+		};
+
+		// Only one of the two profile rows exists for a user; updating both keeps
+		// the caller from having to know which role the reviewee holds.
+		await tx
+			.update(studentProfiles)
+			.set(ratingPatch)
+			.where(eq(studentProfiles.userId, input.revieweeId));
+
+		await tx
+			.update(employerProfiles)
+			.set(ratingPatch)
+			.where(eq(employerProfiles.userId, input.revieweeId));
+
+		await tx.insert(notifications).values({
+			userId: input.revieweeId,
+			type: 'REVIEW_RECEIVED',
+			title: `You received a ${input.rating}-star review`,
+			jobId: job.id
+		});
+
+		if (isEmployerReviewingStudent) {
+			const [employerProfile] = await tx
+				.select({ orgName: employerProfiles.orgName })
+				.from(employerProfiles)
+				.where(eq(employerProfiles.userId, job.employerId));
+
+			workRecordId = randomUUID();
+
+			// FR-51: the employer's review of the student is what the signed
+			// record certifies, so the payload copies the review and the job.
+			const payload: WorkRecordPayload = {
+				recordId: workRecordId,
+				studentName: reviewee.name,
+				employerName: employerProfile?.orgName ?? 'Employer',
+				jobTitle: job.title,
+				startDate: job.startDate,
+				endDate: job.endDate,
+				rating: input.rating,
+				comment: input.comment,
+				issuedAt: new Date().toISOString()
+			};
+
+			await tx.insert(workRecords).values({
+				id: workRecordId,
+				jobId: job.id,
+				studentId: input.revieweeId,
+				employerId: job.employerId,
+				reviewId: created.id,
+				payload,
+				signature: signWorkRecord(payload, secret),
+				signatureVersion: CURRENT_SIGNATURE_VERSION
+			});
+
+			await tx.insert(notifications).values({
+				userId: input.revieweeId,
+				type: 'WORK_RECORD_CREATED',
+				title: `Your verified work record for "${job.title}" is ready`,
+				jobId: job.id
+			});
+		}
+
+		const [reviewer] = await tx
+			.select({ name: users.name })
+			.from(users)
+			.where(eq(users.id, input.reviewerId));
+
+		if (!reviewer) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		return { ...created, reviewerName: reviewer.name };
+	});
+
+	return { review, workRecordId };
 }
