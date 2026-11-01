@@ -1,46 +1,111 @@
 # Implementation status
 
-Base path: `/api/v1`. The contract lists 64 operations on 51 paths. Operations not listed here
-return `501 Not Implemented` from the shared skeleton helper. That `501` uses the internal
+Base path: `/api/v1`. The contract lists 64 operations on 51 paths.
+
+`[x]` means the handler is implemented, tested, and no longer returns `501`. `[ ]` means the skeleton
+still returns `501 Not Implemented` from the shared helper. That `501` uses the internal
 `NOT_IMPLEMENTED` code, which is not part of the public `ErrorCode` enum and disappears as each
 endpoint is implemented.
 
 Authentication is provided by Better Auth under `/api/auth/*` and is outside this contract.
 
-## Implemented
+**30 of 64 operations implemented.**
 
-| Operation                                           | Phase |
-| --------------------------------------------------- | ----- |
-| `GET /me`                                           | 1     |
-| `GET /categories`                                   | 1     |
-| `GET /me/student-profile`                           | 2     |
-| `GET /me/employer-profile`                          | 2     |
-| `GET /me/notifications`                             | 2     |
-| `GET /me/notifications/unread-count`                | 2     |
-| `GET /me/saved-jobs`                                | 2     |
-| `GET /me/applications`                              | 2     |
-| `GET /me/jobs`                                      | 2     |
-| `GET /jobs`                                         | 2     |
-| `GET /jobs/{jobId}`                                 | 2     |
-| `GET /users/{userId}/reviews`                       | 2     |
-| `GET /me/work-records`                              | 2     |
-| `GET /work-records`                                 | 2     |
-| `GET /work-records/{recordId}/verify`               | 2     |
-| `GET /me/verification-request`                      | 2     |
-| `POST /jobs`                                        | 3     |
-| `PATCH /jobs/{jobId}`                               | 3     |
-| `DELETE /jobs/{jobId}`                              | 3     |
-| `POST /jobs/{jobId}/applications`                   | 3     |
-| `GET /jobs/{jobId}/applications`                    | 3     |
-| `POST /applications/{applicationId}/withdraw`       | 3     |
-| `GET /applications/{applicationId}/student-profile` | 3     |
-| `POST /me/notifications/{notificationId}/read`      | 3     |
-| `POST /me/notifications/read-all`                   | 3     |
-| `PUT /me/saved-jobs/{jobId}`                        | 3     |
-| `DELETE /me/saved-jobs/{jobId}`                     | 3     |
-| `PATCH /me`                                         | 3     |
-| `PUT /me/student-profile`                           | 3     |
-| `PUT /me/employer-profile`                          | 3     |
+## Checklist
+
+### Account
+
+- [x] `GET /me` — Current user
+- [x] `PATCH /me` — Edit name, phone or email
+- [ ] `PUT /me/avatar` — Upload or replace the avatar image
+- [ ] `GET /users/{userId}/avatar` — Download a user's uploaded avatar
+
+### Student
+
+- [x] `GET /me/student-profile` — Own student profile
+- [x] `PUT /me/student-profile` — Create or replace the student profile
+- [ ] `GET /me/cv` — Download own CV
+- [ ] `PUT /me/cv` — Upload or replace the CV
+- [ ] `DELETE /me/cv` — Remove the CV from the profile
+- [x] `GET /me/applications` — Applications I submitted, newest first
+- [x] `GET /me/saved-jobs` — Bookmarked jobs
+- [x] `PUT /me/saved-jobs/{jobId}` — Bookmark a job (idempotent)
+- [x] `DELETE /me/saved-jobs/{jobId}` — Remove a bookmark (idempotent)
+
+### Jobs
+
+- [x] `GET /me/employer-profile` — Own employer profile
+- [x] `PUT /me/employer-profile` — Create or replace the employer profile
+- [x] `GET /me/jobs` — My jobs with status and applicant count
+- [x] `GET /categories` — Active job categories
+- [x] `GET /jobs` — Search, filter and sort open jobs
+- [x] `POST /jobs` — Post a job
+- [x] `GET /jobs/{jobId}` — Job details
+- [x] `PATCH /jobs/{jobId}` — Edit own job
+- [x] `DELETE /jobs/{jobId}` — Delete own job
+- [ ] `POST /jobs/{jobId}/cancel` — Cancel a job
+- [ ] `POST /jobs/{jobId}/complete` — Mark a job completed
+
+### Applications
+
+- [x] `GET /jobs/{jobId}/applications` — Applicants of one of my jobs
+- [x] `POST /jobs/{jobId}/applications` — Apply to a job
+- [x] `POST /applications/{applicationId}/withdraw` — Withdraw a pending application
+- [ ] `POST /applications/{applicationId}/accept` — Accept an applicant
+- [ ] `POST /applications/{applicationId}/reject` — Reject an applicant
+- [x] `GET /applications/{applicationId}/student-profile` — Profile of the applicant (employer view)
+- [ ] `GET /applications/{applicationId}/cv` — Download the CV attached to an application
+
+### Reviews
+
+- [ ] `POST /jobs/{jobId}/reviews` — Review the other party of a completed job
+- [x] `GET /users/{userId}/reviews` — Average rating and review history of a user
+
+### Notifications
+
+- [x] `GET /me/notifications` — My notifications, newest first
+- [x] `GET /me/notifications/unread-count` — Number for the bell badge
+- [x] `POST /me/notifications/{notificationId}/read` — Mark one notification read
+- [x] `POST /me/notifications/read-all` — Mark all notifications read
+
+### Admin
+
+- [ ] `GET /admin/users` — Search users
+- [ ] `POST /admin/users/{userId}/lock` — Lock an account
+- [ ] `POST /admin/users/{userId}/unlock` — Unlock an account
+- [ ] `GET /admin/moderation-queue` — Jobs needing attention
+- [ ] `POST /admin/jobs/{jobId}/hide` — Hide a job with a reason
+- [ ] `POST /admin/jobs/{jobId}/restore` — Restore a hidden job
+- [ ] `POST /admin/jobs/{jobId}/clear-flag` — Remove the scam warning after checking
+- [ ] `POST /admin/reviews/{reviewId}/remove` — Remove a spam or abusive review
+- [ ] `POST /admin/categories` — Add a category
+- [ ] `PATCH /admin/categories/{categoryId}` — Rename or deactivate a category
+- [ ] `DELETE /admin/categories/{categoryId}` — Delete an unused category
+- [ ] `GET /admin/stats` — Basic platform statistics
+
+### Trust
+
+- [x] `GET /me/verification-request` — Latest verification request of the employer
+- [ ] `POST /me/verification-request` — Ask for the Verified badge
+- [ ] `GET /admin/verification-requests` — Verification queue
+- [ ] `POST /admin/verification-requests/{requestId}/approve` — Approve a request
+- [ ] `POST /admin/verification-requests/{requestId}/reject` — Reject a request with a reason
+- [ ] `POST /jobs/{jobId}/reports` — Report a suspicious job
+
+### AI
+
+- [ ] `GET /me/ai/consent` — Current AI consent
+- [ ] `PUT /me/ai/consent` — Grant or withdraw consent for AI to read the CV
+- [ ] `GET /me/ai/suggestions` — Up to 5 suggested jobs
+- [ ] `GET /jobs/{jobId}/ai/fit` — Why this job fits (or might fit) my CV
+
+### WorkRecords
+
+- [x] `GET /me/work-records` — My signed work records
+- [ ] `PATCH /me/work-records/{recordId}` — Make a record public or private
+- [ ] `GET /me/work-records/{recordId}/card` — Shareable card image
+- [x] `GET /work-records` — Public directory of work records
+- [x] `GET /work-records/{recordId}/verify` — Check a record's signature
 
 ## Contract changes recorded with the implementation
 
