@@ -4,6 +4,18 @@ import { ApiError } from './errors.ts';
 /**
  * Parses a JSON request body and validates it against a Zod schema.
  *
+ * `<TSchema extends z.ZodType>` means "give me a Zod schema". That constraint
+ * lets the body call `schema.safeParse()` and lets `z.infer` read the schema's
+ * output type.
+ *
+ * The return type `Promise<z.infer<TSchema>>` therefore describes the exact
+ * object the caller gets back, instead of `unknown`:
+ *
+ * ```ts
+ * const body = await parseJson(request, rejectSchema);
+ * // body: { reason: string | null }
+ * ```
+ *
  * Malformed JSON and schema failures both become `VALIDATION_ERROR` responses
  * with a field-level `details` array.
  */
