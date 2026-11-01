@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Instructions for coding agents (opencode, Claude Code, Codex, etc.) working in this repository.
-Read this first, then `.agent/schema-review.md` before touching the database schema.
+Read this first, then `.agents/schema-review.md` before touching the database schema.
 
 ## Project
 
@@ -14,28 +14,20 @@ pnpm. Adapter is `adapter-auto`; no deployment target chosen yet.
 
 ## Source of truth
 
-Durable contracts and decisions live in `docs/`. Private scratch notes live in `.tmp/` and
-`.agent/`, which are **gitignored**, so nothing there is published. Do not treat scratch notes as
-application code; copy what is needed into `src/` when adopting it.
+Durable contracts and decisions live in `docs/`. The agent workspace is `.agents/`, which is
+committed: it holds the installed skills, review notes and scratch. Nothing in it is application
+code; copy what is needed into `src/` when adopting it.
 
-| File                                      | Role                                                              |
-| ----------------------------------------- | ----------------------------------------------------------------- |
-| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 64 operations under `/api/v1`          |
-| `docs/contracts/implementation-status.md` | Implemented vs planned operations                                 |
-| `.tmp/schema.ts`                          | DB contract: 17 tables, 12 enums, constraints, indexes, relations |
-| `.tmp/invariants.ts`                      | Transactional service rules + work-record signing                 |
-| `.tmp/README.md`                          | ERD, enforcement matrix, open product decisions                   |
+| File                                      | Role                                                           |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 64 operations under `/api/v1`       |
+| `docs/contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501`       |
+| `docs/contracts/invariants.ts`            | Transactional service rules + work-record signing              |
+| `docs/roadmap.md`                         | Phase plan from the API foundation through deployment          |
+| `src/lib/server/db/product.schema.ts`     | Product tables, enums, constraints and indexes used by the app |
 
-Safe to ignore:
-
-- `.tmp/package.json` — dependency manifest of the contract harness, not of this app.
-- `.tmp/0000_init.sql` — generated. Verified byte-identical to
-  `drizzle-kit generate --dialect postgresql --schema .tmp/schema.ts --casing snake_case`.
-  Regenerate it; never hand-edit it.
-- `.tmp/gen-check/` — transient output from verification; delete when done.
-
-Not present (paths relative to `.tmp/`, referenced by its README, so its checks cannot run):
-`check/`, `docs/SRS.md`, `redocly.yaml`.
+The original design schema and its SQL are not published. The product schema above is what the
+running code uses; `docs/contracts/invariants.ts` is the transaction specification.
 
 **The API contract is provisional.** `docs/contracts/openapi.yaml` describes the intended API, but
 response shapes and error details may change as handlers land. When behavior and the contract
@@ -87,8 +79,8 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Docker Compose provides Postgres, MinIO, and a one-shot `minio-init` job that creates the
   `${S3_BUCKET:-internery-staging}` bucket. MinIO uses the Chainguard image because the upstream
   community images were removed from Docker Hub and Quay in 2025.
-- Product services and API handlers cover the request foundation and the first reads/writes; the
-  real UI is not implemented. The contract `.tmp/schema.ts` is intentionally unchanged.
+- Product services and API handlers cover phases 0 to 3; the frontend is route skeletons with no
+  data loading yet.
 - File retention and garbage collection are agreed but **not implemented**. See
   `docs/decisions/data-retention.md` for the reference-aware cleanup policy and open decisions.
 
@@ -207,7 +199,7 @@ The readability rules above apply to every change. These are the project-specifi
 | AI          | `ai_consents`, `ai_explanations`, `ai_usage`                  |
 | Audit       | `audit_logs`                                                  |
 
-Rules that must be enforced in transactions (`.tmp/invariants.ts`), never by ad-hoc writes:
+Rules that must be enforced in transactions (`docs/contracts/invariants.ts`), never by ad-hoc writes:
 
 - `acceptApplication` / `rejectApplication` — capacity, row lock on the job, auto-`FILLED`.
 - `changeJobStatus` — `HIRING → FILLED → COMPLETED`, `HIRING|FILLED → CANCELLED`; terminal states final.
@@ -226,19 +218,19 @@ The generated auth schema is different: Better Auth declares explicit snake_case
 (`email_verified`, `user_id`, ...). The database therefore has mixed naming: auth tables are
 snake_case and product tables are camelCase. That is intentional.
 
-The product schema therefore no longer matches `.tmp/0000_init.sql`, which was generated with
-`casing: 'snake_case'`. Treat the contract SQL as a reference for constraints and indexes, not as the
+The product schema therefore no longer matches the original design SQL, which was generated with
+`casing: 'snake_case'`. Treat the design SQL as a reference for constraints and indexes, not as the
 source of the app migration.
 
 ## Known issues to settle before implementation
 
-See `.agent/schema-review.md` for evidence and proposed patches.
+See `.agents/schema-review.md` for evidence and proposed patches.
 
-**Documentation portability:** the API contract and durable decisions now live in `docs/`.
-`docs/contracts/openapi.yaml` is the published contract and
-`docs/contracts/implementation-status.md` lists what exists. The DB contract (`schema.ts`), the
-transaction recipes (`invariants.ts`) and the contract README still live in `.tmp/`; move them next.
-Keep `.tmp/` and `.agent/` as private scratch. The current contract is 64 operations on 51 paths.
+**Documentation portability:** contracts, decisions and the roadmap live in `docs/`.
+`docs/contracts/openapi.yaml` is the published contract,
+`docs/contracts/implementation-status.md` is the per-operation checklist, and
+`docs/contracts/invariants.ts` is the transaction specification. The original design schema and its
+SQL are not published. The current contract is 64 operations on 51 paths.
 
 The identity conflict is resolved in favour of Better Auth: the app uses the generated `users`,
 `sessions`, `accounts` and `verifications` tables. The contract's `users` and `user_tokens` tables
@@ -256,7 +248,7 @@ verification-status fields can drift from their status flags.
 - Do not invent contract details. If a decision is missing, write it down and ask.
 - Prefer the readable version even when a shorter version exists. Before finishing, reread the diff
   for names, nesting, comments and whitespace.
-- Copy contract files into `src/` deliberately. Publish durable documentation in `docs/`; keep
-  scratch notes in `.tmp/` and `.agent/`, which are ignored by git.
+- Copy contract files into `src/` deliberately. Publish durable documentation in `docs/` and keep
+  agent notes in `.agents/`, which is committed.
 - Run `pnpm check`, `pnpm test`, and `pnpm lint` before calling work finished.
 - Keep diffs focused; do not reformat unrelated files.

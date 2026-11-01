@@ -4,15 +4,15 @@ Date: 2026-10-21
 
 ## Context
 
-The database contract in `.tmp/schema.ts` assumed a credentials-only identity model:
+The original database contract assumed a credentials-only identity model:
 `users.password_hash` plus `user_tokens`. The app uses Better Auth with the Drizzle adapter. Keeping
 both would duplicate the account record and force every login, verification and password-reset flow
 to reconcile two sources of truth.
 
 ## Decision
 
-Better Auth owns identity. The contract's `users` and `user_tokens` tables were not ported;
-`.tmp/schema.ts` stays unchanged as the original contract.
+Better Auth owns identity. The contract's `users` and `user_tokens` tables were not ported; the
+original contract schema stays unchanged as the reference design.
 
 - UUID ids via `advanced.database.generateId: 'uuid'`.
 - Plural tables via `drizzleAdapter(..., { usePlural: true })`: `users`, `sessions`, `accounts`,

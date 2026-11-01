@@ -8,7 +8,14 @@ implementation and review.
 | File                                 | Purpose                                                  |
 | ------------------------------------ | -------------------------------------------------------- |
 | `contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 64 operations under `/api/v1` |
-| `contracts/implementation-status.md` | Which operations exist and which still return `501`      |
+| `contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501` |
+| `contracts/invariants.ts`            | Transactional service rules and work-record signing      |
+
+## Planning
+
+| File         | Purpose                                               |
+| ------------ | ----------------------------------------------------- |
+| `roadmap.md` | Phase plan from the API foundation through deployment |
 
 The API contract is **provisional**. Update it in the same change that alters a request or response
 shape. When the implementation and the contract disagree, decide which one is right and record the
@@ -25,8 +32,10 @@ change; do not leave the mismatch undocumented.
 | `decisions/data-retention.md`       | Reference-aware file cleanup and retention             |
 | `decisions/minio-staging.md`        | MinIO configuration for local and staging              |
 
-## Still private
+## Agent workspace
 
-`.tmp/` and `.agent/` remain gitignored scratch areas. The database contract (`schema.ts`) and the
-transaction recipes (`invariants.ts`) still live in `.tmp/` and move here in a later step. Private
-review notes, including `.agent/schema-review.md`, stay out of the published docs.
+`.agents/` holds the installed skills, the schema review and scratch notes. It is committed and the
+skills are pinned by `skills-lock.json`.
+
+The original design schema and its SQL are not published. The product schema in
+`src/lib/server/db/product.schema.ts` is what the application uses.

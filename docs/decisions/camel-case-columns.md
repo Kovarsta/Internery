@@ -4,7 +4,7 @@ Date: 2026-10-21
 
 ## Context
 
-The contract in `.tmp/schema.ts` declares columns without explicit names and relies on
+The original contract declares columns without explicit names and relies on
 `casing: 'snake_case'` in both drizzle-kit and the runtime client. The generated Better Auth schema
 already declares explicit snake_case column names.
 
@@ -21,8 +21,8 @@ The database therefore has two naming styles:
 
 ## Consequences
 
-- The product schema no longer matches `.tmp/0000_init.sql`, which was generated with snake_case.
-  The contract SQL remains useful for constraints, indexes and intent, not for column names.
+- The product schema no longer matches the original design SQL, which was generated with snake_case.
+  The design SQL remains useful for constraints, indexes and intent, not for column names.
 - Raw SQL for product tables must quote camelCase identifiers, for example
   `SELECT "employerId" FROM jobs`.
 - Query builders handle quoting automatically; only hand-written SQL is affected.
