@@ -25,7 +25,7 @@ Phase 4  done      transactional core
 Phase 5  next      storage
 ```
 
-35 of 64 API operations are implemented. See the checklist in
+35 of 65 API operations are implemented. See the checklist in
 [`contracts/implementation-status.md`](contracts/implementation-status.md).
 
 ## Done
@@ -36,7 +36,7 @@ Phase 5  next      storage
 - Product schema: profiles, jobs, applications, reviews, notifications, trust, AI, audit
 - Baseline and auth-type migrations applied
 - Eager `user_profiles` creation and lazy `user_moderation`
-- `/api/v1` route tree: 51 paths, 64 operations
+- `/api/v1` route tree: 51 paths, 65 operations
 - Private-storage, avatar, retention and auth-surface decisions recorded
 - Work-record canonical JSON and HMAC helpers, used by the public verify read
 
@@ -142,6 +142,7 @@ The signing and verification helpers live in `src/lib/server/work-record-signatu
 - **M** `DELETE /me/cv` — clear four columns, keep referenced snapshots
 - **M** `GET /applications/{applicationId}/cv` — employer/owner authorization, snapshot key
 - **M** `PUT /me/avatar` — PNG/JPEG, 2 MB, validation
+- **M** `DELETE /me/avatar` — point `avatarKey` at the reserved blank avatar, `204`
 - **S** `GET /users/{userId}/avatar` — public streamed avatar, ETag/cache headers
 - **M** Reference-aware deletion and the 7-day orphan grace period
 - **L** Retention jobs: application CV expiry, orphan sweep, notifications/AI/auth cleanup

@@ -1,6 +1,6 @@
 # Implementation status
 
-Base path: `/api/v1`. The contract lists 64 operations on 51 paths.
+Base path: `/api/v1`. The contract lists 65 operations on 51 paths.
 
 `[x]` means the handler is implemented, tested, and no longer returns `501`. `[ ]` means the skeleton
 still returns `501 Not Implemented` from the shared helper. That `501` uses the internal
@@ -9,7 +9,7 @@ endpoint is implemented.
 
 Authentication is provided by Better Auth under `/api/auth/*` and is outside this contract.
 
-**35 of 64 operations implemented.**
+**36 of 65 operations implemented.**
 
 ## Checklist
 
@@ -17,8 +17,9 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 
 - [x] `GET /me` — Current user
 - [x] `PATCH /me` — Edit name, phone or email
-- [ ] `PUT /me/avatar` — Upload or replace the avatar image
-- [ ] `GET /users/{userId}/avatar` — Download a user's uploaded avatar
+- [ ] `PUT /me/avatar` - Upload or replace the avatar image
+- [ ] `DELETE /me/avatar` - Reset the avatar to the blank placeholder
+- [x] `GET /users/{userId}/avatar` - Download a user's uploaded avatar
 
 ### Student
 
@@ -188,3 +189,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   `signatureVersion` set to the current signer version.
 - The review route fails closed with `500` when `WORK_RECORD_SECRET` is missing, because a stored
   employer review would otherwise never get its work record.
+- `GET /users/{userId}/avatar` is public and streams the object from the private bucket. A missing
+  avatar key and a missing object both answer `404`, so an account without a picture is not
+  distinguishable from an unknown id. The response carries the object's `Content-Type`, `ETag` and
+  `Cache-Control: public, max-age=86400`.

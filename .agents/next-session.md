@@ -2,9 +2,9 @@
 
 ## Current position
 
-Phases 0 through 3 are done: 30 of 64 API operations are implemented, the contracts and roadmap are
-published under `docs/`, and the frontend route skeletons exist. Next is Phase 4, the transactional
-core: accept, reject, cancel, complete, reviews, and the signed work record.
+Phases 0 through 4 are done: 35 of 65 API operations are implemented, the contracts and roadmap are
+published under `docs/`, and the frontend route skeletons exist. Next is Phase 5, storage: the
+`StorageService`, the CV and avatar endpoints, and the retention sweep.
 
 ## Housekeeping
 

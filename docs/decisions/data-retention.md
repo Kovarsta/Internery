@@ -80,6 +80,9 @@ Never delete the object before the database change commits.
 - Purge application CV fields past retention.
 - Sweep `cv/` objects: collect referenced keys from `student_profiles` and `applications`; delete
   unreferenced objects older than 7 days.
+- Sweep `avatars/` objects the same way, collecting referenced keys from `user_profiles.avatarKey`.
+- Never sweep the reserved blank avatar key (`avatars/_blank.png`). It is infrastructure and stays
+  even when no row references it. See `avatar-storage.md`.
 - S3 lifecycle rule for `tmp/` uploads after 24 hours.
 
 ## Open decisions

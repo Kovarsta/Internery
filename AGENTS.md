@@ -20,7 +20,7 @@ code; copy what is needed into `src/` when adopting it.
 
 | File                                      | Role                                                           |
 | ----------------------------------------- | -------------------------------------------------------------- |
-| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 64 operations under `/api/v1`       |
+| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 65 operations under `/api/v1`       |
 | `docs/contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501`       |
 | `docs/contracts/invariants.ts`            | Transactional service rules + work-record signing              |
 | `docs/roadmap.md`                         | Phase plan from the API foundation through deployment          |
@@ -62,7 +62,7 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Migrations `drizzle/0000_pink_thundra.sql` and `drizzle/0001_fair_lightspeed.sql` have been
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
-- The `/api/v1` route tree exists under `src/routes/api/v1` (51 paths, 64 operations). Most handlers
+- The `/api/v1` route tree exists under `src/routes/api/v1` (51 paths, 65 operations). Most handlers
   are skeletons that return `501`; the account, notification, saved-job, application, own-profile and
   job read/write operations are implemented. Shared API helpers live in `src/lib/server/api/`;
   services live in `src/lib/server/services/`. Authentication endpoints are Better Auth's
@@ -230,7 +230,7 @@ See `.agents/schema-review.md` for evidence and proposed patches.
 `docs/contracts/openapi.yaml` is the published contract,
 `docs/contracts/implementation-status.md` is the per-operation checklist, and
 `docs/contracts/invariants.ts` is the transaction specification. The original design schema has been
-retired. The current contract is 64 operations on 51 paths.
+retired. The current contract is 65 operations on 51 paths.
 
 The identity conflict is resolved in favour of Better Auth: the app uses the generated `users`,
 `sessions`, `accounts` and `verifications` tables. The contract's `users` and `user_tokens` tables
