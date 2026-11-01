@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	toApplication,
+	toApplicant,
 	toCategory,
 	toEmployerProfile,
 	toJobDetail,
@@ -14,6 +15,7 @@ import {
 	toWorkRecord,
 	toWorkRecordCard,
 	type ApplicationSource,
+	type ApplicantSource,
 	type EmployerProfileSource,
 	type JobDetailSource,
 	type JobSummarySource,
@@ -207,6 +209,53 @@ describe('toApplication', () => {
 		expect(decided.hasCv).toBe(false);
 		expect(decided.rejectReason).toBe('The position was filled.');
 		expect(decided.decidedAt).toBe('2026-10-02T09:00:00.000Z');
+	});
+});
+
+describe('toApplicant', () => {
+	const applicant: ApplicantSource = {
+		id: '1d2e3f4a-5b6c-4d7e-8f9a-0b1c2d3e4f5a',
+		status: 'PENDING',
+		message: 'I can start next week.',
+		cvKey: 'cv/writer.pdf',
+		createdAt: new Date('2026-10-05T08:00:00Z'),
+		studentName: 'Writer Student',
+		studentUniversity: 'VNU',
+		studentMajor: 'Computer Science',
+		studentRatingAvg: 4.5,
+		studentRatingCount: 2
+	};
+
+	it('maps the employer applicant shape', () => {
+		expect(toApplicant(applicant)).toEqual({
+			id: applicant.id,
+			status: 'PENDING',
+			message: 'I can start next week.',
+			hasCv: true,
+			createdAt: '2026-10-05T08:00:00.000Z',
+			student: {
+				fullName: 'Writer Student',
+				university: 'VNU',
+				major: 'Computer Science',
+				ratingAvg: 4.5,
+				ratingCount: 2
+			}
+		});
+	});
+
+	it('defaults the ratings when the student has no profile', () => {
+		const mapped = toApplicant({
+			...applicant,
+			studentUniversity: null,
+			studentMajor: null,
+			studentRatingAvg: null,
+			studentRatingCount: null,
+			cvKey: null
+		});
+
+		expect(mapped.student.ratingAvg).toBe(0);
+		expect(mapped.student.ratingCount).toBe(0);
+		expect(mapped.hasCv).toBe(false);
 	});
 });
 

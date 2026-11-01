@@ -76,6 +76,8 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   services live in `src/lib/server/services/`. Authentication endpoints are Better Auth's
   `/api/auth/*` and deliberately not duplicated under `/api/v1`. See `src/routes/api/README.md` for
   route conventions and the implementation checklist.
+- Application writes copy the profile CV onto the application, create an in-app notification, and
+  leave email delivery to a later phase.
 - Work-record signatures are HMAC-SHA256 over canonical JSON with sorted keys. The helpers live in
   `src/lib/server/work-record-signature.ts`; the secret is `WORK_RECORD_SECRET`. Phase 4's
   `createReview` still has to call the signer when it creates a record.

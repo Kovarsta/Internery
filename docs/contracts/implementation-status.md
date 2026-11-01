@@ -9,34 +9,38 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 
 ## Implemented
 
-| Operation                                      | Phase |
-| ---------------------------------------------- | ----- |
-| `GET /me`                                      | 1     |
-| `GET /categories`                              | 1     |
-| `GET /me/student-profile`                      | 2     |
-| `GET /me/employer-profile`                     | 2     |
-| `GET /me/notifications`                        | 2     |
-| `GET /me/notifications/unread-count`           | 2     |
-| `GET /me/saved-jobs`                           | 2     |
-| `GET /me/applications`                         | 2     |
-| `GET /me/jobs`                                 | 2     |
-| `GET /jobs`                                    | 2     |
-| `GET /jobs/{jobId}`                            | 2     |
-| `GET /users/{userId}/reviews`                  | 2     |
-| `GET /me/work-records`                         | 2     |
-| `GET /work-records`                            | 2     |
-| `GET /work-records/{recordId}/verify`          | 2     |
-| `GET /me/verification-request`                 | 2     |
-| `POST /jobs`                                   | 3     |
-| `PATCH /jobs/{jobId}`                          | 3     |
-| `DELETE /jobs/{jobId}`                         | 3     |
-| `POST /me/notifications/{notificationId}/read` | 3     |
-| `POST /me/notifications/read-all`              | 3     |
-| `PUT /me/saved-jobs/{jobId}`                   | 3     |
-| `DELETE /me/saved-jobs/{jobId}`                | 3     |
-| `PATCH /me`                                    | 3     |
-| `PUT /me/student-profile`                      | 3     |
-| `PUT /me/employer-profile`                     | 3     |
+| Operation                                           | Phase |
+| --------------------------------------------------- | ----- |
+| `GET /me`                                           | 1     |
+| `GET /categories`                                   | 1     |
+| `GET /me/student-profile`                           | 2     |
+| `GET /me/employer-profile`                          | 2     |
+| `GET /me/notifications`                             | 2     |
+| `GET /me/notifications/unread-count`                | 2     |
+| `GET /me/saved-jobs`                                | 2     |
+| `GET /me/applications`                              | 2     |
+| `GET /me/jobs`                                      | 2     |
+| `GET /jobs`                                         | 2     |
+| `GET /jobs/{jobId}`                                 | 2     |
+| `GET /users/{userId}/reviews`                       | 2     |
+| `GET /me/work-records`                              | 2     |
+| `GET /work-records`                                 | 2     |
+| `GET /work-records/{recordId}/verify`               | 2     |
+| `GET /me/verification-request`                      | 2     |
+| `POST /jobs`                                        | 3     |
+| `PATCH /jobs/{jobId}`                               | 3     |
+| `DELETE /jobs/{jobId}`                              | 3     |
+| `POST /jobs/{jobId}/applications`                   | 3     |
+| `GET /jobs/{jobId}/applications`                    | 3     |
+| `POST /applications/{applicationId}/withdraw`       | 3     |
+| `GET /applications/{applicationId}/student-profile` | 3     |
+| `POST /me/notifications/{notificationId}/read`      | 3     |
+| `POST /me/notifications/read-all`                   | 3     |
+| `PUT /me/saved-jobs/{jobId}`                        | 3     |
+| `DELETE /me/saved-jobs/{jobId}`                     | 3     |
+| `PATCH /me`                                         | 3     |
+| `PUT /me/student-profile`                           | 3     |
+| `PUT /me/employer-profile`                          | 3     |
 
 ## Contract changes recorded with the implementation
 
@@ -93,3 +97,11 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   update against the stored other bound. A non-owner gets `403`, an unknown job `404`.
 - `DELETE /jobs/{jobId}` locks the job row and refuses when any application is `ACCEPTED`, returning
   `409 JOB_HAS_ACCEPTED_APPLICANTS`. Pending applications and saved bookmarks cascade.
+- `POST /jobs/{jobId}/applications` snapshots the profile CV only when `attachCv` is true and a CV
+  exists; a student without one can still apply. Applying to a hidden job returns `404`.
+- Applying again after a withdrawal revives the withdrawn row instead of failing: the status returns
+  to `PENDING` with the new message and CV snapshot, `decidedAt` is cleared, and the application sorts
+  as a fresh submission. Pending, accepted and rejected applications still answer `ALREADY_APPLIED`.
+- Application and job writes create in-app notifications only. Email delivery is not wired yet.
+- `GET /jobs/{jobId}/applications` and `GET /applications/{applicationId}/student-profile` are
+  owner-scoped: an employer who does not own the job gets `403`, not an empty list.

@@ -178,6 +178,34 @@ export type Application = {
 	decidedAt: string | null;
 };
 
+export type ApplicantSource = {
+	id: string;
+	status: ApplicationStatus;
+	message: string | null;
+	cvKey: string | null;
+	createdAt: Date | string;
+	studentName: string;
+	studentUniversity: string | null;
+	studentMajor: string | null;
+	studentRatingAvg: number | null;
+	studentRatingCount: number | null;
+};
+
+export type Applicant = {
+	id: string;
+	status: ApplicationStatus;
+	message: string | null;
+	hasCv: boolean;
+	createdAt: string;
+	student: {
+		fullName: string;
+		university: string | null;
+		major: string | null;
+		ratingAvg: number;
+		ratingCount: number;
+	};
+};
+
 export type MyJobSource = JobSummarySource & {
 	applicantCount: number;
 	isHidden: boolean;
@@ -428,6 +456,25 @@ export function toApplication(application: ApplicationSource): Application {
 		hasCv: application.cvKey !== null,
 		createdAt: toIsoString(application.createdAt),
 		decidedAt: application.decidedAt === null ? null : toIsoString(application.decidedAt)
+	};
+}
+
+/** Maps an applicant projection to the employer's applicant shape. */
+export function toApplicant(applicant: ApplicantSource): Applicant {
+	return {
+		id: applicant.id,
+		status: applicant.status,
+		message: applicant.message,
+		hasCv: applicant.cvKey !== null,
+		createdAt: toIsoString(applicant.createdAt),
+		student: {
+			fullName: applicant.studentName,
+			university: applicant.studentUniversity,
+			major: applicant.studentMajor,
+			// The left join returns nulls when the student never created a profile.
+			ratingAvg: applicant.studentRatingAvg ?? 0,
+			ratingCount: applicant.studentRatingCount ?? 0
+		}
 	};
 }
 

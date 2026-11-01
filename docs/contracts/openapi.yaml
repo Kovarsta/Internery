@@ -564,7 +564,10 @@ paths:
       summary: Apply to a job
       description: |
         Creates a `PENDING` application. With `attachCv: true` (default) the student's current
-        CV is copied onto the application. Side effects: in-app notification and email to the employer.
+        CV is copied onto the application; a student without a CV can still apply.
+        Side effects: in-app notification to the employer. Email delivery is not wired yet.
+        A hidden job returns `404`, like the job detail read. Applying again after a withdrawal
+        revives the withdrawn application with the new message and CV snapshot.
       x-us: [US-12]
       x-fr: [FR-15]
       x-roles: [STUDENT]
@@ -574,17 +577,20 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/ApplyRequest' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '201':
           description: Application created.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Application' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409':
           description: '`ALREADY_APPLIED` (AC-12.3) or `JOB_NOT_HIRING` (AC-12.4).'
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/Invalid' }
     get:
       tags: [Applications]
       operationId: listJobApplications
@@ -599,31 +605,39 @@ paths:
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/PageSize' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200':
           description: Page of applicants.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/PagedApplicants' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
   /applications/{applicationId}/withdraw:
     post:
       tags: [Applications]
       operationId: withdrawApplication
       summary: Withdraw a pending application
-      description: Only from `PENDING` (AC-14.2). Notifies the employer.
+      description: |
+        Only from `PENDING` (AC-14.2). Notifies the employer. The withdrawal timestamp is
+        recorded in `decidedAt`, so a non-pending application always has one.
       x-us: [US-14]
       x-fr: [FR-17]
       x-roles: [STUDENT]
       parameters:
         - { $ref: '#/components/parameters/ApplicationId' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200':
           description: Application after the change.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Application' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
   /applications/{applicationId}/accept:
     post:
       tags: [Applications]
@@ -693,6 +707,7 @@ paths:
       parameters:
         - { $ref: '#/components/parameters/ApplicationId' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200':
           description: Applicant profile.
           content:
@@ -700,6 +715,7 @@ paths:
               schema: { $ref: '#/components/schemas/StudentProfile' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
   /applications/{applicationId}/cv:
     get:
       tags: [Applications]
