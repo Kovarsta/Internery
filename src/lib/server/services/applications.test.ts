@@ -20,6 +20,12 @@ const testDatabase = testDatabaseUrl
 	? drizzle(postgres(testDatabaseUrl, { max: 1 }), { schema })
 	: null;
 
+// The race test needs two connections that can hold a transaction at the same
+// time; the shared client above is limited to one.
+const concurrentDatabase = testDatabaseUrl
+	? drizzle(postgres(testDatabaseUrl, { max: 4 }), { schema })
+	: null;
+
 const studentId = randomUUID();
 const writerStudentId = randomUUID();
 const secondStudentId = randomUUID();
@@ -37,6 +43,7 @@ const hiddenJobId = randomUUID();
 const rejectJobId = randomUUID();
 const acceptJobId = randomUUID();
 const fullJobId = randomUUID();
+const raceJobId = randomUUID();
 
 const firstApplicationId = randomUUID();
 const secondApplicationId = randomUUID();
@@ -46,6 +53,8 @@ const acceptFirstApplicationId = randomUUID();
 const acceptSecondApplicationId = randomUUID();
 const fullAcceptedApplicationId = randomUUID();
 const fullPendingApplicationId = randomUUID();
+const raceFirstApplicationId = randomUUID();
+const raceSecondApplicationId = randomUUID();
 
 describe.skipIf(!testDatabase)('applications', () => {
 	beforeAll(async () => {
@@ -144,6 +153,7 @@ describe.skipIf(!testDatabase)('applications', () => {
 				job(rejectJobId, 'Reject job'),
 				job(acceptJobId, 'Accept job'),
 				job(fullJobId, 'Full job'),
+				job(raceJobId, 'Race job'),
 				{ ...job(filledJobId, 'Filled job'), status: 'FILLED' },
 				{ ...job(hiddenJobId, 'Hidden job'), isHidden: true }
 			]);
@@ -208,6 +218,18 @@ describe.skipIf(!testDatabase)('applications', () => {
 				jobId: fullJobId,
 				studentId: secondStudentId,
 				status: 'PENDING'
+			},
+			{
+				id: raceFirstApplicationId,
+				jobId: raceJobId,
+				studentId: writerStudentId,
+				status: 'PENDING'
+			},
+			{
+				id: raceSecondApplicationId,
+				jobId: raceJobId,
+				studentId: secondStudentId,
+				status: 'PENDING'
 			}
 		]);
 	});
@@ -237,6 +259,10 @@ describe.skipIf(!testDatabase)('applications', () => {
 				])
 			);
 		await testDatabase.$client.end();
+
+		if (concurrentDatabase) {
+			await concurrentDatabase.$client.end();
+		}
 	});
 
 	describe('listMyApplications', () => {
@@ -689,6 +715,47 @@ describe.skipIf(!testDatabase)('applications', () => {
 			await expect(acceptApplication(testDatabase, employerId, randomUUID())).rejects.toMatchObject(
 				{ code: 'NOT_FOUND' }
 			);
+		});
+
+		it('accepts only one of two applications racing for the last position', async () => {
+			if (!concurrentDatabase) {
+				return;
+			}
+
+			const results = await Promise.allSettled([
+				acceptApplication(concurrentDatabase, employerId, raceFirstApplicationId),
+				acceptApplication(concurrentDatabase, employerId, raceSecondApplicationId)
+			]);
+
+			const fulfilled = results.filter((result) => result.status === 'fulfilled');
+			const rejected = results.filter((result) => result.status === 'rejected');
+
+			expect(fulfilled).toHaveLength(1);
+			expect(rejected).toHaveLength(1);
+
+			// The loser can fail on the capacity check or, if it got the lock
+			// after the job flipped, on the job status. Both are correct.
+			const rejection = rejected[0];
+
+			if (rejection?.status === 'rejected') {
+				expect(['JOB_NOT_HIRING', 'POSITIONS_FULL']).toContain(rejection.reason.code);
+			}
+
+			const accepted = await concurrentDatabase
+				.select({ id: schema.applications.id })
+				.from(schema.applications)
+				.where(
+					and(eq(schema.applications.jobId, raceJobId), eq(schema.applications.status, 'ACCEPTED'))
+				);
+
+			expect(accepted).toHaveLength(1);
+
+			const [job] = await concurrentDatabase
+				.select({ status: schema.jobs.status })
+				.from(schema.jobs)
+				.where(eq(schema.jobs.id, raceJobId));
+
+			expect(job?.status).toBe('FILLED');
 		});
 	});
 });
