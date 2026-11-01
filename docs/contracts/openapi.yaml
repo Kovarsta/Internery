@@ -675,7 +675,10 @@ paths:
       tags: [Applications]
       operationId: rejectApplication
       summary: Reject an applicant
-      description: Only from `PENDING`. The optional reason is shown to the student. Notifies the student.
+      description: |
+        Only from `PENDING`. The optional reason is shown to the student. Notifies the student.
+        Ownership is checked before status, so another employer gets `403` rather than learning
+        whether the application is still pending. An empty body means "no reason".
       x-us: [US-24]
       x-fr: [FR-27]
       x-roles: [EMPLOYER]
@@ -686,13 +689,16 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/RejectRequest' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200':
           description: Application after the change.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Application' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
   /applications/{applicationId}/student-profile:
     get:
       tags: [Applications]

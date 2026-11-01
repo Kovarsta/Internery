@@ -164,6 +164,96 @@ export async function findApplicationForStudent(
 	return application ?? null;
 }
 
+/** Returns one application by id, used to shape the response after a decision. */
+export async function findApplicationById(
+	database: Database,
+	applicationId: string
+): Promise<ApplicationListRecord | null> {
+	const [application] = await database
+		.select(applicationSelection)
+		.from(applications)
+		.innerJoin(jobs, eq(jobs.id, applications.jobId))
+		.innerJoin(users, eq(users.id, jobs.employerId))
+		.leftJoin(employerProfiles, eq(employerProfiles.userId, jobs.employerId))
+		.where(eq(applications.id, applicationId))
+		.limit(1);
+
+	return application ?? null;
+}
+
+/**
+ * Rejects a pending application.
+ *
+ * Only the employer who owns the job may decide, and only while the application
+ * is `PENDING` (AC-24.5). The reason, when given, is stored on the application
+ * and sent with the notification to the student.
+ */
+export async function rejectApplication(
+	database: Database,
+	employerId: string,
+	applicationId: string,
+	reason: string | null
+): Promise<ApplicationListRecord> {
+	await database.transaction(async (tx) => {
+		const [application] = await tx
+			.select({
+				id: applications.id,
+				jobId: applications.jobId,
+				studentId: applications.studentId,
+				status: applications.status
+			})
+			.from(applications)
+			.where(eq(applications.id, applicationId))
+			.for('update');
+
+		if (!application) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		const [job] = await tx
+			.select({ id: jobs.id, title: jobs.title, employerId: jobs.employerId })
+			.from(jobs)
+			.where(eq(jobs.id, application.jobId))
+			.limit(1);
+
+		if (!job) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		// Ownership is checked before the status so a non-owner learns nothing
+		// about an application they cannot decide.
+		if (job.employerId !== employerId) {
+			throw new DomainError('FORBIDDEN');
+		}
+
+		if (application.status !== 'PENDING') {
+			throw new DomainError('INVALID_STATE_TRANSITION');
+		}
+
+		await tx
+			.update(applications)
+			.set({ status: 'REJECTED', rejectReason: reason, decidedAt: new Date() })
+			.where(eq(applications.id, applicationId));
+
+		await tx.insert(notifications).values({
+			userId: application.studentId,
+			type: 'APPLICATION_REJECTED',
+			title: `Your application for "${job.title}" was not accepted`,
+			body: reason,
+			jobId: job.id,
+			applicationId
+		});
+	});
+
+	const application = await findApplicationById(database, applicationId);
+
+	if (!application) {
+		throw new Error('The rejected application could not be read back.');
+	}
+
+	return application;
+}
+
 /**
  * Returns one page of the applicants to an employer's job, newest first.
  *

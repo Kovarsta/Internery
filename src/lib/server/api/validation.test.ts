@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { ApiError } from './errors.ts';
-import { parseJson, parseParams, parseQuery } from './validation.ts';
+import { parseJson, parseOptionalJson, parseParams, parseQuery } from './validation.ts';
 
 async function expectApiError(promise: Promise<unknown>): Promise<ApiError> {
 	try {
@@ -79,5 +79,35 @@ describe('parseQuery', () => {
 		const url = new URL('http://localhost?page=2');
 
 		expect(parseQuery(url, schema)).toEqual({ page: 2 });
+	});
+});
+
+describe('parseOptionalJson', () => {
+	const schema = z.object({ reason: z.string().max(10).nullable().optional() });
+
+	it('returns null for an empty body', async () => {
+		const request = new Request('http://localhost', { method: 'POST' });
+
+		await expect(parseOptionalJson(request, schema)).resolves.toBeNull();
+	});
+
+	it('parses a body when one is sent', async () => {
+		const request = new Request('http://localhost', {
+			method: 'POST',
+			body: JSON.stringify({ reason: 'Filled' })
+		});
+
+		await expect(parseOptionalJson(request, schema)).resolves.toEqual({ reason: 'Filled' });
+	});
+
+	it('still rejects malformed JSON', async () => {
+		const request = new Request('http://localhost', {
+			method: 'POST',
+			body: 'not json'
+		});
+
+		const error = await expectApiError(parseOptionalJson(request, schema));
+
+		expect(error.code).toBe('VALIDATION_ERROR');
 	});
 });

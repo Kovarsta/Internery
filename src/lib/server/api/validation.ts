@@ -11,15 +11,28 @@ export async function parseJson<TSchema extends z.ZodType>(
 	request: Request,
 	schema: TSchema
 ): Promise<z.infer<TSchema>> {
-	let body: unknown;
+	const text = await readBodyText(request);
 
-	try {
-		body = await request.json();
-	} catch {
-		throw new ApiError('VALIDATION_ERROR', 'Request body must be valid JSON.');
+	return parseWithSchema(schema, parseJsonText(text));
+}
+
+/**
+ * Parses an optional JSON body.
+ *
+ * Returns null for an empty body, so a request body the contract marks as
+ * optional does not have to be sent as `{}`.
+ */
+export async function parseOptionalJson<TSchema extends z.ZodType>(
+	request: Request,
+	schema: TSchema
+): Promise<z.infer<TSchema> | null> {
+	const text = await readBodyText(request);
+
+	if (text.trim() === '') {
+		return null;
 	}
 
-	return parseWithSchema(schema, body);
+	return parseWithSchema(schema, parseJsonText(text));
 }
 
 /** Validates SvelteKit route parameters against a Zod schema. */
@@ -28,6 +41,22 @@ export function parseParams<TSchema extends z.ZodType>(
 	schema: TSchema
 ): z.infer<TSchema> {
 	return parseWithSchema(schema, params);
+}
+
+async function readBodyText(request: Request): Promise<string> {
+	try {
+		return await request.text();
+	} catch {
+		throw new ApiError('VALIDATION_ERROR', 'Request body must be valid JSON.');
+	}
+}
+
+function parseJsonText(text: string): unknown {
+	try {
+		return JSON.parse(text);
+	} catch {
+		throw new ApiError('VALIDATION_ERROR', 'Request body must be valid JSON.');
+	}
 }
 
 /** Validates URL search parameters against a Zod schema. */

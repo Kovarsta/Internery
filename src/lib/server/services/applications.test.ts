@@ -9,6 +9,7 @@ import {
 	getApplicantProfile,
 	listJobApplicants,
 	listMyApplications,
+	rejectApplication,
 	withdrawApplication
 } from './applications.ts';
 
@@ -31,10 +32,12 @@ const applyJobId = randomUUID();
 const duplicateJobId = randomUUID();
 const filledJobId = randomUUID();
 const hiddenJobId = randomUUID();
+const rejectJobId = randomUUID();
 
 const firstApplicationId = randomUUID();
 const secondApplicationId = randomUUID();
 const profileApplicationId = randomUUID();
+const rejectApplicationId = randomUUID();
 
 describe.skipIf(!testDatabase)('applications', () => {
 	beforeAll(async () => {
@@ -122,6 +125,7 @@ describe.skipIf(!testDatabase)('applications', () => {
 				job(profileJobId, 'Profile job'),
 				job(applyJobId, 'Apply job'),
 				job(duplicateJobId, 'Duplicate job'),
+				job(rejectJobId, 'Reject job'),
 				{ ...job(filledJobId, 'Filled job'), status: 'FILLED' },
 				{ ...job(hiddenJobId, 'Hidden job'), isHidden: true }
 			]);
@@ -153,6 +157,13 @@ describe.skipIf(!testDatabase)('applications', () => {
 				message: 'Profile application',
 				status: 'PENDING',
 				cvKey: 'cv/writer.pdf'
+			},
+			{
+				id: rejectApplicationId,
+				jobId: rejectJobId,
+				studentId: writerStudentId,
+				message: 'Please consider me.',
+				status: 'PENDING'
 			}
 		]);
 	});
@@ -483,6 +494,65 @@ describe.skipIf(!testDatabase)('applications', () => {
 				rejectReason: null,
 				decidedAt: null
 			});
+		});
+	});
+
+	describe('rejectApplication', () => {
+		it('rejects a pending application and notifies the student', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			const application = await rejectApplication(
+				testDatabase,
+				employerId,
+				rejectApplicationId,
+				'The position was filled.'
+			);
+
+			expect(application.status).toBe('REJECTED');
+			expect(application.rejectReason).toBe('The position was filled.');
+			expect(application.decidedAt).not.toBeNull();
+
+			const [notification] = await testDatabase
+				.select({
+					type: schema.notifications.type,
+					body: schema.notifications.body
+				})
+				.from(schema.notifications)
+				.where(
+					and(
+						eq(schema.notifications.userId, writerStudentId),
+						eq(schema.notifications.applicationId, rejectApplicationId)
+					)
+				);
+
+			expect(notification?.type).toBe('APPLICATION_REJECTED');
+			expect(notification?.body).toBe('The position was filled.');
+		});
+
+		it('refuses an application that is not pending', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				rejectApplication(testDatabase, employerId, secondApplicationId, null)
+			).rejects.toMatchObject({ code: 'INVALID_STATE_TRANSITION' });
+		});
+
+		it('refuses another employer and an unknown application', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				rejectApplication(testDatabase, otherEmployerId, rejectApplicationId, null)
+			).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+			await expect(
+				rejectApplication(testDatabase, employerId, randomUUID(), null)
+			).rejects.toMatchObject({ code: 'NOT_FOUND' });
 		});
 	});
 });

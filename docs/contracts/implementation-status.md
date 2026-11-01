@@ -52,7 +52,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - [x] `POST /jobs/{jobId}/applications` — Apply to a job
 - [x] `POST /applications/{applicationId}/withdraw` — Withdraw a pending application
 - [ ] `POST /applications/{applicationId}/accept` — Accept an applicant
-- [ ] `POST /applications/{applicationId}/reject` — Reject an applicant
+- [x] `POST /applications/{applicationId}/reject` — Reject an applicant
 - [x] `GET /applications/{applicationId}/student-profile` — Profile of the applicant (employer view)
 - [ ] `GET /applications/{applicationId}/cv` — Download the CV attached to an application
 
@@ -170,3 +170,6 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - Application and job writes create in-app notifications only. Email delivery is not wired yet.
 - `GET /jobs/{jobId}/applications` and `GET /applications/{applicationId}/student-profile` are
   owner-scoped: an employer who does not own the job gets `403`, not an empty list.
+- `POST /applications/{applicationId}/reject` locks the application row, checks ownership before
+  status, and only moves `PENDING → REJECTED`. The optional reason is stored and sent with the
+  student's notification. An empty request body is treated as "no reason".
