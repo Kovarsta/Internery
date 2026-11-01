@@ -5,6 +5,8 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
 import {
+	cancelJob,
+	completeJob,
 	createJob,
 	deleteJob,
 	findJobDetail,
@@ -24,11 +26,16 @@ const unverifiedEmployerId = randomUUID();
 const categoryId = randomUUID();
 const draftCategoryId = randomUUID();
 const inactiveCategoryId = randomUUID();
+const lifecycleCategoryId = randomUUID();
 
 const baristaJobId = randomUUID();
 const tutorJobId = randomUUID();
 const hiddenJobId = randomUUID();
 const filledJobId = randomUUID();
+const cancelJobId = randomUUID();
+const cancelFilledJobId = randomUUID();
+const completeJobId = randomUUID();
+const completedJobId = randomUUID();
 
 const defaultFilters = {
 	verifiedOnly: false,
@@ -37,7 +44,7 @@ const defaultFilters = {
 	offset: 0
 };
 
-describe.skipIf(!testDatabase)('job reads', () => {
+describe.skipIf(!testDatabase)('jobs', () => {
 	beforeAll(async () => {
 		if (!testDatabase) {
 			return;
@@ -93,6 +100,11 @@ describe.skipIf(!testDatabase)('job reads', () => {
 			id: inactiveCategoryId,
 			name: `Inactive ${inactiveCategoryId}`,
 			isActive: false
+		});
+
+		await testDatabase.insert(schema.categories).values({
+			id: lifecycleCategoryId,
+			name: `Lifecycle ${lifecycleCategoryId}`
 		});
 
 		await testDatabase.insert(schema.jobs).values([
@@ -157,6 +169,65 @@ describe.skipIf(!testDatabase)('job reads', () => {
 				positionsNeeded: 1,
 				status: 'FILLED',
 				createdAt: new Date('2026-01-04T00:00:00Z')
+			},
+			{
+				id: cancelJobId,
+				employerId: unverifiedEmployerId,
+				categoryId: lifecycleCategoryId,
+				title: 'Job to cancel',
+				description: 'Lifecycle fixture.',
+				location: 'Hanoi',
+				schedule: 'Mornings',
+				salaryAmount: 30_000,
+				salaryType: 'HOURLY',
+				startDate: '2026-12-01',
+				endDate: '2026-12-20',
+				positionsNeeded: 2
+			},
+			{
+				id: cancelFilledJobId,
+				employerId: unverifiedEmployerId,
+				categoryId: lifecycleCategoryId,
+				title: 'Filled job to cancel',
+				description: 'Lifecycle fixture.',
+				location: 'Hanoi',
+				schedule: 'Mornings',
+				salaryAmount: 30_000,
+				salaryType: 'HOURLY',
+				startDate: '2026-12-01',
+				endDate: '2026-12-20',
+				positionsNeeded: 1,
+				status: 'FILLED'
+			},
+			{
+				id: completeJobId,
+				employerId: unverifiedEmployerId,
+				categoryId: lifecycleCategoryId,
+				title: 'Job to complete',
+				description: 'Lifecycle fixture.',
+				location: 'Hanoi',
+				schedule: 'Mornings',
+				salaryAmount: 30_000,
+				salaryType: 'HOURLY',
+				startDate: '2026-12-01',
+				endDate: '2026-12-20',
+				positionsNeeded: 1,
+				status: 'FILLED'
+			},
+			{
+				id: completedJobId,
+				employerId: unverifiedEmployerId,
+				categoryId: lifecycleCategoryId,
+				title: 'Completed job',
+				description: 'Lifecycle fixture.',
+				location: 'Hanoi',
+				schedule: 'Mornings',
+				salaryAmount: 30_000,
+				salaryType: 'HOURLY',
+				startDate: '2026-12-01',
+				endDate: '2026-12-20',
+				positionsNeeded: 1,
+				status: 'COMPLETED'
 			}
 		]);
 
@@ -175,6 +246,26 @@ describe.skipIf(!testDatabase)('job reads', () => {
 				jobId: tutorJobId,
 				studentId: verifiedEmployerId,
 				status: 'ACCEPTED'
+			},
+			{
+				jobId: cancelJobId,
+				studentId: verifiedEmployerId,
+				status: 'PENDING'
+			},
+			{
+				jobId: cancelJobId,
+				studentId: unverifiedEmployerId,
+				status: 'ACCEPTED'
+			},
+			{
+				jobId: completeJobId,
+				studentId: verifiedEmployerId,
+				status: 'ACCEPTED'
+			},
+			{
+				jobId: completeJobId,
+				studentId: unverifiedEmployerId,
+				status: 'PENDING'
 			}
 		]);
 	});
@@ -190,7 +281,14 @@ describe.skipIf(!testDatabase)('job reads', () => {
 			.where(inArray(schema.jobs.employerId, [verifiedEmployerId, unverifiedEmployerId]));
 		await testDatabase
 			.delete(schema.categories)
-			.where(inArray(schema.categories.id, [categoryId, draftCategoryId, inactiveCategoryId]));
+			.where(
+				inArray(schema.categories.id, [
+					categoryId,
+					draftCategoryId,
+					inactiveCategoryId,
+					lifecycleCategoryId
+				])
+			);
 		await testDatabase
 			.delete(schema.employerProfiles)
 			.where(inArray(schema.employerProfiles.userId, [verifiedEmployerId, unverifiedEmployerId]));
@@ -573,6 +671,120 @@ describe.skipIf(!testDatabase)('job reads', () => {
 
 		await expect(deleteJob(testDatabase, verifiedEmployerId, job.id)).rejects.toMatchObject({
 			code: 'FORBIDDEN'
+		});
+	});
+
+	describe('cancelJob', () => {
+		it('cancels a hiring job and notifies pending and accepted students', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			const job = await cancelJob(testDatabase, unverifiedEmployerId, cancelJobId);
+
+			expect(job).toMatchObject({ id: cancelJobId, status: 'CANCELLED' });
+
+			const [row] = await testDatabase
+				.select({ cancelledAt: schema.jobs.cancelledAt })
+				.from(schema.jobs)
+				.where(eq(schema.jobs.id, cancelJobId));
+
+			expect(row?.cancelledAt).not.toBeNull();
+
+			const notifications = await testDatabase
+				.select({ userId: schema.notifications.userId, type: schema.notifications.type })
+				.from(schema.notifications)
+				.where(eq(schema.notifications.jobId, cancelJobId));
+
+			expect(notifications).toHaveLength(2);
+			expect(notifications.map((entry) => entry.userId).sort()).toEqual(
+				[verifiedEmployerId, unverifiedEmployerId].sort()
+			);
+			expect(notifications.every((entry) => entry.type === 'JOB_CANCELLED')).toBe(true);
+		});
+
+		it('cancels a filled job', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			const job = await cancelJob(testDatabase, unverifiedEmployerId, cancelFilledJobId);
+
+			expect(job.status).toBe('CANCELLED');
+		});
+
+		it('refuses a completed job', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				cancelJob(testDatabase, unverifiedEmployerId, completedJobId)
+			).rejects.toMatchObject({ code: 'INVALID_STATE_TRANSITION' });
+		});
+
+		it('refuses another employer and an unknown job', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				cancelJob(testDatabase, verifiedEmployerId, completeJobId)
+			).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+			await expect(
+				cancelJob(testDatabase, unverifiedEmployerId, randomUUID())
+			).rejects.toMatchObject({ code: 'NOT_FOUND' });
+		});
+	});
+
+	describe('completeJob', () => {
+		it('completes a filled job and notifies accepted students only', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			const job = await completeJob(testDatabase, unverifiedEmployerId, completeJobId);
+
+			expect(job.status).toBe('COMPLETED');
+
+			const [row] = await testDatabase
+				.select({ completedAt: schema.jobs.completedAt })
+				.from(schema.jobs)
+				.where(eq(schema.jobs.id, completeJobId));
+
+			expect(row?.completedAt).not.toBeNull();
+
+			const notifications = await testDatabase
+				.select({ userId: schema.notifications.userId, type: schema.notifications.type })
+				.from(schema.notifications)
+				.where(eq(schema.notifications.jobId, completeJobId));
+
+			expect(notifications).toEqual([{ userId: verifiedEmployerId, type: 'JOB_COMPLETED' }]);
+		});
+
+		it('refuses a job that is not filled', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				completeJob(testDatabase, verifiedEmployerId, baristaJobId)
+			).rejects.toMatchObject({ code: 'INVALID_STATE_TRANSITION' });
+		});
+
+		it('refuses another employer and an unknown job', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				completeJob(testDatabase, verifiedEmployerId, cancelFilledJobId)
+			).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+			await expect(
+				completeJob(testDatabase, unverifiedEmployerId, randomUUID())
+			).rejects.toMatchObject({ code: 'NOT_FOUND' });
 		});
 	});
 });
