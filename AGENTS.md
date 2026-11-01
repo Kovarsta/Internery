@@ -26,8 +26,8 @@ code; copy what is needed into `src/` when adopting it.
 | `docs/roadmap.md`                         | Phase plan from the API foundation through deployment          |
 | `src/lib/server/db/product.schema.ts`     | Product tables, enums, constraints and indexes used by the app |
 
-The original design schema and its SQL are not published. The product schema above is what the
-running code uses; `docs/contracts/invariants.ts` is the transaction specification.
+The original design schema has been retired. The product schema above is what the running code uses;
+`docs/contracts/invariants.ts` is the transaction specification.
 
 **The API contract is provisional.** `docs/contracts/openapi.yaml` describes the intended API, but
 response shapes and error details may change as handlers land. When behavior and the contract
@@ -229,8 +229,8 @@ See `.agents/schema-review.md` for evidence and proposed patches.
 **Documentation portability:** contracts, decisions and the roadmap live in `docs/`.
 `docs/contracts/openapi.yaml` is the published contract,
 `docs/contracts/implementation-status.md` is the per-operation checklist, and
-`docs/contracts/invariants.ts` is the transaction specification. The original design schema and its
-SQL are not published. The current contract is 64 operations on 51 paths.
+`docs/contracts/invariants.ts` is the transaction specification. The original design schema has been
+retired. The current contract is 64 operations on 51 paths.
 
 The identity conflict is resolved in favour of Better Auth: the app uses the generated `users`,
 `sessions`, `accounts` and `verifications` tables. The contract's `users` and `user_tokens` tables

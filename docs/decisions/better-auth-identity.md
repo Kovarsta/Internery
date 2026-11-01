@@ -12,7 +12,7 @@ to reconcile two sources of truth.
 ## Decision
 
 Better Auth owns identity. The contract's `users` and `user_tokens` tables were not ported; the
-original contract schema stays unchanged as the reference design.
+design schema that declared them has been retired.
 
 - UUID ids via `advanced.database.generateId: 'uuid'`.
 - Plural tables via `drizzleAdapter(..., { usePlural: true })`: `users`, `sessions`, `accounts`,

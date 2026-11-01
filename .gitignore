@@ -1,6 +1,6 @@
 node_modules
 
-# Temporary documents store
+# Temporary scratch: scripts, generated output, throwaway files
 .tmp
 
 # Output

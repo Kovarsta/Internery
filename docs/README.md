@@ -37,5 +37,5 @@ change; do not leave the mismatch undocumented.
 `.agents/` holds the installed skills, the schema review and scratch notes. It is committed and the
 skills are pinned by `skills-lock.json`.
 
-The original design schema and its SQL are not published. The product schema in
+The original design schema has been retired. The product schema in
 `src/lib/server/db/product.schema.ts` is what the application uses.

@@ -12,5 +12,4 @@ core: accept, reject, cancel, complete, reviews, and the signed work record.
   handler.
 - `.agents/decisions/` duplicates `docs/decisions/`. Two copies differ (`better-auth-surface.md`,
   `data-retention.md`); keep one source.
-- The database contract (`schema.ts`) and its README are not published yet.
 - `pnpm lint` still fails on scaffold files with CRLF line endings.

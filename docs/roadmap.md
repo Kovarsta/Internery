@@ -10,7 +10,7 @@ validation, auth/roles, service logic, error mapping and tests exist and the `50
 Reference files: [`contracts/openapi.yaml`](contracts/openapi.yaml) (API contract),
 [`contracts/implementation-status.md`](contracts/implementation-status.md) (per-operation checklist)
 and [`contracts/invariants.ts`](contracts/invariants.ts) (transaction recipes). The original design
-schema is not published.
+schema was retired.
 
 Difficulty labels are relative: **S** small, **M** medium, **L** large, **XL** extra large.
 
@@ -207,9 +207,6 @@ styling. Build after the backend endpoints are real and tested, easiest first.
 
 ## Deferred maintenance
 
-- Move the DB contract (`schema.ts`) and the contract README into `docs/contracts/` when they are
-  ready to publish. The API contract, the roadmap, the transaction recipes and the durable decisions
-  are already in `docs/`.
 - Keep `docs/contracts/openapi.yaml` and `docs/contracts/implementation-status.md` current with each
   implemented operation. The contract is provisional; record each deliberate divergence instead of
   bending the code to match it.
