@@ -21,10 +21,11 @@ Phase 0  done      seed data and account status semantics
 Phase 1  done      errors, validation, auth, pagination, mappers, tests
 Phase 2  done      every read
 Phase 3  done      every straightforward write
-Phase 4  next      transactional core
+Phase 4  done      transactional core
+Phase 5  next      storage
 ```
 
-30 of 64 API operations are implemented. See the checklist in
+35 of 64 API operations are implemented. See the checklist in
 [`contracts/implementation-status.md`](contracts/implementation-status.md).
 
 ## Done
@@ -111,10 +112,12 @@ Email changes are delegated to Better Auth.
 - **M** `POST /jobs/{jobId}/applications` — copy the CV snapshot, notify the employer
 - **M** `POST /applications/{applicationId}/withdraw`
 
-## Phase 4 — transactional core
+## Phase 4 - transactional core
 
-Status: in progress. Reject, accept, cancel and complete are implemented; reviews and the concurrency
-tests remain.
+Status: done. Accept, reject, cancel and complete run under row locks, and reviews recalculate the
+reviewee's rating under a lock on the reviewee's user row. The employer-to-student review writes the
+signed work record in the same transaction. Database-backed tests cover both concurrency races: two
+accepts for the last position, and two reviews of the same student on different jobs.
 
 These need row locks, state machines and notification fan-out.
 
@@ -124,12 +127,12 @@ These need row locks, state machines and notification fan-out.
 - **M** `POST /jobs/{jobId}/complete`
 - **M** `POST /jobs/{jobId}/reviews` — participant checks, rating recalculation
 - **L** Work-record creation inside the employer-to-student review
-- **M** Rating recalculation that locks the target profile row
+- **M** Rating recalculation serialised by a lock on the reviewee's user row
 - **M** Concurrency test: two accepts for the last position; reviews for the same student across
   different jobs
 
-The signing and verification helpers already exist in `src/lib/server/work-record-signature.ts`; the
-review flow still has to call the signer when it creates a record.
+The signing and verification helpers live in `src/lib/server/work-record-signature.ts`, and
+`createReview` calls the signer when it creates a record.
 
 ## Phase 5 — storage
 

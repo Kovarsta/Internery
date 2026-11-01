@@ -9,7 +9,7 @@ endpoint is implemented.
 
 Authentication is provided by Better Auth under `/api/auth/*` and is outside this contract.
 
-**30 of 64 operations implemented.**
+**35 of 64 operations implemented.**
 
 ## Checklist
 
@@ -58,7 +58,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 
 ### Reviews
 
-- [ ] `POST /jobs/{jobId}/reviews` — Review the other party of a completed job
+- [x] `POST /jobs/{jobId}/reviews` - Review the other party of a completed job
 - [x] `GET /users/{userId}/reviews` — Average rating and review history of a user
 
 ### Notifications
@@ -180,3 +180,11 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - `POST /jobs/{jobId}/cancel` allows `HIRING` and `FILLED`, sets `cancelledAt`, and notifies pending
   and accepted students. `POST /jobs/{jobId}/complete` allows `FILLED` only, sets `completedAt`, and
   notifies accepted students. Both lock the job row and reject other transitions with `409`.
+- `POST /jobs/{jobId}/reviews` locks the job, then the reviewee's user row. The user row is what
+  serialises rating recalculation: two reviews of the same student on different jobs would otherwise
+  each store an average that misses the other. The duplicate check runs under the same lock, so a
+  repeated review is `409 ALREADY_REVIEWED` without relying on a unique-violation catch. An
+  employer's review of a student also writes the signed work record in the same transaction, with
+  `signatureVersion` set to the current signer version.
+- The review route fails closed with `500` when `WORK_RECORD_SECRET` is missing, because a stored
+  employer review would otherwise never get its work record.

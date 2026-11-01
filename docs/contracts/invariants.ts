@@ -267,16 +267,33 @@ export async function createReview(
 			input.reviewerId === job.employerId && acceptedIds.includes(input.revieweeId);
 		if (!studentToEmployer && !employerToStudent) throw new DomainError('NOT_A_PARTICIPANT');
 
-		let review: typeof s.reviews.$inferSelect;
-		try {
-			[review] = await tx
-				.insert(s.reviews)
-				.values({ ...input, comment: input.comment ?? null })
-				.returning();
-		} catch (e) {
-			if (isUniqueViolation(e)) throw new DomainError('ALREADY_REVIEWED'); // AC-26.2 / 27.2
-			throw e;
-		}
+		// Lock the reviewee before the duplicate check and the recalculation;
+		// otherwise two reviews for the same person on different jobs would each
+		// store an average computed without the other.
+		const [reviewee] = await tx
+			.select({ name: users.name })
+			.from(users)
+			.where(eq(users.id, input.revieweeId))
+			.for('update');
+		if (!reviewee) throw new DomainError('NOT_FOUND');
+
+		const [existing] = await tx
+			.select({ id: s.reviews.id })
+			.from(s.reviews)
+			.where(
+				and(
+					eq(s.reviews.jobId, job.id),
+					eq(s.reviews.reviewerId, input.reviewerId),
+					eq(s.reviews.revieweeId, input.revieweeId)
+				)
+			)
+			.limit(1);
+		if (existing) throw new DomainError('ALREADY_REVIEWED'); // AC-26.2 / 27.2
+
+		const [review] = await tx
+			.insert(s.reviews)
+			.values({ ...input, comment: input.comment ?? null })
+			.returning();
 		await recalcRating(tx, input.revieweeId);
 		await tx.insert(s.notifications).values({
 			userId: input.revieweeId,
@@ -288,7 +305,6 @@ export async function createReview(
 		let recordId: string | null = null;
 		if (employerToStudent) {
 			// FR-51: the employer's review of the student issues the signed work record
-			const [student] = await tx.select().from(users).where(eq(users.id, input.revieweeId));
 			const [org] = await tx
 				.select()
 				.from(s.employerProfiles)
@@ -296,7 +312,7 @@ export async function createReview(
 			recordId = randomUUID();
 			const payload: s.WorkRecordPayload = {
 				recordId,
-				studentName: student.fullName,
+				studentName: reviewee.name,
 				employerName: org?.orgName ?? 'Employer',
 				jobTitle: job.title,
 				startDate: job.startDate,
