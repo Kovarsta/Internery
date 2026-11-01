@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Admin verification queue (`/admin/verification`).
+	 *
+	 * Will serve `GET /admin/verification-requests` plus approve and reject. Skeleton only: the
+	 * handlers still return `501`.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

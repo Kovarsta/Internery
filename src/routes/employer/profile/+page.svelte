@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Company profile (`/employer/profile`).
+	 *
+	 * Reads and replaces the organisation fields through `GET` and `PUT /me/employer-profile`.
+	 * Verification state is owned by the trust flow and is read-only here. Skeleton only.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

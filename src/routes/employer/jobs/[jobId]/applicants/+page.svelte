@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Applicants (`/employer/jobs/[jobId]/applicants`).
+	 *
+	 * Serves `GET /jobs/{jobId}/applications`, the applicant profile via
+	 * `GET /applications/{applicationId}/student-profile`, and later accept/reject. Skeleton only.
+	 */
+
 	import { page } from '$app/state';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';

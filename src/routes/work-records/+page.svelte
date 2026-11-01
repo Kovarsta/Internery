@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Public work records (`/work-records`).
+	 *
+	 * Serves `GET /work-records`, the directory of records students chose to publish. Empty until
+	 * the review flow issues a record. Skeleton only.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

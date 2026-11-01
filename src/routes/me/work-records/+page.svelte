@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * My work records (`/me/work-records`).
+	 *
+	 * Serves `GET /me/work-records`. Records are issued by the review flow, which does not exist
+	 * yet, so this page stays empty until then. Skeleton only.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Account hub (`/me`).
+	 *
+	 * Index of everything tied to the signed-in account. Account fields come from `GET /me` and
+	 * are edited through `PATCH /me`. Skeleton only: the summary is not loaded.
+	 */
+
 	import { resolve } from '$app/paths';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';

@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Notifications (`/me/notifications`).
+	 *
+	 * Serves `GET /me/notifications`, the unread badge from `GET /me/notifications/unread-count`,
+	 * and the read actions. Skeleton only: the list is static.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

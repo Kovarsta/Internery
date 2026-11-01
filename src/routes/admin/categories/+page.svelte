@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Admin categories (`/admin/categories`).
+	 *
+	 * Will serve the category create, update and delete operations under `/admin/categories`.
+	 * The public list already comes from `GET /categories`. Skeleton only.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

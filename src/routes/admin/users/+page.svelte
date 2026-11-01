@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Admin users (`/admin/users`).
+	 *
+	 * Will serve `GET /admin/users` plus the lock and unlock actions. Skeleton only: the handler
+	 * still returns `501`.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

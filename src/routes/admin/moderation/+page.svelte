@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Moderation queue (`/admin/moderation`).
+	 *
+	 * Will serve `GET /admin/moderation-queue` plus hide, restore and clear-flag. Skeleton only:
+	 * the handlers still return `501`.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

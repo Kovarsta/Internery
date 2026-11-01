@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * My applications (`/me/applications`).
+	 *
+	 * Serves `GET /me/applications`, optionally filtered by status, plus
+	 * `POST /applications/{applicationId}/withdraw` for pending rows. Skeleton only.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

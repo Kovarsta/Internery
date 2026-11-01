@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Student profile (`/me/profile`).
+	 *
+	 * Reads and replaces the editable fields through `GET` and `PUT /me/student-profile`. The CV
+	 * block belongs to the storage phase and is not part of the form yet. Skeleton only.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

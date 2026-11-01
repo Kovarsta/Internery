@@ -1,4 +1,12 @@
 <script lang="ts">
+	/**
+	 * Job detail (`/jobs/[jobId]`).
+	 *
+	 * Serves `GET /jobs/{jobId}` and, for students, the save and apply actions through
+	 * `PUT /me/saved-jobs/{jobId}` and `POST /jobs/{jobId}/applications`. The endpoint already
+	 * hides the student-only fields from other visitors. Skeleton only: no data load yet.
+	 */
+
 	import { page } from '$app/state';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';

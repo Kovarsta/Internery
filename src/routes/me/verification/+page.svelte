@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Employer verification (`/me/verification`).
+	 *
+	 * Reads the latest request with `GET /me/verification-request`; submitting one arrives with
+	 * the trust phase (`POST /me/verification-request`). Skeleton only.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Saved jobs (`/me/saved-jobs`).
+	 *
+	 * Serves `GET /me/saved-jobs`; closed jobs stay in the list, hidden jobs do not. Removing a
+	 * bookmark uses `DELETE /me/saved-jobs/{jobId}`. Skeleton only.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

@@ -1,4 +1,12 @@
 <script lang="ts">
+	/**
+	 * Root layout.
+	 *
+	 * Loads the global stylesheet, renders the navigation and wraps every page in the same
+	 * container. The header switches between the guest links and the links for the signed-in
+	 * role; `data.user` comes from `+layout.server.ts`.
+	 */
+
 	import { resolve } from '$app/paths';
 	import './layout.css';
 	import favicon from '#lib/assets/favicon.svg';

@@ -1,4 +1,12 @@
 <script lang="ts">
+	/**
+	 * Home (`/`).
+	 *
+	 * Entry point for guests and signed-in users: links into job search and registration.
+	 * The featured categories and latest jobs will come from `GET /categories` and `GET /jobs`.
+	 * Skeleton only: no data load yet.
+	 */
+
 	import { resolve } from '$app/paths';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';

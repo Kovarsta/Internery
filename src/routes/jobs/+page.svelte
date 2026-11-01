@@ -1,4 +1,12 @@
 <script lang="ts">
+	/**
+	 * Job search (`/jobs`).
+	 *
+	 * Serves `GET /jobs` for the result page and `GET /categories` for the filter. Both are
+	 * paged; the contract also supports keyword, location, salary, date and verified filters.
+	 * Skeleton only: the filter form and the result cards are static.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

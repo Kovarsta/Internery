@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Page header used by every route page.
+	 *
+	 * Renders the page title and an optional one-line description. Keep the copy short: it is the
+	 * first thing a student or employer reads on the page.
+	 */
+
 	type Props = {
 		title: string;
 		description?: string;

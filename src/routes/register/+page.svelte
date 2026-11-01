@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Create account (`/register`).
+	 *
+	 * Registration and the verification email are handled by Better Auth under `/api/auth/*`;
+	 * the server assigns the role. Skeleton only: the form is not wired.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

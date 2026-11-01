@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Sign in (`/login`).
+	 *
+	 * Posts the credentials to Better Auth at `/api/auth/sign-in/email`; the session cookie it
+	 * returns is read by the root layout. Skeleton only: the form is not wired.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

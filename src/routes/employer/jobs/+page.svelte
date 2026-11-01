@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * My jobs (`/employer/jobs`).
+	 *
+	 * Serves `GET /me/jobs`, which already returns `applicantCount`, `acceptedCount`, `isHidden`
+	 * and `hiddenReason` per job. Links to the create and applicant pages. Skeleton only.
+	 */
+
 	import { resolve } from '$app/paths';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';

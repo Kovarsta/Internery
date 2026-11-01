@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Verify a work record (`/work-records/[recordId]/verify`).
+	 *
+	 * Serves `GET /work-records/{recordId}/verify`, which recomputes the HMAC and answers
+	 * `valid: true|false` for a public record. Skeleton only: no fetch yet.
+	 */
+
 	import { page } from '$app/state';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';

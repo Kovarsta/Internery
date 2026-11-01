@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Admin hub (`/admin`).
+	 *
+	 * Index of the moderation areas. Every admin operation is still a `501` skeleton on the API
+	 * side; these pages exist so the navigation can grow with them.
+	 */
+
 	import { resolve } from '$app/paths';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';

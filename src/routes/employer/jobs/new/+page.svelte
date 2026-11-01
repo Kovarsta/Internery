@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Post a job (`/employer/jobs/new`).
+	 *
+	 * Serves `POST /jobs`; the category list comes from `GET /categories`. The server validates
+	 * the date range, requires an active category, and flags scam keywords. Skeleton only.
+	 */
+
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
 </script>

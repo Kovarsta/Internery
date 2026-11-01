@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * Dashed placeholder note for a page that is not wired yet.
+	 *
+	 * The content names the endpoint or behaviour that is missing, so the skeleton explains
+	 * itself instead of looking broken. Delete the notice when the page gets its data load.
+	 */
+
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
