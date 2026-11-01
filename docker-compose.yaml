@@ -53,6 +53,27 @@ services:
     command: ['mb', '--ignore-existing', 'local/${S3_BUCKET:-internery-staging}']
     restart: 'no'
 
+  # Uploads the shared blank avatar once, then exits. Reset points at this key,
+  # so it has to exist before any reset can be served. Safe to re-run.
+  minio-blank-avatar:
+    image: cgr.dev/chainguard/minio-client:latest
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      MC_HOST_local: http://${MINIO_ROOT_USER:-admin}:${MINIO_ROOT_PASSWORD:-change-me-please}@minio:9000
+    volumes:
+      - ./docker/minio/blank-avatar.png:/tmp/blank-avatar.png:ro
+    entrypoint: ['/usr/bin/mc']
+    command:
+      [
+        'cp',
+        '--quiet',
+        '/tmp/blank-avatar.png',
+        'local/${S3_BUCKET:-internery-staging}/avatars/_blank.png'
+      ]
+    restart: 'no'
+
 volumes:
   internery:
   minio-data:

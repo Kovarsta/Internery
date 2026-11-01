@@ -3,6 +3,7 @@ import { DomainError } from '#lib/server/api/errors.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { users } from '#lib/server/db/auth.schema.ts';
 import { userProfiles } from '#lib/server/db/product.schema.ts';
+import { BLANK_AVATAR_KEY } from '#lib/server/storage/keys.ts';
 
 export type UserProfileRecord = typeof userProfiles.$inferSelect;
 export type UserRecord = typeof users.$inferSelect;
@@ -45,6 +46,25 @@ export async function getAvatarKey(database: Database, userId: string): Promise<
 		.limit(1);
 
 	return profile?.avatarKey ?? null;
+}
+
+/**
+ * Resets a user's avatar to the shared blank placeholder.
+ *
+ * Points `avatarKey` at the reserved key rather than clearing it, so the OAuth
+ * provider image stays shadowed and the avatar route still has bytes to serve.
+ * Safe to repeat: the second call writes the same key.
+ */
+export async function resetAvatar(database: Database, userId: string): Promise<void> {
+	// The profile row is created with the user, but the upsert keeps this
+	// correct for an account made before that hook existed.
+	await database
+		.insert(userProfiles)
+		.values({ userId, avatarKey: BLANK_AVATAR_KEY })
+		.onConflictDoUpdate({
+			target: userProfiles.userId,
+			set: { avatarKey: BLANK_AVATAR_KEY }
+		});
 }
 
 /**

@@ -4,7 +4,8 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
-import { updateUserAccount, getAvatarKey } from './users.ts';
+import { BLANK_AVATAR_KEY } from '#lib/server/storage/keys.ts';
+import { getAvatarKey, resetAvatar, updateUserAccount } from './users.ts';
 
 // Set TEST_DATABASE_URL to run the database-backed tests.
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -100,5 +101,17 @@ describe.skipIf(!testDatabase)('users', () => {
 
 		await expect(getAvatarKey(testDatabase, testUserId)).resolves.toBeNull();
 		await expect(getAvatarKey(testDatabase, randomUUID())).resolves.toBeNull();
+	});
+
+	it('resets the avatar to the blank key, twice without changing the result', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		await resetAvatar(testDatabase, testUserId);
+		await expect(getAvatarKey(testDatabase, testUserId)).resolves.toBe(BLANK_AVATAR_KEY);
+
+		await resetAvatar(testDatabase, testUserId);
+		await expect(getAvatarKey(testDatabase, testUserId)).resolves.toBe(BLANK_AVATAR_KEY);
 	});
 });
