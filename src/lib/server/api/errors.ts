@@ -39,6 +39,7 @@ export type ErrorCode =
 
 /** Error codes that service functions may throw. */
 export type DomainErrorCode =
+	| 'VALIDATION_ERROR'
 	| 'NOT_FOUND'
 	| 'FORBIDDEN'
 	| 'INVALID_STATE_TRANSITION'
@@ -138,11 +139,13 @@ export class ApiError extends Error {
 /** An error thrown by a service when a business rule fails. */
 export class DomainError extends Error {
 	readonly code: DomainErrorCode;
+	readonly details?: ValidationDetail[];
 
-	constructor(code: DomainErrorCode, message = defaultMessage(code)) {
+	constructor(code: DomainErrorCode, message = defaultMessage(code), details?: ValidationDetail[]) {
 		super(message);
 		this.name = 'DomainError';
 		this.code = code;
+		this.details = details;
 	}
 }
 
@@ -164,7 +167,7 @@ export function handleApiError(error: unknown): Response {
 	}
 
 	if (error instanceof DomainError) {
-		return createErrorResponse(error.code, error.message, undefined, requestId);
+		return createErrorResponse(error.code, error.message, error.details, requestId);
 	}
 
 	console.error(`[api:${requestId}]`, error);

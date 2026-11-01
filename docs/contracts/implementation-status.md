@@ -27,6 +27,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 | `GET /work-records`                            | 2     |
 | `GET /work-records/{recordId}/verify`          | 2     |
 | `GET /me/verification-request`                 | 2     |
+| `POST /jobs`                                   | 3     |
 | `POST /me/notifications/{notificationId}/read` | 3     |
 | `POST /me/notifications/read-all`              | 3     |
 | `PUT /me/saved-jobs/{jobId}`                   | 3     |
@@ -81,3 +82,8 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - Work records are signed with HMAC-SHA256 over canonical JSON with recursively sorted keys. The
   secret is `WORK_RECORD_SECRET`. Rotation is a re-sign with a bumped `signatureVersion`; old keys
   are not archived, so records issued under a removed version stop verifying by design.
+- `POST /jobs` rejects an unknown or inactive category with `422 VALIDATION_ERROR` on `categoryId`
+  instead of letting the foreign key surface as an internal error.
+- The scam scan sets `needsReview` and `flaggedTerms` from a starter keyword list. A hit never blocks
+  or hides the posting; it only queues the job for admin review. The list lives in
+  `src/lib/server/services/scam-terms.ts` and needs product sign-off.

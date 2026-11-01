@@ -444,6 +444,8 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/JobInput' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '201':
           description: Created job.
           content:

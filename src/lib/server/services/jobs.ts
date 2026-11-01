@@ -1,6 +1,9 @@
 import { and, count, desc, eq, gte, lte, sql, type SQL } from 'drizzle-orm';
+import { DomainError } from '#lib/server/api/errors.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { applications, categories, employerProfiles, jobs } from '#lib/server/db/product.schema.ts';
+import { findActiveCategory } from './categories.ts';
+import { findScamTerms } from './job-moderation.ts';
 
 type JobRecord = typeof jobs.$inferSelect;
 type EmployerProfileRecord = typeof employerProfiles.$inferSelect;
@@ -213,6 +216,77 @@ export async function findJobDetail(
 		.limit(1);
 
 	return job ?? null;
+}
+
+export type NewJobInput = {
+	title: string;
+	categoryId: string;
+	description: string;
+	location: string;
+	schedule: string;
+	salaryAmount: number;
+	salaryType: JobRecord['salaryType'];
+	startDate: string;
+	endDate: string;
+	positionsNeeded: number;
+};
+
+/**
+ * Creates a job in `HIRING` state and returns it as the detail projection.
+ *
+ * The scam scan only flags the job for the admin queue; it never blocks posting
+ * (AC-43.1). An unknown or inactive category throws `VALIDATION_ERROR` with the
+ * field, because the foreign key alone would surface as an internal error.
+ */
+export async function createJob(
+	database: Database,
+	employerId: string,
+	input: NewJobInput
+): Promise<JobDetailRecord> {
+	const category = await findActiveCategory(database, input.categoryId);
+
+	if (!category) {
+		throw new DomainError('VALIDATION_ERROR', 'Request validation failed.', [
+			{
+				field: 'categoryId',
+				message: 'The category does not exist or is no longer active.'
+			}
+		]);
+	}
+
+	const flaggedTerms = findScamTerms(`${input.title} ${input.description}`);
+
+	const [inserted] = await database
+		.insert(jobs)
+		.values({
+			employerId,
+			title: input.title,
+			categoryId: input.categoryId,
+			description: input.description,
+			location: input.location,
+			schedule: input.schedule,
+			salaryAmount: input.salaryAmount,
+			salaryType: input.salaryType,
+			startDate: input.startDate,
+			endDate: input.endDate,
+			positionsNeeded: input.positionsNeeded,
+			// A flag, not a block: the job stays visible until an admin decides.
+			needsReview: flaggedTerms.length > 0,
+			flaggedTerms
+		})
+		.returning({ id: jobs.id });
+
+	if (!inserted) {
+		throw new Error('The job insert did not return a row.');
+	}
+
+	const job = await findJobDetail(database, inserted.id);
+
+	if (!job) {
+		throw new Error('The inserted job could not be read back.');
+	}
+
+	return job;
 }
 
 function buildSearchConditions(filters: JobSearchFilters): (SQL | undefined)[] {

@@ -1,12 +1,12 @@
 import type { RequestHandler } from './$types';
 import { z } from 'zod';
+import { requireRole } from '#lib/server/api/auth.ts';
 import { handleApiError } from '#lib/server/api/errors.ts';
-import { toJobSummary } from '#lib/server/api/mappers.ts';
-import { notImplemented } from '#lib/server/api/not-implemented.ts';
+import { toJobDetail, toJobSummary } from '#lib/server/api/mappers.ts';
 import { paged, parsePagination } from '#lib/server/api/pagination.ts';
-import { parseQuery } from '#lib/server/api/validation.ts';
+import { parseJson, parseQuery } from '#lib/server/api/validation.ts';
 import { db } from '#lib/server/db/index.ts';
-import { searchOpenJobs } from '#lib/server/services/jobs.ts';
+import { createJob, searchOpenJobs } from '#lib/server/services/jobs.ts';
 
 /** Treats an empty query value as absent before coercing to an integer. */
 const optionalAmount = z.preprocess(
@@ -49,6 +49,25 @@ const querySchema = z
 		{ path: ['endTo'], message: 'endTo must be on or after startFrom.' }
 	);
 
+/** Job fields enforced by the contract; `endDate` must be strictly after `startDate`. */
+const createJobSchema = z
+	.object({
+		title: z.string().trim().min(1).max(200),
+		categoryId: z.uuid(),
+		description: z.string().trim().min(1),
+		location: z.string().trim().min(1).max(300),
+		schedule: z.string().trim().min(1),
+		salaryAmount: z.number().int().positive(),
+		salaryType: z.enum(['HOURLY', 'DAILY', 'FIXED']),
+		startDate: z.iso.date(),
+		endDate: z.iso.date(),
+		positionsNeeded: z.number().int().min(1)
+	})
+	.refine((job) => job.endDate > job.startDate, {
+		path: ['endDate'],
+		message: 'endDate must be after startDate.'
+	});
+
 /** GET /jobs — searchJobs */
 export const GET: RequestHandler = async (event) => {
 	try {
@@ -76,4 +95,14 @@ export const GET: RequestHandler = async (event) => {
 };
 
 /** POST /jobs — createJob */
-export const POST: RequestHandler = () => notImplemented();
+export const POST: RequestHandler = async (event) => {
+	try {
+		const user = requireRole(event.locals, ['EMPLOYER']);
+		const body = await parseJson(event.request, createJobSchema);
+		const job = await createJob(db, user.id, body);
+
+		return Response.json(toJobDetail(job, null), { status: 201 });
+	} catch (error) {
+		return handleApiError(error);
+	}
+};

@@ -4,7 +4,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
-import { findJobDetail, listEmployerJobs, searchOpenJobs } from './jobs.ts';
+import { createJob, findJobDetail, listEmployerJobs, searchOpenJobs } from './jobs.ts';
 
 // Set TEST_DATABASE_URL to run the database-backed tests.
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -15,6 +15,8 @@ const testDatabase = testDatabaseUrl
 const verifiedEmployerId = randomUUID();
 const unverifiedEmployerId = randomUUID();
 const categoryId = randomUUID();
+const draftCategoryId = randomUUID();
+const inactiveCategoryId = randomUUID();
 
 const baristaJobId = randomUUID();
 const tutorJobId = randomUUID();
@@ -73,6 +75,17 @@ describe.skipIf(!testDatabase)('job reads', () => {
 		await testDatabase.insert(schema.categories).values({
 			id: categoryId,
 			name: `Job reads ${categoryId}`
+		});
+
+		await testDatabase.insert(schema.categories).values({
+			id: draftCategoryId,
+			name: `Job creation ${draftCategoryId}`
+		});
+
+		await testDatabase.insert(schema.categories).values({
+			id: inactiveCategoryId,
+			name: `Inactive ${inactiveCategoryId}`,
+			isActive: false
 		});
 
 		await testDatabase.insert(schema.jobs).values([
@@ -164,13 +177,13 @@ describe.skipIf(!testDatabase)('job reads', () => {
 			return;
 		}
 
-		const jobIds = [baristaJobId, tutorJobId, hiddenJobId, filledJobId];
-
+		// Deleting the jobs cascades to their applications and saved bookmarks.
 		await testDatabase
-			.delete(schema.applications)
-			.where(inArray(schema.applications.jobId, jobIds));
-		await testDatabase.delete(schema.jobs).where(inArray(schema.jobs.id, jobIds));
-		await testDatabase.delete(schema.categories).where(eq(schema.categories.id, categoryId));
+			.delete(schema.jobs)
+			.where(inArray(schema.jobs.employerId, [verifiedEmployerId, unverifiedEmployerId]));
+		await testDatabase
+			.delete(schema.categories)
+			.where(inArray(schema.categories.id, [categoryId, draftCategoryId, inactiveCategoryId]));
 		await testDatabase
 			.delete(schema.employerProfiles)
 			.where(inArray(schema.employerProfiles.userId, [verifiedEmployerId, unverifiedEmployerId]));
@@ -326,5 +339,99 @@ describe.skipIf(!testDatabase)('job reads', () => {
 		});
 
 		await expect(findJobDetail(testDatabase, randomUUID())).resolves.toBeNull();
+	});
+
+	it('creates a job that is visible in search immediately', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const job = await createJob(testDatabase, unverifiedEmployerId, {
+			title: 'Weekend stock assistant',
+			categoryId: draftCategoryId,
+			description: 'Arrange shelves on Saturday mornings.',
+			location: 'Da Nang',
+			schedule: 'Saturday 8:00-12:00',
+			salaryAmount: 40_000,
+			salaryType: 'HOURLY',
+			startDate: '2026-12-01',
+			endDate: '2026-12-20',
+			positionsNeeded: 2
+		});
+
+		expect(job).toMatchObject({
+			status: 'HIRING',
+			needsReview: false,
+			isHidden: false,
+			categoryName: `Job creation ${draftCategoryId}`,
+			acceptedCount: 0,
+			positionsNeeded: 2
+		});
+
+		const page = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId: draftCategoryId
+		});
+
+		expect(page.items.map((item) => item.id)).toContain(job.id);
+	});
+
+	it('flags scam terms without blocking the post', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const job = await createJob(testDatabase, unverifiedEmployerId, {
+			title: 'Việc nhẹ lương cao tại nhà',
+			categoryId: draftCategoryId,
+			description: 'Chỉ cần đặt cọc 200.000đ để nhận việc.',
+			location: 'Hanoi',
+			schedule: 'Flexible',
+			salaryAmount: 500_000,
+			salaryType: 'DAILY',
+			startDate: '2026-12-01',
+			endDate: '2026-12-20',
+			positionsNeeded: 5
+		});
+
+		expect(job.needsReview).toBe(true);
+
+		const [row] = await testDatabase
+			.select({ flaggedTerms: schema.jobs.flaggedTerms })
+			.from(schema.jobs)
+			.where(eq(schema.jobs.id, job.id));
+
+		expect(row?.flaggedTerms).toEqual(expect.arrayContaining(['đặt cọc', 'việc nhẹ lương cao']));
+
+		const page = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId: draftCategoryId
+		});
+
+		expect(page.items.map((item) => item.id)).toContain(job.id);
+	});
+
+	it('rejects an inactive category with a field error', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		await expect(
+			createJob(testDatabase, unverifiedEmployerId, {
+				title: 'Stock assistant',
+				categoryId: inactiveCategoryId,
+				description: 'Arrange shelves.',
+				location: 'Hanoi',
+				schedule: 'Mornings',
+				salaryAmount: 40_000,
+				salaryType: 'HOURLY',
+				startDate: '2026-12-01',
+				endDate: '2026-12-20',
+				positionsNeeded: 1
+			})
+		).rejects.toMatchObject({
+			code: 'VALIDATION_ERROR',
+			details: [{ field: 'categoryId' }]
+		});
 	});
 });
