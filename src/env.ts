@@ -27,5 +27,20 @@ export const variables = defineEnvVars({
 	WORK_RECORD_SECRET: {
 		description:
 			'Secret used to sign and verify work records with HMAC-SHA256. Rotating it invalidates every existing signature.'
+	},
+	S3_ENDPOINT: {
+		description: 'S3-compatible endpoint, e.g. `http://localhost:9000` for MinIO.'
+	},
+	S3_REGION: {
+		description: 'Signing region. MinIO ignores it; use `us-east-1` unless the provider says otherwise.'
+	},
+	S3_BUCKET: {
+		description: 'Bucket that holds CVs and avatars. Created by the compose `minio-init` job.'
+	},
+	S3_ACCESS_KEY_ID: {
+		description: 'Access key for the storage bucket. Server-only; never exposed to the browser.'
+	},
+	S3_SECRET_ACCESS_KEY: {
+		description: 'Secret key for the storage bucket. Server-only; never exposed to the browser.'
 	}
 });

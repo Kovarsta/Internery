@@ -23,6 +23,7 @@
 		"auth:schema": "auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes && node scripts/normalize-auth-schema.mjs && prettier --write src/lib/server/db/auth.schema.ts"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3.1161.0",
 		"@node-rs/argon2": "^2.2.2",
 		"resend": "^6.34.1",
 		"zod": "^4.6.7"
