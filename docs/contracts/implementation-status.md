@@ -43,15 +43,15 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - [x] `GET /jobs/{jobId}` — Job details
 - [x] `PATCH /jobs/{jobId}` — Edit own job
 - [x] `DELETE /jobs/{jobId}` — Delete own job
-- [ ] `POST /jobs/{jobId}/cancel` — Cancel a job
-- [ ] `POST /jobs/{jobId}/complete` — Mark a job completed
+- [x] `POST /jobs/{jobId}/cancel` — Cancel a job
+- [x] `POST /jobs/{jobId}/complete` — Mark a job completed
 
 ### Applications
 
 - [x] `GET /jobs/{jobId}/applications` — Applicants of one of my jobs
 - [x] `POST /jobs/{jobId}/applications` — Apply to a job
 - [x] `POST /applications/{applicationId}/withdraw` — Withdraw a pending application
-- [ ] `POST /applications/{applicationId}/accept` — Accept an applicant
+- [x] `POST /applications/{applicationId}/accept` — Accept an applicant
 - [x] `POST /applications/{applicationId}/reject` — Reject an applicant
 - [x] `GET /applications/{applicationId}/student-profile` — Profile of the applicant (employer view)
 - [ ] `GET /applications/{applicationId}/cv` — Download the CV attached to an application
@@ -173,3 +173,10 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - `POST /applications/{applicationId}/reject` locks the application row, checks ownership before
   status, and only moves `PENDING → REJECTED`. The optional reason is stored and sent with the
   student's notification. An empty request body is treated as "no reason".
+- `POST /applications/{applicationId}/accept` locks the application then the job, so concurrent
+  accepts for the last position cannot both succeed. It refuses a non-`PENDING` application, a job
+  that is not `HIRING`, and a full job (`POSITIONS_FULL`). The last acceptance moves the job to
+  `FILLED` and notifies the remaining pending applicants.
+- `POST /jobs/{jobId}/cancel` allows `HIRING` and `FILLED`, sets `cancelledAt`, and notifies pending
+  and accepted students. `POST /jobs/{jobId}/complete` allows `FILLED` only, sets `completedAt`, and
+  notifies accepted students. Both lock the job row and reject other transitions with `409`.

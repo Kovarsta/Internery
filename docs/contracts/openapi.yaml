@@ -520,39 +520,47 @@ paths:
       summary: Cancel a job
       description: |
         `HIRING` or `FILLED` to `CANCELLED`. `COMPLETED` jobs cannot be cancelled (AC-19.2).
-        The job leaves search. The UI must confirm first (AC-19.3).
+        The job leaves search on its own, because search only returns `HIRING`. Pending and accepted
+        students are notified. The UI must confirm first (AC-19.3).
       x-us: [US-19]
       x-fr: [FR-22]
       x-roles: [EMPLOYER]
       parameters:
         - { $ref: '#/components/parameters/JobId' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200':
           description: Job after the change.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/JobDetail' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
   /jobs/{jobId}/complete:
     post:
       tags: [Jobs]
       operationId: completeJob
       summary: Mark a job completed
-      description: Only from `FILLED` (AC-25.2). Unlocks reviews for both sides.
+      description: |
+        Only from `FILLED` (AC-25.2). Unlocks reviews for both sides. Accepted students are notified.
       x-us: [US-25]
       x-fr: [FR-29]
       x-roles: [EMPLOYER]
       parameters:
         - { $ref: '#/components/parameters/JobId' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200':
           description: Job after the change.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/JobDetail' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
 
   # ---------------------------------------------------------- Applications
   /jobs/{jobId}/applications:
@@ -644,16 +652,18 @@ paths:
       operationId: acceptApplication
       summary: Accept an applicant
       description: |
-        Runs in one transaction holding a row lock on the job (see `db/invariants.ts`).
-        Fails with `POSITIONS_FULL` when the job is already full (AC-24.3).
+        Runs in one transaction holding row locks on the application and the job (see
+        `contracts/invariants.ts`). Fails with `POSITIONS_FULL` when the job is already full (AC-24.3).
         When accepted applicants reach `positionsNeeded` the job becomes `FILLED`
-        and `jobFilled` is true (AC-24.4). Notifies the student (in-app and email).
+        and `jobFilled` is true (AC-24.4). Notifies the accepted student and, when the job fills, the
+        remaining pending applicants.
       x-us: [US-24]
       x-fr: [FR-27, FR-28]
       x-roles: [EMPLOYER]
       parameters:
         - { $ref: '#/components/parameters/ApplicationId' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '200':
           description: Decision recorded.
           content:
@@ -665,11 +675,13 @@ paths:
                   application: { $ref: '#/components/schemas/Application' }
                   jobFilled: { type: boolean }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409':
           description: '`INVALID_STATE_TRANSITION` (AC-24.5), `POSITIONS_FULL` or `JOB_NOT_HIRING`.'
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/Invalid' }
   /applications/{applicationId}/reject:
     post:
       tags: [Applications]

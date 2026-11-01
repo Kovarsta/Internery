@@ -113,8 +113,8 @@ Email changes are delegated to Better Auth.
 
 ## Phase 4 — transactional core
 
-Status: in progress. Application rejection is implemented; accept, job cancel/complete and reviews
-remain, followed by the work-record creation and the concurrency tests.
+Status: in progress. Reject, accept, cancel and complete are implemented; reviews and the concurrency
+tests remain.
 
 These need row locks, state machines and notification fan-out.
 
