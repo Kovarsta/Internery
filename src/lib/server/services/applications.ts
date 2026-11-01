@@ -12,6 +12,7 @@ import {
 
 type ApplicationRecord = typeof applications.$inferSelect;
 type StudentProfileRecord = typeof studentProfiles.$inferSelect;
+type NotificationInsert = typeof notifications.$inferInsert;
 
 export type ApplicationListOptions = {
 	studentId: string;
@@ -522,6 +523,128 @@ export async function withdrawApplication(
 	}
 
 	return application;
+}
+
+export type AcceptedApplication = {
+	application: ApplicationListRecord;
+	jobFilled: boolean;
+};
+
+/**
+ * Accepts a pending application.
+ *
+ * The job row is locked before the capacity check, so two accepts for the last
+ * position cannot both succeed. Accepting the last needed student moves the job
+ * to `FILLED` and tells the remaining pending applicants (AC-24.3, AC-24.4).
+ *
+ * Lock order is application then job, the same order every write path uses.
+ */
+export async function acceptApplication(
+	database: Database,
+	employerId: string,
+	applicationId: string
+): Promise<AcceptedApplication> {
+	let jobFilled = false;
+
+	await database.transaction(async (tx) => {
+		const [application] = await tx
+			.select({
+				id: applications.id,
+				jobId: applications.jobId,
+				studentId: applications.studentId,
+				status: applications.status
+			})
+			.from(applications)
+			.where(eq(applications.id, applicationId))
+			.for('update');
+
+		if (!application) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		const [job] = await tx
+			.select({
+				id: jobs.id,
+				title: jobs.title,
+				employerId: jobs.employerId,
+				status: jobs.status,
+				positionsNeeded: jobs.positionsNeeded
+			})
+			.from(jobs)
+			.where(eq(jobs.id, application.jobId))
+			.for('update');
+
+		if (!job) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		// Ownership first, so a non-owner learns nothing about the application.
+		if (job.employerId !== employerId) {
+			throw new DomainError('FORBIDDEN');
+		}
+
+		if (application.status !== 'PENDING') {
+			throw new DomainError('INVALID_STATE_TRANSITION');
+		}
+
+		if (job.status !== 'HIRING') {
+			throw new DomainError('JOB_NOT_HIRING');
+		}
+
+		const [counts] = await tx
+			.select({ accepted: count() })
+			.from(applications)
+			.where(and(eq(applications.jobId, job.id), eq(applications.status, 'ACCEPTED')));
+
+		const accepted = counts?.accepted ?? 0;
+
+		if (accepted >= job.positionsNeeded) {
+			throw new DomainError('POSITIONS_FULL');
+		}
+
+		await tx
+			.update(applications)
+			.set({ status: 'ACCEPTED', decidedAt: new Date() })
+			.where(eq(applications.id, application.id));
+
+		jobFilled = accepted + 1 >= job.positionsNeeded;
+
+		if (jobFilled) {
+			await tx.update(jobs).set({ status: 'FILLED' }).where(eq(jobs.id, job.id));
+
+			const stillPending = await tx
+				.select({ userId: applications.studentId })
+				.from(applications)
+				.where(and(eq(applications.jobId, job.id), eq(applications.status, 'PENDING')));
+
+			if (stillPending.length > 0) {
+				const pendingNotifications: NotificationInsert[] = stillPending.map(({ userId }) => ({
+					userId,
+					type: 'JOB_FILLED',
+					title: `"${job.title}" has found all the people it needs`,
+					jobId: job.id
+				}));
+
+				await tx.insert(notifications).values(pendingNotifications);
+			}
+		}
+
+		await tx.insert(notifications).values({
+			userId: application.studentId,
+			type: 'APPLICATION_ACCEPTED',
+			title: `Your application for "${job.title}" was accepted`,
+			jobId: job.id,
+			applicationId: application.id
+		});
+	});
+
+	const application = await findApplicationById(database, applicationId);
+
+	if (!application) {
+		throw new Error('The accepted application could not be read back.');
+	}
+
+	return { application, jobFilled };
 }
 
 /** Throws unless the job exists and belongs to the employer. */

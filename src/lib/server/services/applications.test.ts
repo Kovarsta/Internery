@@ -5,6 +5,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
 import {
+	acceptApplication,
 	applyToJob,
 	getApplicantProfile,
 	listJobApplicants,
@@ -21,6 +22,7 @@ const testDatabase = testDatabaseUrl
 
 const studentId = randomUUID();
 const writerStudentId = randomUUID();
+const secondStudentId = randomUUID();
 const employerId = randomUUID();
 const otherEmployerId = randomUUID();
 const categoryId = randomUUID();
@@ -33,11 +35,17 @@ const duplicateJobId = randomUUID();
 const filledJobId = randomUUID();
 const hiddenJobId = randomUUID();
 const rejectJobId = randomUUID();
+const acceptJobId = randomUUID();
+const fullJobId = randomUUID();
 
 const firstApplicationId = randomUUID();
 const secondApplicationId = randomUUID();
 const profileApplicationId = randomUUID();
 const rejectApplicationId = randomUUID();
+const acceptFirstApplicationId = randomUUID();
+const acceptSecondApplicationId = randomUUID();
+const fullAcceptedApplicationId = randomUUID();
+const fullPendingApplicationId = randomUUID();
 
 describe.skipIf(!testDatabase)('applications', () => {
 	beforeAll(async () => {
@@ -58,6 +66,14 @@ describe.skipIf(!testDatabase)('applications', () => {
 				id: writerStudentId,
 				name: 'Writer Student',
 				email: `${writerStudentId}@example.com`,
+				emailVerified: true,
+				role: 'STUDENT',
+				status: 'ACTIVE'
+			},
+			{
+				id: secondStudentId,
+				name: 'Second Student',
+				email: `${secondStudentId}@example.com`,
 				emailVerified: true,
 				role: 'STUDENT',
 				status: 'ACTIVE'
@@ -126,6 +142,8 @@ describe.skipIf(!testDatabase)('applications', () => {
 				job(applyJobId, 'Apply job'),
 				job(duplicateJobId, 'Duplicate job'),
 				job(rejectJobId, 'Reject job'),
+				job(acceptJobId, 'Accept job'),
+				job(fullJobId, 'Full job'),
 				{ ...job(filledJobId, 'Filled job'), status: 'FILLED' },
 				{ ...job(hiddenJobId, 'Hidden job'), isHidden: true }
 			]);
@@ -164,6 +182,32 @@ describe.skipIf(!testDatabase)('applications', () => {
 				studentId: writerStudentId,
 				message: 'Please consider me.',
 				status: 'PENDING'
+			},
+			{
+				id: acceptFirstApplicationId,
+				jobId: acceptJobId,
+				studentId: writerStudentId,
+				message: 'Want the last position.',
+				status: 'PENDING'
+			},
+			{
+				id: acceptSecondApplicationId,
+				jobId: acceptJobId,
+				studentId: secondStudentId,
+				message: 'Also interested.',
+				status: 'PENDING'
+			},
+			{
+				id: fullAcceptedApplicationId,
+				jobId: fullJobId,
+				studentId: writerStudentId,
+				status: 'ACCEPTED'
+			},
+			{
+				id: fullPendingApplicationId,
+				jobId: fullJobId,
+				studentId: secondStudentId,
+				status: 'PENDING'
 			}
 		]);
 	});
@@ -183,7 +227,15 @@ describe.skipIf(!testDatabase)('applications', () => {
 			.where(inArray(schema.employerProfiles.userId, [employerId, otherEmployerId]));
 		await testDatabase
 			.delete(schema.users)
-			.where(inArray(schema.users.id, [studentId, writerStudentId, employerId, otherEmployerId]));
+			.where(
+				inArray(schema.users.id, [
+					studentId,
+					writerStudentId,
+					secondStudentId,
+					employerId,
+					otherEmployerId
+				])
+			);
 		await testDatabase.$client.end();
 	});
 
@@ -553,6 +605,90 @@ describe.skipIf(!testDatabase)('applications', () => {
 			await expect(
 				rejectApplication(testDatabase, employerId, randomUUID(), null)
 			).rejects.toMatchObject({ code: 'NOT_FOUND' });
+		});
+	});
+
+	describe('acceptApplication', () => {
+		it('accepts the last position and fills the job', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			const { application, jobFilled } = await acceptApplication(
+				testDatabase,
+				employerId,
+				acceptFirstApplicationId
+			);
+
+			expect(jobFilled).toBe(true);
+			expect(application.status).toBe('ACCEPTED');
+			expect(application.decidedAt).not.toBeNull();
+
+			const [job] = await testDatabase
+				.select({ status: schema.jobs.status })
+				.from(schema.jobs)
+				.where(eq(schema.jobs.id, acceptJobId));
+
+			expect(job?.status).toBe('FILLED');
+
+			const notifications = await testDatabase
+				.select({
+					userId: schema.notifications.userId,
+					type: schema.notifications.type
+				})
+				.from(schema.notifications)
+				.where(eq(schema.notifications.jobId, acceptJobId));
+
+			expect(notifications).toEqual(
+				expect.arrayContaining([
+					{ userId: writerStudentId, type: 'APPLICATION_ACCEPTED' },
+					{ userId: secondStudentId, type: 'JOB_FILLED' }
+				])
+			);
+		});
+
+		it('refuses an application that is no longer pending', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				acceptApplication(testDatabase, employerId, rejectApplicationId)
+			).rejects.toMatchObject({ code: 'INVALID_STATE_TRANSITION' });
+		});
+
+		it('refuses when the job is no longer hiring', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				acceptApplication(testDatabase, employerId, acceptSecondApplicationId)
+			).rejects.toMatchObject({ code: 'JOB_NOT_HIRING' });
+		});
+
+		it('refuses when the positions are full', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				acceptApplication(testDatabase, employerId, fullPendingApplicationId)
+			).rejects.toMatchObject({ code: 'POSITIONS_FULL' });
+		});
+
+		it('refuses another employer and an unknown application', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				acceptApplication(testDatabase, otherEmployerId, fullPendingApplicationId)
+			).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+			await expect(acceptApplication(testDatabase, employerId, randomUUID())).rejects.toMatchObject(
+				{ code: 'NOT_FOUND' }
+			);
 		});
 	});
 });
