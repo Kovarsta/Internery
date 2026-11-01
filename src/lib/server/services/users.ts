@@ -32,6 +32,22 @@ export async function getUserProfile(
 }
 
 /**
+ * Returns the stored avatar key for a user.
+ *
+ * `null` covers both "no picture" and "no profile row", so the route can answer
+ * them the same way and not reveal whether an account exists.
+ */
+export async function getAvatarKey(database: Database, userId: string): Promise<string | null> {
+	const [profile] = await database
+		.select({ avatarKey: userProfiles.avatarKey })
+		.from(userProfiles)
+		.where(eq(userProfiles.userId, userId))
+		.limit(1);
+
+	return profile?.avatarKey ?? null;
+}
+
+/**
  * Updates the account name and common profile phone in one transaction.
  *
  * Fields that are `undefined` are left unchanged. A missing `user_profiles` row

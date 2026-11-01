@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
-import { updateUserAccount } from './users.ts';
+import { updateUserAccount, getAvatarKey } from './users.ts';
 
 // Set TEST_DATABASE_URL to run the database-backed tests.
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -14,7 +14,7 @@ const testDatabase = testDatabaseUrl
 
 const testUserId = randomUUID();
 
-describe.skipIf(!testDatabase)('updateUserAccount', () => {
+describe.skipIf(!testDatabase)('users', () => {
 	beforeAll(async () => {
 		if (!testDatabase) {
 			return;
@@ -73,5 +73,32 @@ describe.skipIf(!testDatabase)('updateUserAccount', () => {
 		await expect(
 			updateUserAccount(testDatabase, randomUUID(), { fullName: 'Nobody' })
 		).rejects.toMatchObject({ code: 'NOT_FOUND' });
+	});
+
+	it('returns the stored avatar key', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		await testDatabase
+			.update(schema.userProfiles)
+			.set({ avatarKey: 'avatars/test/avatar.png' })
+			.where(eq(schema.userProfiles.userId, testUserId));
+
+		await expect(getAvatarKey(testDatabase, testUserId)).resolves.toBe('avatars/test/avatar.png');
+
+		await testDatabase
+			.update(schema.userProfiles)
+			.set({ avatarKey: null })
+			.where(eq(schema.userProfiles.userId, testUserId));
+	});
+
+	it('returns null without an avatar or a profile row', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		await expect(getAvatarKey(testDatabase, testUserId)).resolves.toBeNull();
+		await expect(getAvatarKey(testDatabase, randomUUID())).resolves.toBeNull();
 	});
 });
