@@ -96,9 +96,9 @@ provision the same object once.
 
 ## Implementation TODOs
 
-- Add avatar upload validation and storage-service calls.
 - Version the `avatarUrl` with `?v=` so the route can cache immutably.
 - Answer `304` when the request's `If-None-Match` matches the object ETag.
+- Sweep avatars: remove objects no profile and no application references.
 
 ## References
 

@@ -124,6 +124,8 @@ paths:
               properties:
                 file: { type: string, format: binary, description: 'PNG or JPEG, up to 2 MB' }
       responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '200':
           description: Updated user.
           content:
@@ -131,6 +133,7 @@ paths:
               schema: { $ref: '#/components/schemas/UserMe' }
         '413': { $ref: '#/components/responses/FileTooLarge' }
         '415': { $ref: '#/components/responses/UnsupportedMedia' }
+        '422': { $ref: '#/components/responses/Invalid' }
     delete:
       tags: [Account]
       operationId: deleteAvatar
