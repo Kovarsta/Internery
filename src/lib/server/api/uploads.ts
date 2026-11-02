@@ -12,11 +12,9 @@ const MAX_INPUT_PIXELS = 16_000_000;
 // where phone photos keep GPS coordinates.
 const AVATAR_SIZE = 512;
 const WEBP_QUALITY = 80;
-// The first bytes of each accepted format. A browser-supplied MIME type is a
-// claim; these bytes are the actual file, so the check cannot be fooled by
-// renaming. https://en.wikipedia.org/wiki/List_of_file_signatures
-const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-const JPEG_SIGNATURE = [0xff, 0xd8, 0xff];
+
+/** Formats the API accepts. The check runs on the decoded file, not its name. */
+const ACCEPTED_FORMATS = ['png', 'jpeg'];
 
 /** A validated and normalised avatar upload, ready to store. */
 export type AvatarImage = {
@@ -42,14 +40,15 @@ export async function parseFormData(request: Request): Promise<FormData> {
 /**
  * Validates an uploaded avatar and normalises it for storage.
  *
- * The size is checked before the file is read. The type comes from the file
- * signature, not from `file.type`, which the client controls. The accepted
- * bytes are then rotated by their EXIF orientation, cropped towards a square
- * (never enlarged) and re-encoded as WebP, so the stored object is always ours.
+ * The size is checked before the file is read. The format comes from sharp's
+ * own detection of the bytes, so a renamed file or a false `file.type` cannot
+ * get through. The accepted image is rotated by its EXIF orientation, cropped
+ * towards a square (never enlarged) and re-encoded as WebP, which makes the
+ * stored object ours.
  *
- * Throws `FILE_TOO_LARGE` (`413`), `INVALID_FILE_TYPE` (`415`) for a file that
- * is not a decodable PNG or JPEG, or `VALIDATION_ERROR` (`422`) for an empty
- * file.
+ * Throws `FILE_TOO_LARGE` (`413`), `INVALID_FILE_TYPE` (`415`) for anything
+ * that is not a decodable PNG or JPEG, or `VALIDATION_ERROR` (`422`) for an
+ * empty file.
  */
 export async function readAvatarImage(file: File): Promise<AvatarImage> {
 	if (file.size === 0) {
@@ -61,32 +60,30 @@ export async function readAvatarImage(file: File): Promise<AvatarImage> {
 	}
 
 	const bytes = new Uint8Array(await file.arrayBuffer());
-
-	if (!startsWith(bytes, PNG_SIGNATURE) && !startsWith(bytes, JPEG_SIGNATURE)) {
-		throw new ApiError('INVALID_FILE_TYPE');
-	}
+	const image = sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS });
 
 	try {
-		const processed = await sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS })
+		const metadata = await image.metadata();
+
+		if (!ACCEPTED_FORMATS.includes(metadata.format ?? '')) {
+			throw new ApiError('INVALID_FILE_TYPE');
+		}
+
+		const processed = await image
 			.rotate()
 			.resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover', withoutEnlargement: true })
 			.webp({ quality: WEBP_QUALITY })
 			.toBuffer();
 
 		return { bytes: new Uint8Array(processed), contentType: 'image/webp', extension: 'webp' };
-	} catch {
-		// A file can carry a valid signature and still fail to decode.
+	} catch (error) {
+		if (error instanceof ApiError) {
+			throw error;
+		}
+
+		// A file can look like an image and still fail to decode.
 		throw new ApiError('INVALID_FILE_TYPE');
 	}
-}
-
-/** Checks whether the bytes begin with every byte of the signature. */
-function startsWith(bytes: Uint8Array, signature: number[]): boolean {
-	if (bytes.length < signature.length) {
-		return false;
-	}
-
-	return signature.every((byte, index) => bytes[index] === byte);
 }
 
 /** Builds a `422` that points at the upload field. */

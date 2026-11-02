@@ -196,9 +196,9 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - `DELETE /me/avatar` points `avatarKey` at the reserved `avatars/_blank.png` key instead of clearing
   it, which keeps the OAuth provider image shadowed. It upserts the profile row and answers `204`
   every time, so a repeated call changes nothing.
-- `PUT /me/avatar` accepts a multipart `file` field, checks the signature bytes rather than the
-  client MIME type, and enforces the 2 MB limit before reading the body. The image is rotated by its
-  EXIF orientation, cropped towards 512×512 (never enlarged) and re-encoded as WebP at quality 80,
-  which also strips metadata such as GPS. Each upload gets a new key under `avatars/{userId}/`. The
-  object is stored before the row is updated, so the profile cannot point at a missing object; the
-  previous object is left for the reference-aware sweep.
+- `PUT /me/avatar` accepts a multipart `file` field, detects the format from the decoded bytes rather
+  than the client MIME type, and enforces the 2 MB limit before reading the body. The image is rotated
+  by its EXIF orientation, cropped towards 512×512 (never enlarged) and re-encoded as WebP at quality
+  80, which also strips metadata such as GPS. Each upload gets a new key under `avatars/{userId}/`.
+  The object is stored before the row is updated, so the profile cannot point at a missing object;
+  the previous object is left for the reference-aware sweep.

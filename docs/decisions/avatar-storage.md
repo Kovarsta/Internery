@@ -51,7 +51,7 @@ invalidation harder.
 ## Upload and replacement
 
 - Accept PNG or JPEG, up to 2 MB.
-- Validate the file signature, not only the client-supplied MIME type.
+- Let the decoder identify the format; never trust the client MIME type or file extension.
 - Cap the decoder at 16 MP, so a small compressed file cannot expand into an enormous raster.
 - Rotate by the EXIF orientation, crop towards 512×512 without enlarging, then re-encode as WebP at
   quality 80. Re-encoding strips EXIF, including GPS coordinates.
