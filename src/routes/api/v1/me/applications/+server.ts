@@ -4,6 +4,7 @@ import { requireRole } from '#lib/server/api/auth.ts';
 import { handleApiError } from '#lib/server/api/errors.ts';
 import { toApplication } from '#lib/server/api/mappers.ts';
 import { paged, parsePagination } from '#lib/server/api/pagination.ts';
+import { noStoreJson } from '#lib/server/api/responses.ts';
 import { parseQuery } from '#lib/server/api/validation.ts';
 import { db } from '#lib/server/db/index.ts';
 import { listMyApplications } from '#lib/server/services/applications.ts';
@@ -26,7 +27,7 @@ export const GET: RequestHandler = async (event) => {
 			offset: pagination.offset
 		});
 
-		return Response.json(paged(items.map(toApplication), total, pagination));
+		return noStoreJson(paged(items.map(toApplication), total, pagination));
 	} catch (error) {
 		return handleApiError(error);
 	}

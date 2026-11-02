@@ -214,6 +214,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   and enforces the 5 MB limit before reading. A DOCX must have the OpenXML structure, so a plain ZIP
   renamed to `.docx` is refused. Each upload gets `cv/{userId}/{uuid}.{ext}`; the object is stored
   before the four profile columns are updated, and earlier applications keep their snapshot.
-- `GET /me` and `PATCH /me` answer with `Cache-Control: no-store` through `noStoreJson`, so a client
-  never reuses a stale `avatarUrl` or account snapshot. The other `/me/*` reads still need the same
-  default.
+- Personalised JSON answers with `Cache-Control: no-store` through `noStoreJson`: the account reads,
+  the `/me/*` lists and profiles, the applicant profile, and the job detail with its applicant list.
+  Public reads such as `/categories`, `/jobs` and the work-record verify endpoint keep the normal
+  response.

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireRole } from '#lib/server/api/auth.ts';
 import { handleApiError } from '#lib/server/api/errors.ts';
 import { toStudentProfile } from '#lib/server/api/mappers.ts';
+import { noStoreJson } from '#lib/server/api/responses.ts';
 import { parseParams } from '#lib/server/api/validation.ts';
 import { db } from '#lib/server/db/index.ts';
 import { getApplicantProfile } from '#lib/server/services/applications.ts';
@@ -19,7 +20,7 @@ export const GET: RequestHandler = async (event) => {
 
 		const { student, profile } = await getApplicantProfile(db, user.id, applicationId);
 
-		return Response.json(toStudentProfile(profile, student));
+		return noStoreJson(toStudentProfile(profile, student));
 	} catch (error) {
 		return handleApiError(error);
 	}

@@ -3,6 +3,7 @@ import { requireRole } from '#lib/server/api/auth.ts';
 import { handleApiError } from '#lib/server/api/errors.ts';
 import { toWorkRecord } from '#lib/server/api/mappers.ts';
 import { paged, parsePagination } from '#lib/server/api/pagination.ts';
+import { noStoreJson } from '#lib/server/api/responses.ts';
 import { db } from '#lib/server/db/index.ts';
 import { listStudentWorkRecords } from '#lib/server/services/work-records.ts';
 
@@ -19,7 +20,7 @@ export const GET: RequestHandler = async (event) => {
 
 		const records = items.map((record) => toWorkRecord(record, event.url.origin));
 
-		return Response.json(paged(records, total, pagination));
+		return noStoreJson(paged(records, total, pagination));
 	} catch (error) {
 		return handleApiError(error);
 	}

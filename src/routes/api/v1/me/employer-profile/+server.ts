@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireRole } from '#lib/server/api/auth.ts';
 import { handleApiError } from '#lib/server/api/errors.ts';
 import { toEmployerProfile } from '#lib/server/api/mappers.ts';
+import { noStoreJson } from '#lib/server/api/responses.ts';
 import { parseJson } from '#lib/server/api/validation.ts';
 import { db } from '#lib/server/db/index.ts';
 import { getEmployerProfile, saveEmployerProfile } from '#lib/server/services/profiles.ts';
@@ -21,7 +22,7 @@ export const GET: RequestHandler = async (event) => {
 		const user = requireRole(event.locals, ['EMPLOYER']);
 		const profile = await getEmployerProfile(db, user.id);
 
-		return Response.json(toEmployerProfile(profile, user.id));
+		return noStoreJson(toEmployerProfile(profile, user.id));
 	} catch (error) {
 		return handleApiError(error);
 	}

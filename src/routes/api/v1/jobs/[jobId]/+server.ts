@@ -4,6 +4,7 @@ import { requireRole } from '#lib/server/api/auth.ts';
 import { ApiError, handleApiError } from '#lib/server/api/errors.ts';
 import { hasOrderedDates, jobFields } from '#lib/server/api/job-fields.ts';
 import { toApplication, toJobDetail } from '#lib/server/api/mappers.ts';
+import { noStoreJson } from '#lib/server/api/responses.ts';
 import { parseJson, parseParams } from '#lib/server/api/validation.ts';
 import { db } from '#lib/server/db/index.ts';
 import { findStudentApplicationForJob } from '#lib/server/services/applications.ts';
@@ -41,7 +42,7 @@ export const GET: RequestHandler = async (event) => {
 
 		const studentDetails = await loadStudentDetails(job.id, viewer);
 
-		return Response.json(toJobDetail(job, studentDetails));
+		return noStoreJson(toJobDetail(job, studentDetails));
 	} catch (error) {
 		return handleApiError(error);
 	}

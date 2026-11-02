@@ -3,6 +3,7 @@ import { requireRole } from '#lib/server/api/auth.ts';
 import { ApiError, handleApiError } from '#lib/server/api/errors.ts';
 import { toVerificationRequest } from '#lib/server/api/mappers.ts';
 import { notImplemented } from '#lib/server/api/not-implemented.ts';
+import { noStoreJson } from '#lib/server/api/responses.ts';
 import { db } from '#lib/server/db/index.ts';
 import { findLatestVerificationRequest } from '#lib/server/services/verification.ts';
 
@@ -16,7 +17,7 @@ export const GET: RequestHandler = async (event) => {
 			throw new ApiError('NOT_FOUND');
 		}
 
-		return Response.json(toVerificationRequest(request));
+		return noStoreJson(toVerificationRequest(request));
 	} catch (error) {
 		return handleApiError(error);
 	}

@@ -55,11 +55,13 @@ The image and the JSON that points at it are cached differently, and that is del
 
 - `GET /users/{userId}/avatar?v=...` — cache for a year with `immutable`. The version makes the URL
   identify exact bytes, so a new picture is a new URL.
-- `GET /me` — must not be stored (`Cache-Control: no-store`). It carries the current `avatarUrl`, so
-  a cached copy would keep handing out the previous picture's URL.
+- `GET /me` and the other personalised JSON responses — must not be stored
+  (`Cache-Control: no-store`). These carry the current `avatarUrl`, so a cached copy would keep
+  handing out the previous picture's URL, and some of them are private to one account.
 
-The general rule: **cache the bytes, not the pointer.** The other personalised JSON responses have
-the same requirement, so they should share one `no-store` default rather than each adding a header.
+The general rule: **cache the bytes, not the pointer.** `noStoreJson` in
+`src/lib/server/api/responses.ts` is the shared default for personalised JSON; public reads such as
+categories and the job list keep the normal response.
 
 ## Upload and replacement
 
@@ -111,7 +113,6 @@ provision the same object once.
 
 ## Implementation TODOs
 
-- Apply the `no-store` default to the other personalised JSON responses (`/me/*`).
 - Sweep avatars: remove objects no profile and no application references.
 
 ## References
