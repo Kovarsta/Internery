@@ -4,8 +4,9 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
+import type { Storage } from '#lib/server/storage/client.ts';
 import { BLANK_AVATAR_KEY } from '#lib/server/storage/keys.ts';
-import { getAvatarKey, resetAvatar, updateUserAccount } from './users.ts';
+import { getAvatarKey, resetAvatar, saveAvatar, updateUserAccount } from './users.ts';
 
 // Set TEST_DATABASE_URL to run the database-backed tests.
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -113,5 +114,42 @@ describe.skipIf(!testDatabase)('users', () => {
 
 		await resetAvatar(testDatabase, testUserId);
 		await expect(getAvatarKey(testDatabase, testUserId)).resolves.toBe(BLANK_AVATAR_KEY);
+	});
+
+	it('stores an uploaded avatar under a new key and points the profile at it', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const objects = new Map<string, Uint8Array>();
+		const fakeStorage: Storage = {
+			async putObject(key, body) {
+				objects.set(key, body);
+			},
+			async getObject() {
+				return null;
+			},
+			async deleteObject(key) {
+				objects.delete(key);
+			}
+		};
+
+		const image = {
+			bytes: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+			contentType: 'image/png' as const,
+			extension: 'png' as const
+		};
+
+		await saveAvatar(testDatabase, fakeStorage, testUserId, image);
+
+		const key = await getAvatarKey(testDatabase, testUserId);
+
+		if (!key) {
+			throw new Error('Expected the profile to point at the uploaded avatar.');
+		}
+
+		expect(key.startsWith(`avatars/${testUserId}/`)).toBe(true);
+		expect(key.endsWith('.png')).toBe(true);
+		expect(objects.get(key)).toEqual(image.bytes);
 	});
 });

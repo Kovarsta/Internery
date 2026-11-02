@@ -1,9 +1,11 @@
 import { eq } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
+import type { AvatarImage } from '#lib/server/api/uploads.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { users } from '#lib/server/db/auth.schema.ts';
 import { userProfiles } from '#lib/server/db/product.schema.ts';
-import { BLANK_AVATAR_KEY } from '#lib/server/storage/keys.ts';
+import type { Storage } from '#lib/server/storage/client.ts';
+import { BLANK_AVATAR_KEY, newAvatarKey } from '#lib/server/storage/keys.ts';
 
 export type UserProfileRecord = typeof userProfiles.$inferSelect;
 export type UserRecord = typeof users.$inferSelect;
@@ -64,6 +66,32 @@ export async function resetAvatar(database: Database, userId: string): Promise<v
 		.onConflictDoUpdate({
 			target: userProfiles.userId,
 			set: { avatarKey: BLANK_AVATAR_KEY }
+		});
+}
+
+/**
+ * Stores an uploaded avatar and points the profile at it.
+ *
+ * The object is written before the row, so the profile never references a key
+ * that is not stored yet. The previous object is not deleted here: the
+ * reference-aware sweep removes it after the grace period.
+ */
+export async function saveAvatar(
+	database: Database,
+	storage: Storage,
+	userId: string,
+	image: AvatarImage
+): Promise<void> {
+	const key = newAvatarKey(userId, image.extension);
+
+	await storage.putObject(key, image.bytes, image.contentType);
+
+	await database
+		.insert(userProfiles)
+		.values({ userId, avatarKey: key })
+		.onConflictDoUpdate({
+			target: userProfiles.userId,
+			set: { avatarKey: key }
 		});
 }
 
