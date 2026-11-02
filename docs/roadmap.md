@@ -22,10 +22,10 @@ Phase 1  done      errors, validation, auth, pagination, mappers, tests
 Phase 2  done      every read
 Phase 3  done      every straightforward write
 Phase 4  done      transactional core
-Phase 5  next      storage
+Phase 5  now       storage
 ```
 
-35 of 65 API operations are implemented. See the checklist in
+42 of 65 API operations are implemented. See the checklist in
 [`contracts/implementation-status.md`](contracts/implementation-status.md).
 
 ## Done
@@ -134,7 +134,10 @@ These need row locks, state machines and notification fan-out.
 The signing and verification helpers live in `src/lib/server/work-record-signature.ts`, and
 `createReview` calls the signer when it creates a record.
 
-## Phase 5 — storage
+## Phase 5 - storage
+
+Status: in progress. Every storage endpoint is implemented. The orphan sweep script exists; CV
+expiry and the other retention jobs remain.
 
 - **M** S3/MinIO client configuration and a `StorageService` abstraction
 - **M** `PUT /me/cv` — PDF/DOCX, 5 MB, magic-byte validation, new unique key

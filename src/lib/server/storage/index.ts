@@ -21,5 +21,3 @@ export const storage = createStorage({
 	accessKeyId: S3_ACCESS_KEY_ID,
 	secretAccessKey: S3_SECRET_ACCESS_KEY
 });
-
-export type { Storage, StorageConfig, StoredObject } from './client.ts';

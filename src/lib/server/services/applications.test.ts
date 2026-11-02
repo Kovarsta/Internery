@@ -836,7 +836,11 @@ describe.skipIf(!testDatabase)('applications', () => {
 				},
 				async deleteObject(key) {
 					objects.delete(key);
-				}
+				},
+				async listObjects() {
+					return { objects: [], nextToken: null };
+				},
+				async deleteObjects() {}
 			};
 
 			const replacement = {

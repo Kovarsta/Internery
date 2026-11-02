@@ -19,8 +19,10 @@
  *   https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
  */
 import {
+	DeleteObjectsCommand,
 	DeleteObjectCommand,
 	GetObjectCommand,
+	ListObjectsV2Command,
 	PutObjectCommand,
 	S3Client,
 	S3ServiceException
@@ -43,11 +45,25 @@ export type StoredObject = {
 	contentLength: number | null;
 };
 
+/** One entry from a bucket listing. */
+export type StoredObjectInfo = {
+	key: string;
+	lastModified: Date | null;
+};
+
+/** One page of a bucket listing. `nextToken` is null on the last page. */
+export type ObjectPage = {
+	objects: StoredObjectInfo[];
+	nextToken: string | null;
+};
+
 /** The object operations the API needs. Keys are opaque strings, never URLs. */
 export type Storage = {
 	putObject(key: string, body: Uint8Array, contentType: string): Promise<void>;
 	getObject(key: string): Promise<StoredObject | null>;
 	deleteObject(key: string): Promise<void>;
+	listObjects(prefix: string, continuationToken?: string | null): Promise<ObjectPage>;
+	deleteObjects(keys: string[]): Promise<void>;
 };
 
 /**
@@ -124,6 +140,48 @@ export function createStorage(config: StorageConfig): Storage {
 			// a success, which is what the cleanup paths want.
 			// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObject.html
 			await client.send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }));
+		},
+
+		async listObjects(prefix, continuationToken) {
+			const result = await client.send(
+				new ListObjectsV2Command({
+					Bucket: config.bucket,
+					Prefix: prefix,
+					ContinuationToken: continuationToken ?? undefined,
+					MaxKeys: 1000
+				})
+			);
+
+			const objects: StoredObjectInfo[] = [];
+
+			for (const entry of result.Contents ?? []) {
+				if (entry.Key) {
+					objects.push({ key: entry.Key, lastModified: entry.LastModified ?? null });
+				}
+			}
+
+			return {
+				objects,
+				nextToken: result.IsTruncated ? (result.NextContinuationToken ?? null) : null
+			};
+		},
+
+		async deleteObjects(keys) {
+			// The API accepts at most 1000 keys per request.
+			// https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html
+			for (let index = 0; index < keys.length; index += 1000) {
+				const batch = keys.slice(index, index + 1000);
+
+				await client.send(
+					new DeleteObjectsCommand({
+						Bucket: config.bucket,
+						Delete: {
+							Objects: batch.map((key) => ({ Key: key })),
+							Quiet: true
+						}
+					})
+				);
+			}
 		}
 	};
 }

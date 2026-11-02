@@ -85,6 +85,17 @@ Never delete the object before the database change commits.
   even when no row references it. See `avatar-storage.md`.
 - S3 lifecycle rule for `tmp/` uploads after 24 hours.
 
+### Sweep notes
+
+- The reference check loads the distinct non-null keys from the profile and application columns into
+  one set. It is three queries in total, never one query per object.
+- Deleting in batches is the useful optimisation: S3 accepts up to 1000 keys per delete request.
+- Listing and deleting are separate round trips, so page-by-page processing costs about two requests
+  per 1000 objects. That is enough at the current size.
+- If the bucket grows much larger, the options are partial indexes on the key columns, or a
+  `stored_files` table with reference counts. Both add write-path cost, so measure first.
+- Run the sweep as a scheduled script, not inside the request process.
+
 ## Open decisions
 
 - Confirm final retention periods with counsel.
@@ -101,8 +112,7 @@ Never delete the object before the database change commits.
 
 ## Implementation TODOs
 
-- Add storage service and S3 environment variables.
 - Add retention constants to configuration.
-- Add scheduled cleanup jobs.
+- Run `pnpm storage:sweep` from a scheduler. Dry run is the default; `--apply` deletes.
+- Add application CV expiry and the notification/AI/auth cleanup jobs.
 - Add audit entries for system deletions, using key hashes rather than PII where possible.
-- Add tests for the apply-vs-reupload race and reference-aware deletion.

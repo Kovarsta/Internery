@@ -221,6 +221,9 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   changing the CV key. Without that lock an apply can snapshot a key that a concurrent replacement
   makes unreferenced, and the sweep could delete it before the application commits. The race test
   runs both operations on separate connections.
+- `pnpm storage:sweep` collects referenced keys in three queries, lists `cv/` and `avatars/`, and
+  deletes unreferenced objects older than 7 days. Dry run is the default; `--apply` deletes. The
+  reserved blank avatar is never deleted.
 - Personalised JSON answers with `Cache-Control: no-store` through `noStoreJson`: the account reads,
   the `/me/*` lists and profiles, the applicant profile, and the job detail with its applicant list.
   Public reads such as `/categories`, `/jobs` and the work-record verify endpoint keep the normal

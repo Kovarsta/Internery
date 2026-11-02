@@ -131,7 +131,11 @@ describe.skipIf(!testDatabase)('users', () => {
 			},
 			async deleteObject(key) {
 				objects.delete(key);
-			}
+			},
+			async listObjects() {
+				return { objects: [], nextToken: null };
+			},
+			async deleteObjects() {}
 		};
 
 		const image = {
