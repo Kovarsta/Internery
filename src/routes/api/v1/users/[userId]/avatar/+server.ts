@@ -35,18 +35,29 @@ export const GET: RequestHandler = async (event) => {
 			throw new ApiError('NOT_FOUND');
 		}
 
-		// Public profile data, so browsers and CDNs may cache it. The URL does
-		// not carry a version yet, so a replaced picture can stay cached for a
-		// day; adding `?v=` in the mapper will let this become `immutable`.
+		// `avatarUrl` carries `?v=`, so a changed picture is a changed URL and
+		// this response can be cached indefinitely.
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
 		const headers = new Headers({
-			'Content-Type': object.contentType ?? 'application/octet-stream',
-			'Cache-Control': 'public, max-age=86400'
+			'Cache-Control': 'public, max-age=31536000, immutable'
 		});
 
 		if (object.etag) {
 			headers.set('ETag', object.etag);
+
+			// A conditional request that already has this exact object does not
+			// need the bytes. The header can hold a list, so compare each tag.
+			// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+			const cachedTags = event.request.headers.get('if-none-match')?.split(',') ?? [];
+
+			if (cachedTags.some((tag) => tag.trim() === object.etag)) {
+				// Release the S3 response that will not be read.
+				await object.body.cancel();
+				return new Response(null, { status: 304, headers });
+			}
 		}
+
+		headers.set('Content-Type', object.contentType ?? 'application/octet-stream');
 
 		if (object.contentLength !== null) {
 			headers.set('Content-Length', String(object.contentLength));

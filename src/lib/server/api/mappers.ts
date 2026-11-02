@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { WorkRecordPayload } from '#lib/server/db/product.schema.ts';
 import type { UserRole } from './auth.ts';
 
@@ -346,12 +347,23 @@ export type Notification = {
 	createdAt: string;
 };
 
+/**
+ * Short, stable version for a storage key.
+ *
+ * Every upload gets a new key, so the hash changes with the picture. That is
+ * what lets the avatar route cache immutably: a new image always means a new
+ * URL, so a cached copy can never be stale.
+ */
+function avatarVersion(key: string): string {
+	return createHash('sha256').update(key).digest('hex').slice(0, 8);
+}
+
 /** Maps a user and their optional common profile to the public account shape. */
 export function toUserMe(user: UserMeSource, profile: UserProfileSource): UserMe {
 	let avatarUrl = user.image ?? null;
 
 	if (profile?.avatarKey) {
-		avatarUrl = `/api/v1/users/${user.id}/avatar`;
+		avatarUrl = `/api/v1/users/${user.id}/avatar?v=${avatarVersion(profile.avatarKey)}`;
 	}
 
 	return {

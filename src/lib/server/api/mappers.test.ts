@@ -58,8 +58,19 @@ describe('toUserMe', () => {
 			{ phone: '0900000000', avatarKey: 'avatars/student.png' }
 		);
 
-		expect(result.avatarUrl).toBe(`/api/v1/users/${user.id}/avatar`);
+		expect(result.avatarUrl).toMatch(
+			new RegExp(`^/api/v1/users/${user.id}/avatar\\?v=[0-9a-f]{8}$`)
+		);
 		expect(result.phone).toBe('0900000000');
+	});
+
+	it('keeps the version stable for one key and changes it for another', () => {
+		const first = toUserMe(user, { phone: null, avatarKey: 'avatars/first.png' });
+		const again = toUserMe(user, { phone: null, avatarKey: 'avatars/first.png' });
+		const second = toUserMe(user, { phone: null, avatarKey: 'avatars/second.png' });
+
+		expect(first.avatarUrl).toBe(again.avatarUrl);
+		expect(first.avatarUrl).not.toBe(second.avatarUrl);
 	});
 
 	it('falls back to the provider image', () => {
