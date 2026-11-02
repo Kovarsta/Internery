@@ -111,7 +111,7 @@ provision the same object once.
 
 ## Implementation TODOs
 
-- Set `Cache-Control: no-store` on personalised JSON, starting with `GET /me`.
+- Apply the `no-store` default to the other personalised JSON responses (`/me/*`).
 - Sweep avatars: remove objects no profile and no application references.
 
 ## References

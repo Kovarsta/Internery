@@ -4,6 +4,7 @@ import { isAPIError } from 'better-auth/api';
 import { requireActiveAccount } from '#lib/server/api/auth.ts';
 import { ApiError, handleApiError } from '#lib/server/api/errors.ts';
 import { toUserMe } from '#lib/server/api/mappers.ts';
+import { noStoreJson } from '#lib/server/api/responses.ts';
 import { parseJson } from '#lib/server/api/validation.ts';
 import { auth } from '#lib/server/auth.ts';
 import { db } from '#lib/server/db/index.ts';
@@ -25,7 +26,7 @@ export const GET: RequestHandler = async (event) => {
 		const user = requireActiveAccount(event.locals);
 		const profile = await getUserProfile(db, user.id);
 
-		return Response.json(toUserMe(user, profile));
+		return noStoreJson(toUserMe(user, profile));
 	} catch (error) {
 		return handleApiError(error);
 	}
@@ -44,7 +45,7 @@ export const PATCH: RequestHandler = async (event) => {
 		if (input.fullName === undefined && input.phone === undefined) {
 			const profile = await getUserProfile(db, user.id);
 
-			return Response.json(toUserMe(user, profile));
+			return noStoreJson(toUserMe(user, profile));
 		}
 
 		const updated = await updateUserAccount(db, user.id, {
@@ -52,7 +53,7 @@ export const PATCH: RequestHandler = async (event) => {
 			phone: input.phone
 		});
 
-		return Response.json(toUserMe(updated.user, updated.profile));
+		return noStoreJson(toUserMe(updated.user, updated.profile));
 	} catch (error) {
 		return handleApiError(error);
 	}
