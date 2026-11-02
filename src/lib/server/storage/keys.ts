@@ -7,6 +7,7 @@
 import { randomUUID } from 'node:crypto';
 
 export const AVATAR_PREFIX = 'avatars/';
+export const CV_PREFIX = 'cv/';
 
 /**
  * The shared blank avatar.
@@ -21,4 +22,9 @@ export const BLANK_AVATAR_KEY = `${AVATAR_PREFIX}_blank.png`;
 /** Builds a fresh key for an upload under the owner's user id. */
 export function newAvatarKey(userId: string, extension: 'webp'): string {
 	return `${AVATAR_PREFIX}${userId}/${randomUUID()}.${extension}`;
+}
+
+/** Builds a fresh key for a CV upload under the owner's user id. */
+export function newCvKey(userId: string, extension: 'pdf' | 'docx'): string {
+	return `${CV_PREFIX}${userId}/${randomUUID()}.${extension}`;
 }

@@ -1,16 +1,35 @@
 import sharp from 'sharp';
+import { fileTypeFromBuffer } from 'file-type';
 import { ApiError } from './errors.ts';
 
+/**
+ * One megabyte in bytes.
+ *
+ * File sizes are binary, so a "2 MB" limit is 2 × 1024 × 1024 = 2,097,152 bytes.
+ */
+const MEGABYTE = 1024 * 1024;
+
+/**
+ * One megapixel in pixels.
+ *
+ * Image dimensions are quoted in decimal by camera makers, so 16 MP is
+ * 16 × 1000 × 1000 = 16,000,000 pixels, not 16 × 1024 × 1024.
+ */
+const MEGAPIXEL = 1_000_000;
+
 /** Largest avatar the API accepts. Matches the contract and the storage decision. */
-const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+export const MAX_AVATAR_BYTES = 2 * MEGABYTE;
+
+/** Largest CV the API accepts. */
+export const MAX_CV_BYTES = 5 * MEGABYTE;
 
 // A small compressed file can decode to an enormous raster, so the decoder is
-// capped at 16 MP. That covers a 12 MP phone photo with room to spare.
-const MAX_INPUT_PIXELS = 16_000_000;
+// capped at 16 MP (roughly 4000 × 4000). A 12 MP phone photo fits easily.
+const MAX_INPUT_PIXELS = 16 * MEGAPIXEL;
 
 // Every stored avatar is square WebP. Re-encoding also drops EXIF, which is
 // where phone photos keep GPS coordinates.
-const AVATAR_SIZE = 512;
+const AVATAR_EDGE_PIXELS = 512;
 const WEBP_QUALITY = 80;
 
 /** Formats the API accepts. The check runs on the decoded file, not its name. */
@@ -71,7 +90,10 @@ export async function readAvatarImage(file: File): Promise<AvatarImage> {
 
 		const processed = await image
 			.rotate()
-			.resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover', withoutEnlargement: true })
+			.resize(AVATAR_EDGE_PIXELS, AVATAR_EDGE_PIXELS, {
+				fit: 'cover',
+				withoutEnlargement: true
+			})
 			.webp({ quality: WEBP_QUALITY })
 			.toBuffer();
 
@@ -84,6 +106,81 @@ export async function readAvatarImage(file: File): Promise<AvatarImage> {
 		// A file can look like an image and still fail to decode.
 		throw new ApiError('INVALID_FILE_TYPE');
 	}
+}
+
+const PDF_MIME = 'application/pdf';
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+/** A validated CV upload, ready to store. */
+export type CvUpload = {
+	bytes: Uint8Array;
+	fileName: string;
+	mimeType: typeof PDF_MIME | typeof DOCX_MIME;
+	extension: 'pdf' | 'docx';
+};
+
+/**
+ * Validates an uploaded CV and returns its bytes and detected format.
+ *
+ * The size is checked before the file is read. The format comes from
+ * `file-type`, which inspects the bytes: a PDF signature, or the ZIP structure
+ * of a DOCX. A plain ZIP renamed to `.docx` is refused.
+ *
+ * Throws `FILE_TOO_LARGE` (`413`), `INVALID_FILE_TYPE` (`415`) for anything
+ * that is not a PDF or DOCX, or `VALIDATION_ERROR` (`422`) for an empty file.
+ */
+export async function readCvFile(file: File): Promise<CvUpload> {
+	if (file.size === 0) {
+		throw validationError('The file is empty.');
+	}
+
+	if (file.size > MAX_CV_BYTES) {
+		throw new ApiError('FILE_TOO_LARGE');
+	}
+
+	const bytes = new Uint8Array(await file.arrayBuffer());
+	const detected = await fileTypeFromBuffer(bytes).catch(() => null);
+
+	if (detected?.ext === 'pdf') {
+		return {
+			bytes,
+			fileName: safeFileName(file.name, 'pdf'),
+			mimeType: PDF_MIME,
+			extension: 'pdf'
+		};
+	}
+
+	if (detected?.ext === 'docx') {
+		return {
+			bytes,
+			fileName: safeFileName(file.name, 'docx'),
+			mimeType: DOCX_MIME,
+			extension: 'docx'
+		};
+	}
+
+	throw new ApiError('INVALID_FILE_TYPE');
+}
+
+/**
+ * Keeps a display name that is safe to store and send back in a header.
+ *
+ * The browser can send a path in `file.name`, and control characters do not
+ * belong in a database column or an HTTP header. An empty name becomes
+ * `cv.<extension>` so the download always has something to call itself.
+ */
+function safeFileName(name: string, extension: string): string {
+	const base = name.split(/[\\/]/).pop() ?? '';
+	const cleaned = [...base]
+		.filter((character) => character >= ' ' && character !== '\u007f')
+		.join('')
+		.trim();
+
+	if (cleaned === '') {
+		return `cv.${extension}`;
+	}
+
+	return [...cleaned].slice(0, 255).join('');
 }
 
 /** Builds a `422` that points at the upload field. */
