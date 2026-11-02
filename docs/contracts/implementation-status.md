@@ -9,7 +9,7 @@ endpoint is implemented.
 
 Authentication is provided by Better Auth under `/api/auth/*` and is outside this contract.
 
-**41 of 65 operations implemented.**
+**42 of 65 operations implemented.**
 
 ## Checklist
 
@@ -55,7 +55,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - [x] `POST /applications/{applicationId}/accept` — Accept an applicant
 - [x] `POST /applications/{applicationId}/reject` — Reject an applicant
 - [x] `GET /applications/{applicationId}/student-profile` — Profile of the applicant (employer view)
-- [ ] `GET /applications/{applicationId}/cv` — Download the CV attached to an application
+- [x] `GET /applications/{applicationId}/cv` - Download the CV attached to an application
 
 ### Reviews
 
@@ -214,6 +214,9 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   and enforces the 5 MB limit before reading. A DOCX must have the OpenXML structure, so a plain ZIP
   renamed to `.docx` is refused. Each upload gets `cv/{userId}/{uuid}.{ext}`; the object is stored
   before the four profile columns are updated, and earlier applications keep their snapshot.
+- `GET /applications/{applicationId}/cv` streams the application's snapshot, never the student's
+  current profile CV. The employer who owns the job and the applicant can read it; anyone else gets
+  `403`. A missing snapshot or object answers `404`.
 - Personalised JSON answers with `Cache-Control: no-store` through `noStoreJson`: the account reads,
   the `/me/*` lists and profiles, the applicant profile, and the job detail with its applicant list.
   Public reads such as `/categories`, `/jobs` and the work-record verify endpoint keep the normal

@@ -347,6 +347,50 @@ export async function getApplicantProfile(
 }
 
 /**
+ * Returns the CV snapshot attached to an application.
+ *
+ * Allowed for the employer who owns the job and for the student who applied;
+ * every other caller gets `403` (AC-23.2). The snapshot is the file attached at
+ * apply time, not the student's current profile CV.
+ *
+ * Throws `NOT_FOUND` for an unknown application or one without a CV.
+ */
+export async function getApplicationCv(
+	database: Database,
+	viewer: { id: string; role: 'STUDENT' | 'EMPLOYER' | 'ADMIN' },
+	applicationId: string
+): Promise<{ key: string; fileName: string }> {
+	const [row] = await database
+		.select({
+			employerId: jobs.employerId,
+			studentId: applications.studentId,
+			cvKey: applications.cvKey,
+			cvFileName: applications.cvFileName
+		})
+		.from(applications)
+		.innerJoin(jobs, eq(jobs.id, applications.jobId))
+		.where(eq(applications.id, applicationId))
+		.limit(1);
+
+	if (!row) {
+		throw new DomainError('NOT_FOUND');
+	}
+
+	const isJobOwner = viewer.role === 'EMPLOYER' && row.employerId === viewer.id;
+	const isApplicant = viewer.role === 'STUDENT' && row.studentId === viewer.id;
+
+	if (!isJobOwner && !isApplicant) {
+		throw new DomainError('FORBIDDEN');
+	}
+
+	if (!row.cvKey || !row.cvFileName) {
+		throw new DomainError('NOT_FOUND');
+	}
+
+	return { key: row.cvKey, fileName: row.cvFileName };
+}
+
+/**
  * Creates a `PENDING` application for a student.
  *
  * The CV is copied onto the application so a later replacement or deletion of

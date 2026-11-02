@@ -8,6 +8,7 @@ import {
 	acceptApplication,
 	applyToJob,
 	getApplicantProfile,
+	getApplicationCv,
 	listJobApplicants,
 	listMyApplications,
 	rejectApplication,
@@ -165,6 +166,7 @@ describe.skipIf(!testDatabase)('applications', () => {
 				studentId,
 				message: 'First application',
 				cvKey: 'cv/first.pdf',
+				cvFileName: 'first.pdf',
 				status: 'PENDING',
 				createdAt: new Date('2026-01-01T08:00:00Z')
 			},
@@ -184,7 +186,8 @@ describe.skipIf(!testDatabase)('applications', () => {
 				studentId: writerStudentId,
 				message: 'Profile application',
 				status: 'PENDING',
-				cvKey: 'cv/writer.pdf'
+				cvKey: 'cv/writer.pdf',
+				cvFileName: 'writer.pdf'
 			},
 			{
 				id: rejectApplicationId,
@@ -756,6 +759,60 @@ describe.skipIf(!testDatabase)('applications', () => {
 				.where(eq(schema.jobs.id, raceJobId));
 
 			expect(job?.status).toBe('FILLED');
+		});
+	});
+
+	describe('getApplicationCv', () => {
+		it('returns the snapshot to the employer who owns the job', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				getApplicationCv(testDatabase, { id: employerId, role: 'EMPLOYER' }, firstApplicationId)
+			).resolves.toEqual({ key: 'cv/first.pdf', fileName: 'first.pdf' });
+		});
+
+		it('returns the snapshot to the student who applied', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				getApplicationCv(testDatabase, { id: studentId, role: 'STUDENT' }, firstApplicationId)
+			).resolves.toEqual({ key: 'cv/first.pdf', fileName: 'first.pdf' });
+		});
+
+		it('refuses another employer and another student', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				getApplicationCv(
+					testDatabase,
+					{ id: otherEmployerId, role: 'EMPLOYER' },
+					firstApplicationId
+				)
+			).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+			await expect(
+				getApplicationCv(testDatabase, { id: writerStudentId, role: 'STUDENT' }, firstApplicationId)
+			).rejects.toMatchObject({ code: 'FORBIDDEN' });
+		});
+
+		it('refuses an application without a CV and an unknown id', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			await expect(
+				getApplicationCv(testDatabase, { id: employerId, role: 'EMPLOYER' }, rejectApplicationId)
+			).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+			await expect(
+				getApplicationCv(testDatabase, { id: employerId, role: 'EMPLOYER' }, randomUUID())
+			).rejects.toMatchObject({ code: 'NOT_FOUND' });
 		});
 	});
 });
