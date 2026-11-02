@@ -1,31 +1,64 @@
+import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { readAvatarImage } from './uploads.ts';
 
-const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
-const JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
+/** Builds a real image so the decoder has something valid to read. */
+async function imageFixture(width: number, height: number, format: 'png' | 'jpeg') {
+	const pipeline = sharp({
+		create: { width, height, channels: 3, background: { r: 51, g: 102, b: 153 } }
+	});
+
+	return format === 'png' ? pipeline.png().toBuffer() : pipeline.jpeg().toBuffer();
+}
 
 describe('readAvatarImage', () => {
-	it('detects a PNG from its signature', async () => {
-		const image = await readAvatarImage(new File([PNG_BYTES], 'avatar.png'));
+	it('normalises a PNG to a square WebP', async () => {
+		const input = await imageFixture(1024, 768, 'png');
+		const image = await readAvatarImage(new File([input], 'avatar.png'));
 
-		expect(image.contentType).toBe('image/png');
-		expect(image.extension).toBe('png');
-		expect(image.bytes).toEqual(PNG_BYTES);
+		expect(image.contentType).toBe('image/webp');
+		expect(image.extension).toBe('webp');
+
+		const metadata = await sharp(image.bytes).metadata();
+
+		expect(metadata.format).toBe('webp');
+		expect(metadata.width).toBe(512);
+		expect(metadata.height).toBe(512);
 	});
 
 	it('detects a JPEG even when the client claims another type', async () => {
-		const image = await readAvatarImage(
-			new File([JPEG_BYTES], 'avatar.png', { type: 'image/png' })
-		);
+		const input = await imageFixture(800, 600, 'jpeg');
+		const image = await readAvatarImage(new File([input], 'avatar.png', { type: 'image/png' }));
 
-		expect(image.contentType).toBe('image/jpeg');
-		expect(image.extension).toBe('jpg');
+		const metadata = await sharp(image.bytes).metadata();
+
+		expect(metadata.format).toBe('webp');
+		expect(metadata.width).toBe(512);
+		expect(metadata.height).toBe(512);
+	});
+
+	it('does not enlarge an image smaller than the target', async () => {
+		const input = await imageFixture(100, 80, 'png');
+		const image = await readAvatarImage(new File([input], 'small.png'));
+
+		const metadata = await sharp(image.bytes).metadata();
+
+		expect(metadata.width).toBe(100);
+		expect(metadata.height).toBe(80);
 	});
 
 	it('refuses bytes that are not a PNG or JPEG', async () => {
 		const notAnImage = new File(['just some text'], 'avatar.png', { type: 'image/png' });
 
 		await expect(readAvatarImage(notAnImage)).rejects.toMatchObject({
+			code: 'INVALID_FILE_TYPE'
+		});
+	});
+
+	it('refuses a file with a valid signature but a broken image body', async () => {
+		const broken = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0]);
+
+		await expect(readAvatarImage(new File([broken], 'broken.png'))).rejects.toMatchObject({
 			code: 'INVALID_FILE_TYPE'
 		});
 	});

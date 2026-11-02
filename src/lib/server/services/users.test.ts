@@ -135,9 +135,9 @@ describe.skipIf(!testDatabase)('users', () => {
 		};
 
 		const image = {
-			bytes: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
-			contentType: 'image/png' as const,
-			extension: 'png' as const
+			bytes: new Uint8Array([0x52, 0x49, 0x46, 0x46]),
+			contentType: 'image/webp' as const,
+			extension: 'webp' as const
 		};
 
 		await saveAvatar(testDatabase, fakeStorage, testUserId, image);
@@ -149,7 +149,7 @@ describe.skipIf(!testDatabase)('users', () => {
 		}
 
 		expect(key.startsWith(`avatars/${testUserId}/`)).toBe(true);
-		expect(key.endsWith('.png')).toBe(true);
+		expect(key.endsWith('.webp')).toBe(true);
 		expect(objects.get(key)).toEqual(image.bytes);
 	});
 });

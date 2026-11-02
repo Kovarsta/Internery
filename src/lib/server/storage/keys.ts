@@ -19,6 +19,6 @@ export const AVATAR_PREFIX = 'avatars/';
 export const BLANK_AVATAR_KEY = `${AVATAR_PREFIX}_blank.png`;
 
 /** Builds a fresh key for an upload under the owner's user id. */
-export function newAvatarKey(userId: string, extension: 'png' | 'jpg'): string {
+export function newAvatarKey(userId: string, extension: 'webp'): string {
 	return `${AVATAR_PREFIX}${userId}/${randomUUID()}.${extension}`;
 }

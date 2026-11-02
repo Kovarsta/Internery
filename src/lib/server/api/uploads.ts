@@ -1,19 +1,28 @@
+import sharp from 'sharp';
 import { ApiError } from './errors.ts';
 
 /** Largest avatar the API accepts. Matches the contract and the storage decision. */
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
-// The first bytes of each format. A browser-supplied MIME type is a claim; these
-// bytes are the actual file, so the check cannot be fooled by renaming a file.
-// https://en.wikipedia.org/wiki/List_of_file_signatures
+// A small compressed file can decode to an enormous raster, so the decoder is
+// capped at 16 MP. That covers a 12 MP phone photo with room to spare.
+const MAX_INPUT_PIXELS = 16_000_000;
+
+// Every stored avatar is square WebP. Re-encoding also drops EXIF, which is
+// where phone photos keep GPS coordinates.
+const AVATAR_SIZE = 512;
+const WEBP_QUALITY = 80;
+// The first bytes of each accepted format. A browser-supplied MIME type is a
+// claim; these bytes are the actual file, so the check cannot be fooled by
+// renaming. https://en.wikipedia.org/wiki/List_of_file_signatures
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const JPEG_SIGNATURE = [0xff, 0xd8, 0xff];
 
-/** A validated avatar upload, ready to store. */
+/** A validated and normalised avatar upload, ready to store. */
 export type AvatarImage = {
 	bytes: Uint8Array;
-	contentType: 'image/png' | 'image/jpeg';
-	extension: 'png' | 'jpg';
+	contentType: 'image/webp';
+	extension: 'webp';
 };
 
 /**
@@ -31,13 +40,16 @@ export async function parseFormData(request: Request): Promise<FormData> {
 }
 
 /**
- * Validates an uploaded avatar and returns its bytes and real content type.
+ * Validates an uploaded avatar and normalises it for storage.
  *
- * The size is checked before reading the file into memory. The type comes from
- * the file signature, not from `file.type`, which the client controls.
+ * The size is checked before the file is read. The type comes from the file
+ * signature, not from `file.type`, which the client controls. The accepted
+ * bytes are then rotated by their EXIF orientation, cropped towards a square
+ * (never enlarged) and re-encoded as WebP, so the stored object is always ours.
  *
- * Throws `FILE_TOO_LARGE` (`413`), `INVALID_FILE_TYPE` (`415`), or
- * `VALIDATION_ERROR` (`422`) for an empty file.
+ * Throws `FILE_TOO_LARGE` (`413`), `INVALID_FILE_TYPE` (`415`) for a file that
+ * is not a decodable PNG or JPEG, or `VALIDATION_ERROR` (`422`) for an empty
+ * file.
  */
 export async function readAvatarImage(file: File): Promise<AvatarImage> {
 	if (file.size === 0) {
@@ -50,15 +62,22 @@ export async function readAvatarImage(file: File): Promise<AvatarImage> {
 
 	const bytes = new Uint8Array(await file.arrayBuffer());
 
-	if (startsWith(bytes, PNG_SIGNATURE)) {
-		return { bytes, contentType: 'image/png', extension: 'png' };
+	if (!startsWith(bytes, PNG_SIGNATURE) && !startsWith(bytes, JPEG_SIGNATURE)) {
+		throw new ApiError('INVALID_FILE_TYPE');
 	}
 
-	if (startsWith(bytes, JPEG_SIGNATURE)) {
-		return { bytes, contentType: 'image/jpeg', extension: 'jpg' };
-	}
+	try {
+		const processed = await sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS })
+			.rotate()
+			.resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover', withoutEnlargement: true })
+			.webp({ quality: WEBP_QUALITY })
+			.toBuffer();
 
-	throw new ApiError('INVALID_FILE_TYPE');
+		return { bytes: new Uint8Array(processed), contentType: 'image/webp', extension: 'webp' };
+	} catch {
+		// A file can carry a valid signature and still fail to decode.
+		throw new ApiError('INVALID_FILE_TYPE');
+	}
 }
 
 /** Checks whether the bytes begin with every byte of the signature. */
