@@ -844,8 +844,9 @@ paths:
       operationId: getUserAvatar
       summary: Download a user's uploaded avatar
       description: |
-        Public profile image. Returns the uploaded avatar only; when the user has no uploaded
-        avatar, `UserMe.avatarUrl` falls back to the OAuth provider image or null.
+        Public profile image. Uploaded avatars are stored as WebP; the shared blank placeholder is
+        a PNG. When the user has no uploaded avatar, `UserMe.avatarUrl` falls back to the OAuth
+        provider image or null.
       security: []
       x-us: [US-06]
       x-fr: [FR-08]
@@ -855,6 +856,8 @@ paths:
         '200':
           description: Avatar image.
           content:
+            image/webp:
+              schema: { type: string, format: binary }
             image/png:
               schema: { type: string, format: binary }
             image/jpeg:

@@ -52,6 +52,9 @@ invalidation harder.
 
 - Accept PNG or JPEG, up to 2 MB.
 - Validate the file signature, not only the client-supplied MIME type.
+- Cap the decoder at 16 MP, so a small compressed file cannot expand into an enormous raster.
+- Rotate by the EXIF orientation, crop towards 512×512 without enlarging, then re-encode as WebP at
+  quality 80. Re-encoding strips EXIF, including GPS coordinates.
 - Generate a new key for every upload; never overwrite an existing object.
 - Update `avatarKey` to the new key.
 - Delete the old object after the normal 7-day unreferenced grace period.
@@ -90,7 +93,6 @@ provision the same object once.
 ## Open decisions
 
 - Whether avatars stay public or become authenticated later.
-- Whether to resize/normalise uploads to WebP before storing them.
 - Whether `users.image` should be updated to the application URL for OAuth consistency, or remain the
   provider URL fallback. Current decision: keep it as the provider fallback.
 
