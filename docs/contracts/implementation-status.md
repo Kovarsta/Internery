@@ -224,6 +224,9 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - `pnpm storage:sweep` collects referenced keys in three queries, lists `cv/` and `avatars/`, and
   deletes unreferenced objects older than 7 days. Dry run is the default; `--apply` deletes. The
   reserved blank avatar is never deleted.
+- `pnpm retention:run` clears expired application CVs and purges old sessions, verification tokens,
+  notifications, AI explanations, AI usage days and audit logs. Dry run is the default; `--apply`
+  deletes. Application CV expiry only nulls the columns; the sweep removes the object afterwards.
 - Personalised JSON answers with `Cache-Control: no-store` through `noStoreJson`: the account reads,
   the `/me/*` lists and profiles, the applicant profile, and the job detail with its applicant list.
   Public reads such as `/categories`, `/jobs` and the work-record verify endpoint keep the normal

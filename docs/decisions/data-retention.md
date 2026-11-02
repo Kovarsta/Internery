@@ -84,6 +84,10 @@ Never delete the object before the database change commits.
 - Never sweep the reserved blank avatar key (`avatars/_blank.png`). It is infrastructure and stays
   even when no row references it. See `avatar-storage.md`.
 - S3 lifecycle rule for `tmp/` uploads after 24 hours.
+- Run `pnpm retention:run` for the timestamped database cleanups: expired application CVs, sessions,
+  verification tokens, notifications, AI explanations, AI usage days and audit logs. Dry run is the
+  default; `--apply` deletes. Application CV expiry only nulls the columns, so the orphan sweep
+  removes the object after its grace period.
 
 ### Sweep notes
 
@@ -112,7 +116,11 @@ Never delete the object before the database change commits.
 
 ## Implementation TODOs
 
-- Add retention constants to configuration.
-- Run `pnpm storage:sweep` from a scheduler. Dry run is the default; `--apply` deletes.
-- Add application CV expiry and the notification/AI/auth cleanup jobs.
+- Move the retention periods into configuration; they currently live in `services/retention.ts` and
+  the sweep.
+- Run `pnpm retention:run` and `pnpm storage:sweep` from a scheduler. Both dry-run by default.
+- Decide the account deletion purge: what starts the 30-day grace, and whether to hard-delete or
+  anonymise. Restrictive foreign keys make anonymisation the practical choice.
+- Decide whether pending applications on a terminal job expire after 30 days. The table says "keep
+  snapshot" without a follow-up rule.
 - Add audit entries for system deletions, using key hashes rather than PII where possible.

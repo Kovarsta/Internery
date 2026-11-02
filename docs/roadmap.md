@@ -136,8 +136,8 @@ The signing and verification helpers live in `src/lib/server/work-record-signatu
 
 ## Phase 5 - storage
 
-Status: in progress. Every storage endpoint is implemented. The orphan sweep script exists; CV
-expiry and the other retention jobs remain.
+Status: in progress. Every storage endpoint, the orphan sweep and the timestamped retention jobs are
+done. Account deletion and the system-deletion audit remain open.
 
 - **M** S3/MinIO client configuration and a `StorageService` abstraction
 - **M** `PUT /me/cv` — PDF/DOCX, 5 MB, magic-byte validation, new unique key
