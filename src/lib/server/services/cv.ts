@@ -45,10 +45,20 @@ export async function getOwnCv(database: Database, studentId: string): Promise<C
  * points at it.
  */
 export async function removeOwnCv(database: Database, studentId: string): Promise<void> {
-	await database
-		.update(studentProfiles)
-		.set({ cvKey: null, cvFileName: null, cvMimeType: null, cvSizeBytes: null })
-		.where(eq(studentProfiles.userId, studentId));
+	await database.transaction(async (tx) => {
+		// Serialise with applyToJob, which locks the same row before copying the
+		// key onto an application.
+		await tx
+			.select({ userId: studentProfiles.userId })
+			.from(studentProfiles)
+			.where(eq(studentProfiles.userId, studentId))
+			.for('update');
+
+		await tx
+			.update(studentProfiles)
+			.set({ cvKey: null, cvFileName: null, cvMimeType: null, cvSizeBytes: null })
+			.where(eq(studentProfiles.userId, studentId));
+	});
 }
 
 /**
@@ -68,22 +78,32 @@ export async function saveCv(
 
 	await storage.putObject(key, upload.bytes, upload.mimeType);
 
-	await database
-		.insert(studentProfiles)
-		.values({
-			userId: studentId,
-			cvKey: key,
-			cvFileName: upload.fileName,
-			cvMimeType: upload.mimeType,
-			cvSizeBytes: upload.bytes.length
-		})
-		.onConflictDoUpdate({
-			target: studentProfiles.userId,
-			set: {
+	await database.transaction(async (tx) => {
+		// Same lock as applyToJob: an application either snapshots the old key
+		// or the new one, and never races a replacement mid-way.
+		await tx
+			.select({ userId: studentProfiles.userId })
+			.from(studentProfiles)
+			.where(eq(studentProfiles.userId, studentId))
+			.for('update');
+
+		await tx
+			.insert(studentProfiles)
+			.values({
+				userId: studentId,
 				cvKey: key,
 				cvFileName: upload.fileName,
 				cvMimeType: upload.mimeType,
 				cvSizeBytes: upload.bytes.length
-			}
-		});
+			})
+			.onConflictDoUpdate({
+				target: studentProfiles.userId,
+				set: {
+					cvKey: key,
+					cvFileName: upload.fileName,
+					cvMimeType: upload.mimeType,
+					cvSizeBytes: upload.bytes.length
+				}
+			});
+	});
 }

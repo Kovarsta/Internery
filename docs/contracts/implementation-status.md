@@ -217,6 +217,10 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - `GET /applications/{applicationId}/cv` streams the application's snapshot, never the student's
   current profile CV. The employer who owns the job and the applicant can read it; anyone else gets
   `403`. A missing snapshot or object answers `404`.
+- `applyToJob` and the CV replace/delete paths lock the `student_profiles` row before reading or
+  changing the CV key. Without that lock an apply can snapshot a key that a concurrent replacement
+  makes unreferenced, and the sweep could delete it before the application commits. The race test
+  runs both operations on separate connections.
 - Personalised JSON answers with `Cache-Control: no-store` through `noStoreJson`: the account reads,
   the `/me/*` lists and profiles, the applicant profile, and the job detail with its applicant list.
   Public reads such as `/categories`, `/jobs` and the work-record verify endpoint keep the normal

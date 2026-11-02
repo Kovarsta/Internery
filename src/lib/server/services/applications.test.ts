@@ -4,6 +4,8 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
+import type { Storage } from '#lib/server/storage/client.ts';
+import { saveCv } from './cv.ts';
 import {
 	acceptApplication,
 	applyToJob,
@@ -45,6 +47,7 @@ const rejectJobId = randomUUID();
 const acceptJobId = randomUUID();
 const fullJobId = randomUUID();
 const raceJobId = randomUUID();
+const cvRaceJobId = randomUUID();
 
 const firstApplicationId = randomUUID();
 const secondApplicationId = randomUUID();
@@ -155,6 +158,7 @@ describe.skipIf(!testDatabase)('applications', () => {
 				job(acceptJobId, 'Accept job'),
 				job(fullJobId, 'Full job'),
 				job(raceJobId, 'Race job'),
+				job(cvRaceJobId, 'CV race job'),
 				{ ...job(filledJobId, 'Filled job'), status: 'FILLED' },
 				{ ...job(hiddenJobId, 'Hidden job'), isHidden: true }
 			]);
@@ -813,6 +817,57 @@ describe.skipIf(!testDatabase)('applications', () => {
 			await expect(
 				getApplicationCv(testDatabase, { id: employerId, role: 'EMPLOYER' }, randomUUID())
 			).rejects.toMatchObject({ code: 'NOT_FOUND' });
+		});
+	});
+
+	describe('applyToJob with a concurrent CV replacement', () => {
+		it('snapshots the old or the new key and leaves the new one current', async () => {
+			if (!concurrentDatabase) {
+				return;
+			}
+
+			const objects = new Map<string, Uint8Array>();
+			const fakeStorage: Storage = {
+				async putObject(key, body) {
+					objects.set(key, body);
+				},
+				async getObject() {
+					return null;
+				},
+				async deleteObject(key) {
+					objects.delete(key);
+				}
+			};
+
+			const replacement = {
+				bytes: new Uint8Array([0x25, 0x50, 0x44, 0x46]),
+				fileName: 'replacement.pdf',
+				mimeType: 'application/pdf' as const,
+				extension: 'pdf' as const
+			};
+
+			const [, application] = await Promise.all([
+				saveCv(concurrentDatabase, fakeStorage, writerStudentId, replacement),
+				applyToJob(
+					concurrentDatabase,
+					{ id: writerStudentId, name: 'Writer Student' },
+					cvRaceJobId,
+					{ message: 'CV race', attachCv: true }
+				)
+			]);
+
+			const [profile] = await concurrentDatabase
+				.select({ cvKey: schema.studentProfiles.cvKey })
+				.from(schema.studentProfiles)
+				.where(eq(schema.studentProfiles.userId, writerStudentId));
+
+			if (!profile?.cvKey) {
+				throw new Error('Expected the replacement CV to be stored.');
+			}
+
+			expect(profile.cvKey.startsWith(`cv/${writerStudentId}/`)).toBe(true);
+			expect(objects.has(profile.cvKey)).toBe(true);
+			expect(['cv/writer.pdf', profile.cvKey]).toContain(application.cvKey);
 		});
 	});
 });

@@ -434,11 +434,14 @@ export async function applyToJob(
 		let cvFileName: string | null = null;
 
 		if (input.attachCv) {
+			// Lock the profile before reading the key. A concurrent CV
+			// replacement takes the same lock in saveCv, so this snapshot is
+			// either the old file or the new one, never a half-applied change.
 			const [profile] = await tx
 				.select({ cvKey: studentProfiles.cvKey, cvFileName: studentProfiles.cvFileName })
 				.from(studentProfiles)
 				.where(eq(studentProfiles.userId, student.id))
-				.limit(1);
+				.for('update');
 
 			// Applying without a CV is allowed; the snapshot stays empty.
 			if (profile?.cvKey && profile.cvFileName) {
