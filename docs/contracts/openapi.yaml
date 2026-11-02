@@ -845,7 +845,8 @@ paths:
       summary: Download a user's uploaded avatar
       description: |
         Public profile image. Uploaded avatars are stored as WebP; the shared blank placeholder is
-        a PNG. When the user has no uploaded avatar, `UserMe.avatarUrl` falls back to the OAuth
+        a PNG. The URL carries a `?v=` version derived from the stored key, so it can be cached
+        immutably. When the user has no uploaded avatar, `UserMe.avatarUrl` falls back to the OAuth
         provider image or null.
       security: []
       x-us: [US-06]
@@ -862,6 +863,8 @@ paths:
               schema: { type: string, format: binary }
             image/jpeg:
               schema: { type: string, format: binary }
+        '304':
+          description: Not modified; the cached copy still matches the current ETag.
         '404': { $ref: '#/components/responses/NotFound' }
 
   # --------------------------------------------------------- Notifications
@@ -1742,7 +1745,9 @@ components:
         phone: { type: [string, 'null'] }
         avatarUrl:
           type: [string, 'null']
-          description: Application-served avatar URL or OAuth provider image; never a raw storage URL.
+          description: |
+            Application-served avatar URL or OAuth provider image; never a raw storage URL.
+            A stored avatar carries a `?v=` version derived from its key.
         createdAt: { type: string, format: date-time }
     UserUpdate:
       type: object

@@ -41,12 +41,25 @@ application-served URL shape.
 
 - stream the private object;
 - set `Content-Type` from stored metadata;
-- send an `ETag` derived from the object key or version;
-- send cache headers;
+- send the object's `ETag` and answer `304` when `If-None-Match` matches;
+- send `Cache-Control: public, max-age=31536000, immutable`, because the `?v=` version in the
+  URL changes with the stored key;
 - return `404` when the user has no uploaded avatar and no fallback image.
 
 Do not return a presigned S3 URL: it creates a temporary shareable storage link and makes cache
 invalidation harder.
+
+## Caching split
+
+The image and the JSON that points at it are cached differently, and that is deliberate:
+
+- `GET /users/{userId}/avatar?v=...` — cache for a year with `immutable`. The version makes the URL
+  identify exact bytes, so a new picture is a new URL.
+- `GET /me` — must not be stored (`Cache-Control: no-store`). It carries the current `avatarUrl`, so
+  a cached copy would keep handing out the previous picture's URL.
+
+The general rule: **cache the bytes, not the pointer.** The other personalised JSON responses have
+the same requirement, so they should share one `no-store` default rather than each adding a header.
 
 ## Upload and replacement
 
@@ -98,8 +111,7 @@ provision the same object once.
 
 ## Implementation TODOs
 
-- Version the `avatarUrl` with `?v=` so the route can cache immutably.
-- Answer `304` when the request's `If-None-Match` matches the object ETag.
+- Set `Cache-Control: no-store` on personalised JSON, starting with `GET /me`.
 - Sweep avatars: remove objects no profile and no application references.
 
 ## References

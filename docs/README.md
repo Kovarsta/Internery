@@ -30,6 +30,7 @@ change; do not leave the mismatch undocumented.
 | `decisions/better-auth-surface.md`  | Auth endpoints live under `/api/auth`, not `/api/v1`   |
 | `decisions/camel-case-columns.md`   | Product columns are camelCase, auth columns snake_case |
 | `decisions/data-retention.md`       | Reference-aware file cleanup and retention             |
+| `decisions/drizzle-style.md`        | Table objects, projections and service record types    |
 | `decisions/minio-staging.md`        | MinIO configuration for local and staging              |
 
 ## Agent workspace

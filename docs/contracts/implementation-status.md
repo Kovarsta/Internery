@@ -9,7 +9,7 @@ endpoint is implemented.
 
 Authentication is provided by Better Auth under `/api/auth/*` and is outside this contract.
 
-**38 of 65 operations implemented.**
+**41 of 65 operations implemented.**
 
 ## Checklist
 
@@ -25,9 +25,9 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 
 - [x] `GET /me/student-profile` — Own student profile
 - [x] `PUT /me/student-profile` — Create or replace the student profile
-- [ ] `GET /me/cv` — Download own CV
-- [ ] `PUT /me/cv` — Upload or replace the CV
-- [ ] `DELETE /me/cv` — Remove the CV from the profile
+- [x] `GET /me/cv` - Download own CV
+- [x] `PUT /me/cv` - Upload or replace the CV
+- [x] `DELETE /me/cv` - Remove the CV from the profile
 - [x] `GET /me/applications` — Applications I submitted, newest first
 - [x] `GET /me/saved-jobs` — Bookmarked jobs
 - [x] `PUT /me/saved-jobs/{jobId}` — Bookmark a job (idempotent)
@@ -192,7 +192,9 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - `GET /users/{userId}/avatar` is public and streams the object from the private bucket. A missing
   avatar key and a missing object both answer `404`, so an account without a picture is not
   distinguishable from an unknown id. The response carries the object's `Content-Type`, `ETag` and
-  `Cache-Control: public, max-age=86400`.
+  `Cache-Control: public, max-age=31536000, immutable`; `avatarUrl` includes a `?v=` hash of the
+  stored key, so a replaced picture is a new URL. A request whose `If-None-Match` matches the ETag
+  gets `304` and the object stream is cancelled.
 - `DELETE /me/avatar` points `avatarKey` at the reserved `avatars/_blank.png` key instead of clearing
   it, which keeps the OAuth provider image shadowed. It upserts the profile row and answers `204`
   every time, so a repeated call changes nothing.
@@ -202,3 +204,13 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   80, which also strips metadata such as GPS. Each upload gets a new key under `avatars/{userId}/`.
   The object is stored before the row is updated, so the profile cannot point at a missing object;
   the previous object is left for the reference-aware sweep.
+- `GET /me/cv` streams the student's own CV as an attachment with `Cache-Control: private, no-store`.
+  The `Content-Disposition` header carries an ASCII fallback and an RFC 5987 `filename*` for names
+  such as Vietnamese ones. A missing key and a missing object both answer `404`.
+- `DELETE /me/cv` clears `cvKey`, `cvFileName`, `cvMimeType` and `cvSizeBytes`, then answers `204`.
+  Applications keep their own snapshot key, so the object is not deleted inline; the sweep removes
+  it once nothing references it.
+- `PUT /me/cv` accepts a multipart `file` field, detects PDF or DOCX from the bytes with `file-type`,
+  and enforces the 5 MB limit before reading. A DOCX must have the OpenXML structure, so a plain ZIP
+  renamed to `.docx` is refused. Each upload gets `cv/{userId}/{uuid}.{ext}`; the object is stored
+  before the four profile columns are updated, and earlier applications keep their snapshot.
