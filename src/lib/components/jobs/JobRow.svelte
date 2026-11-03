@@ -10,8 +10,9 @@
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import type { JobSummary } from '#lib/api/types.ts';
 	import { formatDateRange, formatPositionsRemaining, formatSalary } from '#lib/format.ts';
+	import type { Snippet } from 'svelte';
 
-	let { job }: { job: JobSummary } = $props();
+	let { job, children }: { job: JobSummary; children?: Snippet } = $props();
 
 	const href = $derived(resolve(`jobs/${encodeURIComponent(job.id)}`));
 </script>
@@ -44,5 +45,6 @@
 		<a class="mt-1 inline-block text-sm font-medium text-chalk hover:underline" {href}>
 			View shift
 		</a>
+		{@render children?.()}
 	</div>
 </article>

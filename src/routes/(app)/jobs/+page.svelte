@@ -46,6 +46,7 @@
 {/if}
 
 <Pagination
+	basePath={resolve('jobs')}
 	page={data.page}
 	pageSize={data.pageSize}
 	total={data.jobs.total}

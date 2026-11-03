@@ -1,22 +1,22 @@
 <script lang="ts">
 	/**
-	 * Pagination for `/jobs`.
+	 * Pagination for a paged list.
 	 *
 	 * Keeps the active filters in the URL. Pages are 1-based, matching the API.
 	 */
 
-	import { resolve } from '$app/paths';
 	import type { ResolvedPathname } from '$app/types';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 
 	type Props = {
+		basePath: ResolvedPathname;
 		page: number;
 		pageSize: number;
 		total: number;
 		query: string;
 	};
 
-	let { page, pageSize, total, query }: Props = $props();
+	let { basePath, page, pageSize, total, query }: Props = $props();
 
 	const totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
 
@@ -24,8 +24,8 @@
 		const params = new SvelteURLSearchParams(query);
 		params.set('page', String(target));
 
-		// resolve() handles the path and base; the query string is runtime data.
-		return `${resolve('jobs')}?${params.toString()}` as ResolvedPathname;
+		// The caller resolved the path and base; the query string is runtime data.
+		return `${basePath}?${params.toString()}` as ResolvedPathname;
 	}
 </script>
 
