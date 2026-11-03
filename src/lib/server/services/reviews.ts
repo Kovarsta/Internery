@@ -9,10 +9,10 @@ import {
 	jobs,
 	notifications,
 	reviews,
-	studentProfiles,
 	workRecords,
 	type WorkRecordPayload
 } from '#lib/server/db/product.schema.ts';
+import { recalculateUserRating } from './ratings.ts';
 import { CURRENT_SIGNATURE_VERSION, signWorkRecord } from '#lib/server/work-record-signature.ts';
 
 export type ReviewListRecord = {
@@ -226,33 +226,7 @@ export async function createReview(
 			throw new Error('The review could not be written.');
 		}
 
-		// Hidden reviews are excluded, matching the public list (AC-28.2). The
-		// `float8` cast keeps the average a JSON number and the rounding matches
-		// the two decimals of the profile rating columns.
-		const [rating] = await tx
-			.select({
-				ratingAvg: sql<number>`coalesce(round(avg(${reviews.rating})::numeric, 2), 0)::float8`,
-				ratingCount: count()
-			})
-			.from(reviews)
-			.where(and(eq(reviews.revieweeId, input.revieweeId), eq(reviews.isHidden, false)));
-
-		const ratingPatch = {
-			ratingAvg: rating?.ratingAvg ?? 0,
-			ratingCount: rating?.ratingCount ?? 0
-		};
-
-		// Only one of the two profile rows exists for a user; updating both keeps
-		// the caller from having to know which role the reviewee holds.
-		await tx
-			.update(studentProfiles)
-			.set(ratingPatch)
-			.where(eq(studentProfiles.userId, input.revieweeId));
-
-		await tx
-			.update(employerProfiles)
-			.set(ratingPatch)
-			.where(eq(employerProfiles.userId, input.revieweeId));
+		await recalculateUserRating(tx, input.revieweeId);
 
 		await tx.insert(notifications).values({
 			userId: input.revieweeId,

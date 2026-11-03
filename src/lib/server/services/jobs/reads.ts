@@ -2,6 +2,7 @@
  * Job reads: public search, job detail and the employer's own job list.
  */
 import { and, count, desc, eq, gte, lte, sql, type SQL } from 'drizzle-orm';
+import { toLikePattern } from '#lib/server/api/sql.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { categories, employerProfiles, jobs } from '#lib/server/db/product.schema.ts';
 import {
@@ -152,16 +153,4 @@ function orderFor(sort: JobSortOrder): SQL[] {
 	}
 
 	return [desc(jobs.createdAt), desc(jobs.id)];
-}
-
-/**
- * Escapes LIKE wildcards so the location filter matches the text literally.
- *
- * Without this, a student typing `%` would match every job, and `_` would match
- * any single character.
- */
-function toLikePattern(value: string): string {
-	const escaped = value.replace(/[\\%_]/g, (character) => `\\${character}`);
-
-	return `%${escaped}%`;
 }

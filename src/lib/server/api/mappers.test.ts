@@ -1,19 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
+	toAdminUser,
 	toApplication,
 	toApplicant,
 	toCategory,
 	toEmployerProfile,
 	toJobDetail,
 	toJobSummary,
+	toModerationItem,
 	toMyJob,
 	toNotification,
+	toPlatformStats,
 	toReview,
 	toStudentProfile,
 	toUserMe,
 	toVerificationRequest,
 	toWorkRecord,
 	toWorkRecordCard,
+	type AdminUserSource,
 	type ApplicationSource,
 	type ApplicantSource,
 	type EmployerProfileSource,
@@ -636,5 +640,112 @@ describe('toVerificationRequest', () => {
 		expect(reviewed.hasLicense).toBe(false);
 		expect(reviewed.rejectReason).toBe('The licence was illegible.');
 		expect(reviewed.reviewedAt).toBe('2026-10-03T08:00:00.000Z');
+	});
+});
+
+describe('toAdminUser', () => {
+	const user: AdminUserSource = {
+		id: '00000000-0000-4000-8000-000000000010',
+		email: 'linh@internery.local',
+		name: 'Pham Thu Linh',
+		role: 'STUDENT',
+		status: 'LOCKED',
+		lockedAt: new Date('2026-10-04T09:00:00Z'),
+		lockReason: 'Repeated abusive messages.',
+		createdAt: new Date('2026-09-01T08:00:00Z')
+	};
+
+	it('maps the account fields and the lock details', () => {
+		expect(toAdminUser(user)).toEqual({
+			id: user.id,
+			email: 'linh@internery.local',
+			role: 'STUDENT',
+			status: 'LOCKED',
+			fullName: 'Pham Thu Linh',
+			lockedAt: '2026-10-04T09:00:00.000Z',
+			lockReason: 'Repeated abusive messages.',
+			createdAt: '2026-09-01T08:00:00.000Z'
+		});
+	});
+
+	it('keeps a never-locked account null', () => {
+		const active = toAdminUser({
+			...user,
+			status: 'ACTIVE',
+			lockedAt: null,
+			lockReason: null
+		});
+
+		expect(active.lockedAt).toBeNull();
+		expect(active.lockReason).toBeNull();
+	});
+});
+
+describe('toModerationItem', () => {
+	const job: JobSummarySource = {
+		id: '20000000-0000-4000-8000-000000000005',
+		title: 'Weekend cafe assistant',
+		location: 'Hanoi',
+		salaryAmount: 280_000,
+		salaryType: 'DAILY',
+		startDate: '2026-09-05',
+		endDate: '2026-09-27',
+		positionsNeeded: 2,
+		acceptedCount: 2,
+		status: 'COMPLETED',
+		needsReview: true,
+		createdAt: new Date('2026-08-20T08:00:00Z'),
+		categoryId: '10000000-0000-4000-8000-000000000001',
+		categoryName: 'Food & Beverage',
+		employerId: '00000000-0000-4000-8000-000000000003',
+		employerOrgName: 'Acme Coffee',
+		employerOrgType: 'COMPANY',
+		employerVerificationStatus: 'VERIFIED',
+		employerRatingAvg: 4.5,
+		employerRatingCount: 2
+	};
+
+	it('maps the job summary and keeps the moderation fields', () => {
+		const item = toModerationItem({
+			job,
+			isHidden: true,
+			hiddenReason: 'Three students reported this job.',
+			openReportCount: 3,
+			flaggedTerms: ['deposit'],
+			causes: ['REPORTED', 'AUTO_HIDDEN', 'SCAM_FLAG']
+		});
+
+		expect(item.job.id).toBe(job.id);
+		expect(item.job.scamWarning).toBe(true);
+		expect(item.isHidden).toBe(true);
+		expect(item.openReportCount).toBe(3);
+		expect(item.causes).toEqual(['REPORTED', 'AUTO_HIDDEN', 'SCAM_FLAG']);
+	});
+});
+
+describe('toPlatformStats', () => {
+	it('nests the counts into users and jobs', () => {
+		expect(
+			toPlatformStats({
+				from: '2026-01-01',
+				to: null,
+				students: 3,
+				employers: 1,
+				admins: 1,
+				hiring: 4,
+				filled: 0,
+				completed: 1,
+				cancelled: 0,
+				applicationsTotal: 8,
+				completedJobs: 1
+			})
+		).toEqual({
+			from: '2026-01-01',
+			to: null,
+			users: { students: 3, employers: 1, admins: 1 },
+			jobs: { hiring: 4, filled: 0, completed: 1, cancelled: 0 },
+			applicationsTotal: 8,
+			completedJobs: 1
+		});
 	});
 });

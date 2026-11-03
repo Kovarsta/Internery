@@ -611,6 +611,127 @@ export function toNotification(notification: NotificationSource): Notification {
 	};
 }
 
+export type AdminUserSource = {
+	id: string;
+	email: string;
+	name: string;
+	role: UserRole;
+	status: AccountStatus;
+	lockedAt: Date | null;
+	lockReason: string | null;
+	createdAt: Date | string;
+};
+
+export type AdminUser = {
+	id: string;
+	email: string;
+	role: UserRole;
+	status: AccountStatus;
+	fullName: string;
+	lockedAt: string | null;
+	lockReason: string | null;
+	createdAt: string;
+};
+
+/** Maps an account row with its moderation fields for the admin list. */
+export function toAdminUser(user: AdminUserSource): AdminUser {
+	return {
+		id: user.id,
+		email: user.email,
+		role: user.role,
+		status: user.status,
+		fullName: user.name,
+		lockedAt: user.lockedAt === null ? null : toIsoString(user.lockedAt),
+		lockReason: user.lockReason,
+		createdAt: toIsoString(user.createdAt)
+	};
+}
+
+export type ModerationCause = 'REPORTED' | 'AUTO_HIDDEN' | 'ADMIN_HIDDEN' | 'SCAM_FLAG';
+
+export type ModerationItemSource = {
+	job: JobSummarySource;
+	isHidden: boolean;
+	hiddenReason: string | null;
+	openReportCount: number;
+	flaggedTerms: string[];
+	causes: ModerationCause[];
+};
+
+export type ModerationItem = {
+	job: JobSummary;
+	isHidden: boolean;
+	hiddenReason: string | null;
+	openReportCount: number;
+	flaggedTerms: string[];
+	causes: ModerationCause[];
+};
+
+/** Maps a moderation queue row; the job itself uses the public summary shape. */
+export function toModerationItem(item: ModerationItemSource): ModerationItem {
+	return {
+		job: toJobSummary(item.job),
+		isHidden: item.isHidden,
+		hiddenReason: item.hiddenReason,
+		openReportCount: item.openReportCount,
+		flaggedTerms: item.flaggedTerms,
+		causes: item.causes
+	};
+}
+
+export type PlatformStatsSource = {
+	from: string | null;
+	to: string | null;
+	students: number;
+	employers: number;
+	admins: number;
+	hiring: number;
+	filled: number;
+	completed: number;
+	cancelled: number;
+	applicationsTotal: number;
+	completedJobs: number;
+};
+
+export type PlatformStats = {
+	from: string | null;
+	to: string | null;
+	users: {
+		students: number;
+		employers: number;
+		admins: number;
+	};
+	jobs: {
+		hiring: number;
+		filled: number;
+		completed: number;
+		cancelled: number;
+	};
+	applicationsTotal: number;
+	completedJobs: number;
+};
+
+/** Nests the flat count record into the contract's `users` and `jobs` groups. */
+export function toPlatformStats(stats: PlatformStatsSource): PlatformStats {
+	return {
+		from: stats.from,
+		to: stats.to,
+		users: {
+			students: stats.students,
+			employers: stats.employers,
+			admins: stats.admins
+		},
+		jobs: {
+			hiring: stats.hiring,
+			filled: stats.filled,
+			completed: stats.completed,
+			cancelled: stats.cancelled
+		},
+		applicationsTotal: stats.applicationsTotal,
+		completedJobs: stats.completedJobs
+	};
+}
+
 function toIsoString(value: Date | string): string {
 	return value instanceof Date ? value.toISOString() : value;
 }

@@ -1120,6 +1120,26 @@ paths:
         '204': { description: Removed. }
         '404': { $ref: '#/components/responses/NotFound' }
   /admin/categories:
+    get:
+      tags: [Admin]
+      operationId: adminListCategories
+      summary: List every category, active or not
+      description: |
+        Includes deactivated categories so an admin can rename or reactivate them. The public
+        `GET /categories` returns only active rows.
+      x-us: [US-34]
+      x-fr: [FR-39]
+      x-roles: [ADMIN]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '200':
+          description: All categories, ordered by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
     post:
       tags: [Admin]
       operationId: adminCreateCategory
