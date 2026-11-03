@@ -2,45 +2,74 @@
 	/**
 	 * My jobs (`/employer/jobs`).
 	 *
-	 * Serves `GET /me/jobs`, which already returns `applicantCount`, `acceptedCount`, `isHidden`
-	 * and `hiddenReason` per job. Links to the create and applicant pages. Skeleton only.
+	 * Lists `GET /me/jobs` with a status filter kept in the URL. The create form
+	 * redirects here with `?created=1`, which shows a single confirmation.
 	 */
 
 	import { resolve } from '$app/paths';
-	import PageHeader from '#lib/components/PageHeader.svelte';
-	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
+	import EmployerJobRow from '#lib/components/employer/EmployerJobRow.svelte';
+	import EmptyState from '#lib/components/jobs/EmptyState.svelte';
+	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
+	import { Button } from '#lib/components/ui/button/index.ts';
+	import type { JobStatus } from '#lib/api/types.ts';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	const statusFilters: { label: string; value: JobStatus | null }[] = [
+		{ label: 'All', value: null },
+		{ label: 'Hiring', value: 'HIRING' },
+		{ label: 'Filled', value: 'FILLED' },
+		{ label: 'Completed', value: 'COMPLETED' },
+		{ label: 'Cancelled', value: 'CANCELLED' }
+	];
+
+	const total = $derived(data.jobs.total);
 </script>
 
-<div class="flex flex-wrap items-center justify-between gap-3">
-	<PageHeader
-		title="My jobs"
-		description="Every job you posted, with applicant and accepted counts."
-	/>
-	<a
-		class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-		href={resolve('/employer/jobs/new')}
-	>
-		Post a job
-	</a>
+<div class="flex flex-wrap items-start justify-between gap-3">
+	<div>
+		<h1 class="text-3xl font-extrabold tracking-tight">My jobs</h1>
+		<p class="mt-2 text-ink/70">
+			{total}
+			{total === 1 ? 'job' : 'jobs'}
+			{data.status ? 'with this status' : 'in total'}.
+		</p>
+	</div>
+
+	<Button href={resolve('/employer/jobs/new')}>Post a job</Button>
 </div>
 
-<div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
-	<div class="divide-y divide-slate-100">
-		{#each [1, 2, 3] as placeholder (placeholder)}
-			<div class="flex items-center gap-4 px-4 py-4">
-				<div class="flex-1">
-					<div class="h-4 w-1/3 rounded bg-slate-200"></div>
-					<div class="mt-2 h-3 w-1/4 rounded bg-slate-100"></div>
-				</div>
-				<div class="h-3 w-16 rounded bg-slate-100"></div>
-				<div class="h-7 w-20 rounded bg-slate-100"></div>
-			</div>
+{#if data.created}
+	<Alert class="mt-6 border-chalk/30 bg-chalk/5">
+		<AlertTitle>Job published</AlertTitle>
+		<AlertDescription>It is in search now and students can apply.</AlertDescription>
+	</Alert>
+{/if}
+
+<nav class="mt-6 flex flex-wrap gap-2" aria-label="Filter by status">
+	{#each statusFilters as filter (filter.label)}
+		<Button
+			href={filter.value ? `?status=${filter.value}` : resolve('/employer/jobs')}
+			size="sm"
+			variant={data.status === filter.value ? 'default' : 'outline'}
+		>
+			{filter.label}
+		</Button>
+	{/each}
+</nav>
+
+{#if data.jobs.items.length > 0}
+	<div class="mt-6 divide-y divide-rule border-t border-rule">
+		{#each data.jobs.items as job (job.id)}
+			<EmployerJobRow {job} />
 		{/each}
 	</div>
-</div>
-
-<div class="mt-4">
-	<SkeletonNotice>
-		My-jobs skeleton. GET /me/jobs already returns status, applicant and accepted counts.
-	</SkeletonNotice>
-</div>
+{:else}
+	<EmptyState
+		title="No jobs here"
+		description="Post a shift and it appears in search immediately."
+		actionLabel="Post a job"
+		actionHref={resolve('/employer/jobs/new')}
+	/>
+{/if}
