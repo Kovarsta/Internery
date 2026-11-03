@@ -110,6 +110,23 @@ export type CvInfo = {
 	sizeBytes: number;
 };
 
+export type OrgType = 'COMPANY' | 'INDIVIDUAL';
+
+export type EmployerVerification = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+
+/** The employer profile the owner edits on `/employer/profile`. */
+export type EmployerProfile = {
+	userId: string;
+	orgName: string;
+	orgType: OrgType;
+	description: string | null;
+	address: string | null;
+	contactPhone: string | null;
+	verificationStatus: EmployerVerification;
+	ratingAvg: number;
+	ratingCount: number;
+};
+
 /** The full student profile an employer sees for one application. */
 export type StudentProfile = {
 	userId: string;

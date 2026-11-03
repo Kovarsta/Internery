@@ -83,8 +83,8 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Product services and API handlers cover phases 0 to 3. The frontend lives in the `(app)` route
   group under `src/routes/(app)`; `src/routes/api` stays outside it. Job browsing, applications,
   saved jobs, the employer job list and applicant review, notifications and sign-in work against the
-  API. Student profile editing works; the company profile, verification, work records and the admin
-  area are still skeletons.
+  API. Student and company profile editing work; verification, work records and the admin area are
+  still skeletons.
 - File retention and garbage collection are agreed but **not implemented**. See
   `docs/decisions/data-retention.md` for the reference-aware cleanup policy and open decisions.
 
