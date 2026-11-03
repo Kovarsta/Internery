@@ -87,3 +87,19 @@ export type MyJob = JobSummary & {
 	isHidden: boolean;
 	hiddenReason: string | null;
 };
+
+/** An applicant as the employer sees them, without the full profile. */
+export type Applicant = {
+	id: string;
+	status: ApplicationStatus;
+	message: string | null;
+	hasCv: boolean;
+	createdAt: string;
+	student: {
+		fullName: string;
+		university: string | null;
+		major: string | null;
+		ratingAvg: number;
+		ratingCount: number;
+	};
+};

@@ -15,13 +15,13 @@ How the SvelteKit app is built and how it gets data. The backend is documented s
 
 ## Route map
 
-| Area     | Routes                                                      | Guard      |
-| -------- | ----------------------------------------------------------- | ---------- |
-| Public   | `/`, `/jobs`, `/jobs/[jobId]`, `/login`, `/register`        | none       |
-| Account  | `/me`, `/me/profile`, `/me/applications`, ...               | session    |
-| Employer | `/employer/jobs`, `/employer/jobs/new`, `/employer/profile` | `EMPLOYER` |
-| Admin    | `/admin`, `/admin/users`, `/admin/moderation`, ...          | `ADMIN`    |
-| Verify   | `/work-records`, `/work-records/[recordId]/verify`          | none       |
+| Area     | Routes                                                                           | Guard      |
+| -------- | -------------------------------------------------------------------------------- | ---------- |
+| Public   | `/`, `/jobs`, `/jobs/[jobId]`, `/login`, `/register`                             | none       |
+| Account  | `/me`, `/me/profile`, `/me/applications`, ...                                    | session    |
+| Employer | `/employer/jobs`, `/employer/jobs/new`, `/employer/jobs/[jobId]/applicants`, ... | `EMPLOYER` |
+| Admin    | `/admin`, `/admin/users`, `/admin/moderation`, ...                               | `ADMIN`    |
+| Verify   | `/work-records`, `/work-records/[recordId]/verify`                               | none       |
 
 Guards live in `+layout.server.ts` files: signed-out visitors redirect to `/login`, a wrong role gets
 `403` through `+error.svelte`.
@@ -79,9 +79,9 @@ Mutations use one of two patterns:
 
 - **Form action** for a whole-page flow (sign in, register, publish a job). It works without
   JavaScript and returns `fail(...)` with the API's message, which the page renders in an `Alert`.
-- **Browser write** for an in-page action (apply, save, withdraw). `apiSend` returns the error
-  instead of throwing, so the component can show a toast and call `refreshAll()` to reload the
-  server data. Use this when staying on the page is the point.
+- **Browser write** for an in-page action (apply, save, withdraw, accept an applicant). `apiSend`
+  returns the error instead of throwing, so the component can show a toast and call `refreshAll()`
+  to reload the server data. Use this when staying on the page is the point.
 
 `use:enhance` is optional; these forms already return server-rendered state.
 
@@ -92,9 +92,9 @@ Mutations use one of two patterns:
 do not call the library directly from components. Toasts are supplementary; the page must still show
 the state after a reload.
 
-Toasts are for write results (applied, saved, withdrawn, signed in), never for validation errors
-that belong next to a field. A navigation-level confirmation that must survive without JavaScript
-stays an `Alert`.
+Toasts are for write results (applied, saved, withdrawn, accepted, rejected, signed in), never for
+validation errors that belong next to a field. A navigation-level confirmation that must survive
+without JavaScript stays an `Alert`.
 
 Types in `src/lib/api/types.ts` mirror the contract by hand for now. If the number of response shapes
 grows, generate them from `openapi.yaml` with `openapi-typescript` instead of maintaining two copies.
@@ -116,7 +116,7 @@ src/lib/components/            shared across areas
 src/lib/components/ui/         generated shadcn-svelte controls
 src/lib/components/jobs/       job list, row, filters, actions, pagination
 src/lib/components/applications/  one application row with its withdraw action
-src/lib/components/employer/   employer job row
+src/lib/components/employer/   employer job row and applicant row with accept/reject
 ```
 
 Rules:
