@@ -96,6 +96,21 @@ export async function saveAvatar(
 }
 
 /**
+ * Applies the role chosen on the registration form.
+ *
+ * Better Auth owns the `role` column and marks it `input: false`, so signup
+ * cannot carry the value. The route sets it after the account exists. `ADMIN`
+ * is deliberately not accepted here; only the admin flow grants it.
+ */
+export async function assignSignupRole(
+	database: Database,
+	userId: string,
+	role: 'STUDENT' | 'EMPLOYER'
+): Promise<void> {
+	await database.update(users).set({ role }).where(eq(users.id, userId));
+}
+
+/**
  * Updates the account name and common profile phone in one transaction.
  *
  * Fields that are `undefined` are left unchanged. A missing `user_profiles` row

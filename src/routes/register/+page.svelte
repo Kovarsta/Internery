@@ -2,76 +2,106 @@
 	/**
 	 * Create account (`/register`).
 	 *
-	 * Registration and the verification email are handled by Better Auth under `/api/auth/*`;
-	 * the server assigns the role. Skeleton only: the form is not wired.
+	 * Students apply for jobs and employers post them; the chosen role is sent to
+	 * `+page.server.ts` and stored after Better Auth creates the user. The address
+	 * must be verified before the first sign-in.
 	 */
 
-	import PageHeader from '#lib/components/PageHeader.svelte';
-	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
+	import { resolve } from '$app/paths';
+	import { enhance, type SubmitFunction } from '$app/forms';
+	import { showSuccess } from '#lib/toast.ts';
+	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
+	import { Button } from '#lib/components/ui/button/index.ts';
+	import { Input } from '#lib/components/ui/input/index.ts';
+	import { Label } from '#lib/components/ui/label/index.ts';
+	import { NativeSelect, NativeSelectOption } from '#lib/components/ui/native-select/index.ts';
+	import type { PageProps } from './$types';
+
+	let { form }: PageProps = $props();
+
+	/**
+	 * Keeps registration on the client so the toast survives the redirect to the
+	 * sign-in page. Without JavaScript the plain form still posts.
+	 */
+	const enhanceRegister: SubmitFunction = () => {
+		return async ({ result, update }) => {
+			await update();
+
+			if (result.type === 'redirect') {
+				showSuccess('Account created. Check your inbox.');
+			}
+		};
+	};
 </script>
 
-<PageHeader
-	title="Create an account"
-	description="Students apply for jobs; employers post them. Email verification is required before signing in."
-/>
+<section class="max-w-md">
+	<h1 class="text-3xl font-extrabold tracking-tight">Create an account</h1>
+	<p class="mt-2 text-ink/70">
+		Students apply for jobs; employers post them. Verify your email before signing in.
+	</p>
 
-<form class="max-w-md space-y-4 rounded-xl border border-slate-200 bg-white p-6">
-	<div>
-		<label class="block text-sm font-medium text-slate-700" for="register-name">Full name</label>
-		<input
-			autocomplete="name"
-			class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-			id="register-name"
-			name="name"
-			type="text"
-		/>
-	</div>
+	{#if form?.message}
+		<Alert class="mt-5" variant="destructive">
+			<AlertTitle>Cannot create the account</AlertTitle>
+			<AlertDescription>{form.message}</AlertDescription>
+		</Alert>
+	{/if}
 
-	<div>
-		<label class="block text-sm font-medium text-slate-700" for="register-email">Email</label>
-		<input
-			autocomplete="email"
-			class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-			id="register-email"
-			name="email"
-			type="email"
-		/>
-	</div>
-
-	<div>
-		<label class="block text-sm font-medium text-slate-700" for="register-password">Password</label>
-		<input
-			autocomplete="new-password"
-			class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-			id="register-password"
-			name="password"
-			type="password"
-		/>
-	</div>
-
-	<div>
-		<label class="block text-sm font-medium text-slate-700" for="register-role">I am a</label>
-		<select
-			class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-			id="register-role"
-			name="role"
-		>
-			<option value="STUDENT">Student looking for part-time work</option>
-			<option value="EMPLOYER">Employer posting jobs</option>
-		</select>
-	</div>
-
-	<button
-		class="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-		disabled
-		type="button"
+	<form
+		class="mt-6 space-y-4 border-t-4 border-chalk bg-card p-6"
+		method="POST"
+		use:enhance={enhanceRegister}
 	>
-		Create account
-	</button>
-</form>
+		<div>
+			<Label class="mb-1" for="register-name">Full name</Label>
+			<Input
+				autocomplete="name"
+				id="register-name"
+				name="name"
+				required
+				type="text"
+				value={form?.name ?? ''}
+			/>
+		</div>
 
-<div class="mt-4 max-w-md">
-	<SkeletonNotice>
-		Registration is not wired yet. Better Auth handles signup, email verification and the session.
-	</SkeletonNotice>
-</div>
+		<div>
+			<Label class="mb-1" for="register-email">Email</Label>
+			<Input
+				autocomplete="email"
+				id="register-email"
+				name="email"
+				required
+				type="email"
+				value={form?.email ?? ''}
+			/>
+		</div>
+
+		<div>
+			<Label class="mb-1" for="register-password">Password</Label>
+			<Input
+				autocomplete="new-password"
+				id="register-password"
+				minlength={8}
+				name="password"
+				required
+				type="password"
+			/>
+			<p class="mt-1 text-xs text-ink/60">At least 8 characters.</p>
+		</div>
+
+		<div>
+			<Label class="mb-1" for="register-role">I am a</Label>
+			<NativeSelect class="w-full" id="register-role" name="role" value={form?.role ?? 'STUDENT'}>
+				<NativeSelectOption value="STUDENT">Student looking for part-time work</NativeSelectOption>
+				<NativeSelectOption value="EMPLOYER">Employer posting jobs</NativeSelectOption>
+			</NativeSelect>
+		</div>
+
+		<Button class="w-full" type="submit">Create account</Button>
+	</form>
+
+	<p class="mt-4 text-sm text-ink/60">
+		Already have an account?
+		<a class="font-medium text-chalk hover:underline" href={resolve('/login')}>Sign in</a>
+	</p>
+</section>
