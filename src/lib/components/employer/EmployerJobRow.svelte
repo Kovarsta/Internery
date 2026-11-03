@@ -9,6 +9,7 @@
 	import { resolve } from '$app/paths';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
+	import EmployerJobActions from '#lib/components/employer/EmployerJobActions.svelte';
 	import { formatDateRange, formatPositionsRemaining, formatSalary } from '#lib/format.ts';
 	import { jobStatusClass, jobStatusLabel } from '#lib/labels.ts';
 	import type { MyJob } from '#lib/api/types.ts';
@@ -47,16 +48,20 @@
 		{/if}
 	</div>
 
-	<div class="flex flex-wrap gap-2 sm:justify-end">
-		<Button
-			href={resolve(`employer/jobs/${encodeURIComponent(job.id)}/applicants`)}
-			size="sm"
-			variant="outline"
-		>
-			Applicants
-		</Button>
-		<Button href={resolve(`jobs/${encodeURIComponent(job.id)}`)} size="sm" variant="ghost">
-			View
-		</Button>
+	<div class="flex flex-col items-start gap-2 sm:items-end">
+		<div class="flex flex-wrap gap-2 sm:justify-end">
+			<Button
+				href={resolve(`employer/jobs/${encodeURIComponent(job.id)}/applicants`)}
+				size="sm"
+				variant="outline"
+			>
+				Applicants
+			</Button>
+			<Button href={resolve(`jobs/${encodeURIComponent(job.id)}`)} size="sm" variant="ghost">
+				View
+			</Button>
+		</div>
+
+		<EmployerJobActions {job} />
 	</div>
 </article>
