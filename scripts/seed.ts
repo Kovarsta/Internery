@@ -127,6 +127,12 @@ type SeedJob = {
 	status?: 'HIRING' | 'COMPLETED';
 	startDate?: string;
 	endDate?: string;
+	/** Admin queue demo: the scam scan flagged this job. */
+	needsReview?: boolean;
+	flaggedTerms?: string[];
+	/** Admin queue demo: the job was hidden by the report threshold. */
+	isHidden?: boolean;
+	hiddenReason?: string;
 };
 
 const seedJobs: SeedJob[] = [
@@ -150,7 +156,11 @@ const seedJobs: SeedJob[] = [
 		schedule: 'Saturday and Sunday, 9:00-18:00',
 		salaryAmount: 250_000,
 		salaryType: 'DAILY',
-		positionsNeeded: 1
+		positionsNeeded: 1,
+		// Flagged, not hidden: the admin can clear the warning and the job stays
+		// visible with the banner (AC-43.2).
+		needsReview: true,
+		flaggedTerms: ['training fee', 'deposit']
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000003',
@@ -172,7 +182,11 @@ const seedJobs: SeedJob[] = [
 		schedule: 'One day, 8:00-17:00',
 		salaryAmount: 400_000,
 		salaryType: 'FIXED',
-		positionsNeeded: 5
+		positionsNeeded: 5,
+		// Auto-hidden by the report threshold, so the moderation queue has an
+		// item the admin can restore (AC-42.3).
+		isHidden: true,
+		hiddenReason: 'Auto-hidden after 3 reports'
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000005',
@@ -261,6 +275,53 @@ const seedApplications = [
 	}
 ] as const;
 
+type SeedReport = {
+	id: string;
+	jobId: string;
+	reporterEmail: string;
+	reason: string;
+};
+
+/**
+ * Open reports behind the moderation queue.
+ *
+ * The retail job has two, which is below the three-report threshold, so it
+ * stays visible with its scam flag. The event job has three and is seeded as
+ * auto-hidden, matching what the report flow would have done.
+ */
+const seedReports: SeedReport[] = [
+	{
+		id: '70000000-0000-4000-8000-000000000001',
+		jobId: seedJobs[1].id,
+		reporterEmail: 'student@internery.local',
+		reason: 'They ask for a deposit before the first shift.'
+	},
+	{
+		id: '70000000-0000-4000-8000-000000000002',
+		jobId: seedJobs[1].id,
+		reporterEmail: 'linh@internery.local',
+		reason: 'The pay is much lower than the advert says.'
+	},
+	{
+		id: '70000000-0000-4000-8000-000000000003',
+		jobId: seedJobs[3].id,
+		reporterEmail: 'student@internery.local',
+		reason: 'They asked me to pay for a uniform by bank transfer.'
+	},
+	{
+		id: '70000000-0000-4000-8000-000000000004',
+		jobId: seedJobs[3].id,
+		reporterEmail: 'linh@internery.local',
+		reason: 'The contact number is not reachable.'
+	},
+	{
+		id: '70000000-0000-4000-8000-000000000005',
+		jobId: seedJobs[3].id,
+		reporterEmail: 'minh@internery.local',
+		reason: 'The posting looks copied from another site.'
+	}
+];
+
 type SeedReview = {
 	id: string;
 	jobId: string;
@@ -269,7 +330,6 @@ type SeedReview = {
 	rating: number;
 	comment: string;
 };
-
 const seedReviews: SeedReview[] = [
 	{
 		id: '50000000-0000-4000-8000-000000000001',
@@ -547,7 +607,13 @@ async function seedJobRows(employerId: string, categoryIdsByName: Map<string, st
 			endDate: job.endDate ?? addDays(30),
 			positionsNeeded: job.positionsNeeded,
 			status: job.status ?? 'HIRING',
-			completedAt: isCompleted ? new Date('2026-09-28T09:00:00.000Z') : null
+			completedAt: isCompleted ? new Date('2026-09-28T09:00:00.000Z') : null,
+			needsReview: job.needsReview ?? false,
+			flaggedTerms: job.flaggedTerms ?? [],
+			isHidden: job.isHidden ?? false,
+			hiddenReason: job.hiddenReason ?? null,
+			hiddenBy: null,
+			hiddenAt: job.isHidden ? new Date('2026-10-20T09:00:00.000Z') : null
 		};
 
 		await db
@@ -575,6 +641,21 @@ async function seedApplicationRows(userIdsByEmail: Map<string, string>) {
 				status: application.status,
 				rejectReason: application.rejectReason,
 				decidedAt: isPending ? null : new Date()
+			})
+			.onConflictDoNothing();
+	}
+}
+
+async function seedReportRows(userIdsByEmail: Map<string, string>) {
+	for (const report of seedReports) {
+		await db
+			.insert(schema.reports)
+			.values({
+				id: report.id,
+				jobId: report.jobId,
+				reporterId: requireUserId(userIdsByEmail, report.reporterEmail),
+				reason: report.reason,
+				status: 'OPEN'
 			})
 			.onConflictDoNothing();
 	}
@@ -702,6 +783,7 @@ async function main() {
 	await seedReviewRows(userIdsByEmail);
 	await seedWorkRecordRows(userIdsByEmail);
 	await seedNotificationRows(userIdsByEmail);
+	await seedReportRows(userIdsByEmail);
 
 	console.log('Seed complete.');
 	console.log(`  users: ${seedUsers.length}`);
@@ -712,6 +794,7 @@ async function main() {
 	console.log(`  work records: ${seedWorkRecords.length}`);
 	console.log('  verification requests: 1');
 	console.log(`  notifications: ${seedNotifications.length}`);
+	console.log(`  reports: ${seedReports.length}`);
 	console.log('');
 	console.log('Sign in with:');
 

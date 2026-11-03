@@ -23,6 +23,9 @@ export const MAX_AVATAR_BYTES = 2 * MEGABYTE;
 /** Largest CV the API accepts. */
 export const MAX_CV_BYTES = 5 * MEGABYTE;
 
+/** Largest business licence the API accepts. */
+export const MAX_LICENSE_BYTES = 5 * MEGABYTE;
+
 // A small compressed file can decode to an enormous raster, so the decoder is
 // capped at 16 MP (roughly 4000 × 4000). A 12 MP phone photo fits easily.
 const MAX_INPUT_PIXELS = 16 * MEGAPIXEL;
@@ -144,7 +147,7 @@ export async function readCvFile(file: File): Promise<CvUpload> {
 	if (detected?.ext === 'pdf') {
 		return {
 			bytes,
-			fileName: safeFileName(file.name, 'pdf'),
+			fileName: safeFileName(file.name, 'pdf', 'cv'),
 			mimeType: PDF_MIME,
 			extension: 'pdf'
 		};
@@ -153,9 +156,69 @@ export async function readCvFile(file: File): Promise<CvUpload> {
 	if (detected?.ext === 'docx') {
 		return {
 			bytes,
-			fileName: safeFileName(file.name, 'docx'),
+			fileName: safeFileName(file.name, 'docx', 'cv'),
 			mimeType: DOCX_MIME,
 			extension: 'docx'
+		};
+	}
+
+	throw new ApiError('INVALID_FILE_TYPE');
+}
+
+/** A validated business-licence upload, ready to store. */
+export type LicenseUpload = {
+	bytes: Uint8Array;
+	fileName: string;
+	mimeType: 'application/pdf' | 'image/png' | 'image/jpeg';
+	extension: 'pdf' | 'png' | 'jpg';
+};
+
+/**
+ * Validates an uploaded business licence and returns its bytes and format.
+ *
+ * The contract allows a PDF, PNG or JPEG up to 5 MB. The format comes from the
+ * bytes, not from the extension or the browser's MIME type, so a renamed file
+ * cannot get through.
+ *
+ * Throws `FILE_TOO_LARGE` (`413`), `INVALID_FILE_TYPE` (`415`) for any other
+ * format, or `VALIDATION_ERROR` (`422`) for an empty file.
+ */
+export async function readLicenseFile(file: File): Promise<LicenseUpload> {
+	if (file.size === 0) {
+		throw validationError('The file is empty.');
+	}
+
+	if (file.size > MAX_LICENSE_BYTES) {
+		throw new ApiError('FILE_TOO_LARGE');
+	}
+
+	const bytes = new Uint8Array(await file.arrayBuffer());
+	const detected = await fileTypeFromBuffer(bytes).catch(() => null);
+
+	if (detected?.ext === 'pdf') {
+		return {
+			bytes,
+			fileName: safeFileName(file.name, 'pdf', 'license'),
+			mimeType: PDF_MIME,
+			extension: 'pdf'
+		};
+	}
+
+	if (detected?.ext === 'png') {
+		return {
+			bytes,
+			fileName: safeFileName(file.name, 'png', 'license'),
+			mimeType: 'image/png',
+			extension: 'png'
+		};
+	}
+
+	if (detected?.ext === 'jpg') {
+		return {
+			bytes,
+			fileName: safeFileName(file.name, 'jpg', 'license'),
+			mimeType: 'image/jpeg',
+			extension: 'jpg'
 		};
 	}
 
@@ -167,9 +230,9 @@ export async function readCvFile(file: File): Promise<CvUpload> {
  *
  * The browser can send a path in `file.name`, and control characters do not
  * belong in a database column or an HTTP header. An empty name becomes
- * `cv.<extension>` so the download always has something to call itself.
+ * `<fallback>.<extension>` so a download always has something to call itself.
  */
-function safeFileName(name: string, extension: string): string {
+function safeFileName(name: string, extension: string, fallback: string): string {
 	const base = name.split(/[\\/]/).pop() ?? '';
 	const cleaned = [...base]
 		.filter((character) => character >= ' ' && character !== '\u007f')
@@ -177,7 +240,7 @@ function safeFileName(name: string, extension: string): string {
 		.trim();
 
 	if (cleaned === '') {
-		return `cv.${extension}`;
+		return `${fallback}.${extension}`;
 	}
 
 	return [...cleaned].slice(0, 255).join('');

@@ -78,6 +78,27 @@ export function parseQuery<TSchema extends z.ZodType>(url: URL, schema: TSchema)
 	return parseWithSchema(schema, query);
 }
 
+/**
+ * Validates the text fields of a multipart form against a Zod schema.
+ *
+ * File fields are skipped, so the schema only sees the text values and the
+ * handler can read the files it expects on its own.
+ */
+export function parseFormFields<TSchema extends z.ZodType>(
+	form: FormData,
+	schema: TSchema
+): z.infer<TSchema> {
+	const fields: Record<string, string> = {};
+
+	for (const [field, value] of form.entries()) {
+		if (typeof value === 'string') {
+			fields[field] = value;
+		}
+	}
+
+	return parseWithSchema(schema, fields);
+}
+
 function parseWithSchema<TSchema extends z.ZodType>(
 	schema: TSchema,
 	value: unknown

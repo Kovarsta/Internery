@@ -11,6 +11,7 @@
 	import EmployerPanel from '#lib/components/jobs/EmployerPanel.svelte';
 	import JobActions from '#lib/components/jobs/JobActions.svelte';
 	import JobFacts from '#lib/components/jobs/JobFacts.svelte';
+	import JobReport from '#lib/components/jobs/JobReport.svelte';
 	import ReviewSection from '#lib/components/reviews/ReviewSection.svelte';
 	import type { PageProps } from './$types';
 
@@ -23,6 +24,8 @@
 			job.status === 'COMPLETED' &&
 			job.myApplication?.status === 'ACCEPTED'
 	);
+
+	const canReportJob = $derived(data.user?.role === 'STUDENT');
 </script>
 
 <a class="text-sm font-medium text-chalk hover:underline" href={resolve('jobs')}>Back to jobs</a>
@@ -66,6 +69,10 @@
 				revieweeId={job.employer.userId}
 				revieweeName={job.employer.orgName}
 			/>
+		{/if}
+
+		{#if canReportJob}
+			<JobReport jobId={job.id} />
 		{/if}
 	</aside>
 </div>

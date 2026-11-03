@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 
 export const AVATAR_PREFIX = 'avatars/';
 export const CV_PREFIX = 'cv/';
+export const LICENSE_PREFIX = 'licenses/';
 
 /**
  * The shared blank avatar.
@@ -27,4 +28,9 @@ export function newAvatarKey(userId: string, extension: 'webp'): string {
 /** Builds a fresh key for a CV upload under the owner's user id. */
 export function newCvKey(userId: string, extension: 'pdf' | 'docx'): string {
 	return `${CV_PREFIX}${userId}/${randomUUID()}.${extension}`;
+}
+
+/** Builds a fresh key for a business-licence upload under the employer's user id. */
+export function newLicenseKey(userId: string, extension: 'pdf' | 'png' | 'jpg'): string {
+	return `${LICENSE_PREFIX}${userId}/${randomUUID()}.${extension}`;
 }

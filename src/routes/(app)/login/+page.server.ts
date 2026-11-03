@@ -1,6 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { eq } from 'drizzle-orm';
 import { auth } from '#lib/server/auth.ts';
 import { readAuthMessage } from '#lib/server/auth-errors.ts';
+import { db } from '#lib/server/db/index.ts';
+import { sessions } from '#lib/server/db/auth.schema.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 /**
@@ -29,10 +32,23 @@ export const actions: Actions = {
 		}
 
 		try {
-			await auth.api.signInEmail({
+			const result = await auth.api.signInEmail({
 				body: { email, password },
 				headers: event.request.headers
 			});
+
+			// Better Auth checks the password, not the account lifecycle. A locked,
+			// suspended or deleted account must not get a usable session, and the
+			// status is only inspected after the credentials are proven, so this
+			// does not reveal whether the address exists.
+			if (result.user.status !== 'ACTIVE') {
+				await db.delete(sessions).where(eq(sessions.token, result.token));
+
+				return fail(403, {
+					email,
+					message: 'This account cannot sign in. Contact an administrator.'
+				});
+			}
 		} catch (error) {
 			return fail(400, { email, message: readAuthMessage(error) });
 		}
