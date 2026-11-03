@@ -47,6 +47,13 @@
 	</Alert>
 {/if}
 
+{#if data.updated}
+	<Alert class="mt-6 border-chalk/30 bg-chalk/5">
+		<AlertTitle>Job updated</AlertTitle>
+		<AlertDescription>The public listing shows the new details.</AlertDescription>
+	</Alert>
+{/if}
+
 <nav class="mt-6 flex flex-wrap gap-2" aria-label="Filter by status">
 	{#each statusFilters as filter (filter.label)}
 		<Button

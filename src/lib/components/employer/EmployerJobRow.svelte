@@ -50,6 +50,15 @@
 
 	<div class="flex flex-col items-start gap-2 sm:items-end">
 		<div class="flex flex-wrap gap-2 sm:justify-end">
+			{#if job.status === 'HIRING'}
+				<Button
+					href={resolve(`employer/jobs/${encodeURIComponent(job.id)}/edit`)}
+					size="sm"
+					variant="ghost"
+				>
+					Edit
+				</Button>
+			{/if}
 			<Button
 				href={resolve(`employer/jobs/${encodeURIComponent(job.id)}/applicants`)}
 				size="sm"

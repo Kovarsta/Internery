@@ -12,8 +12,8 @@ function isJobStatus(value: string | null): value is JobStatus {
 /**
  * Loads `/employer/jobs`.
  *
- * The status filter stays in the URL. `created` is the flag left by the create
- * form's redirect, so the list can confirm the publish once.
+ * The status filter stays in the URL. `created` and `updated` are the flags left by the create and
+ * edit forms' redirects, so the list can confirm the write once.
  */
 export const load: PageServerLoad = async (event) => {
 	const requestedStatus = event.url.searchParams.get('status');
@@ -30,6 +30,7 @@ export const load: PageServerLoad = async (event) => {
 	return {
 		jobs,
 		status,
-		created: event.url.searchParams.get('created') === '1'
+		created: event.url.searchParams.get('created') === '1',
+		updated: event.url.searchParams.get('updated') === '1'
 	};
 };
