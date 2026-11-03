@@ -2,61 +2,94 @@
 	/**
 	 * Account hub (`/me`).
 	 *
-	 * Index of everything tied to the signed-in account. Account fields come from `GET /me` and
-	 * are edited through `PATCH /me`. Skeleton only: the summary is not loaded.
+	 * Shows the account summary from `GET /me` and links into the area for the
+	 * signed-in role. Editing lives on the profile pages.
 	 */
 
 	import { resolve } from '$app/paths';
-	import PageHeader from '#lib/components/PageHeader.svelte';
-	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
+	import { Badge } from '#lib/components/ui/badge/index.ts';
+	import { formatTimestamp } from '#lib/format.ts';
+	import type { UserRole } from '#lib/api/types.ts';
+	import type { PageProps } from './$types';
 
-	const links = [
-		{ href: resolve('/me/profile'), label: 'Student profile', hint: 'University, skills, CV' },
-		{
-			href: resolve('/employer/profile'),
-			label: 'Company profile',
-			hint: 'Organisation and contact'
-		},
-		{
-			href: resolve('/me/applications'),
-			label: 'My applications',
-			hint: 'Status of every application'
-		},
-		{ href: resolve('/me/saved-jobs'), label: 'Saved jobs', hint: 'Bookmarked postings' },
-		{
-			href: resolve('/me/notifications'),
-			label: 'Notifications',
-			hint: 'Application and job updates'
-		},
-		{
-			href: resolve('/me/verification'),
-			label: 'Verification',
-			hint: 'Request the Verified badge'
-		},
-		{ href: resolve('/me/work-records'), label: 'Work records', hint: 'Signed records you own' }
-	];
+	let { data }: PageProps = $props();
+
+	const me = $derived(data.me);
+
+	const roleLabel: Record<UserRole, string> = {
+		STUDENT: 'Student',
+		EMPLOYER: 'Employer',
+		ADMIN: 'Administrator'
+	};
+
+	const linksByRole: Record<UserRole, { href: string; label: string; hint: string }[]> = {
+		STUDENT: [
+			{ href: resolve('/me/profile'), label: 'Student profile', hint: 'University, skills, CV' },
+			{
+				href: resolve('/me/applications'),
+				label: 'My applications',
+				hint: 'Status of every application'
+			},
+			{ href: resolve('/me/saved-jobs'), label: 'Saved jobs', hint: 'Bookmarked postings' },
+			{
+				href: resolve('/me/notifications'),
+				label: 'Notifications',
+				hint: 'Application and job updates'
+			},
+			{ href: resolve('/me/verification'), label: 'Verification', hint: 'Request the badge' },
+			{
+				href: resolve('/me/work-records'),
+				label: 'Work records',
+				hint: 'Signed records you own'
+			}
+		],
+		EMPLOYER: [
+			{
+				href: resolve('/employer/profile'),
+				label: 'Company profile',
+				hint: 'Organisation and contact'
+			},
+			{ href: resolve('/employer/jobs'), label: 'Your jobs', hint: 'Post and manage listings' },
+			{
+				href: resolve('/me/notifications'),
+				label: 'Notifications',
+				hint: 'Application updates'
+			},
+			{ href: resolve('/me/verification'), label: 'Verification', hint: 'Request the badge' }
+		],
+		ADMIN: [{ href: resolve('/admin'), label: 'Admin area', hint: 'Moderation and reports' }]
+	};
 </script>
 
-<PageHeader
-	title="My account"
-	description="Account settings and everything tied to your profile."
-/>
+<section>
+	<div class="flex flex-wrap items-center gap-3">
+		<h1 class="text-3xl font-extrabold tracking-tight">Hi, {me.fullName}</h1>
+		<Badge class="bg-chalk/10 text-chalk" variant="ghost">{roleLabel[me.role]}</Badge>
+	</div>
+	<p class="mt-2 text-ink/70">{me.email}</p>
 
-<div class="grid gap-3 sm:grid-cols-2">
-	{#each links as link (link.href)}
-		<a
-			class="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-400"
-			href={link.href}
-		>
-			<span class="block font-medium text-slate-900">{link.label}</span>
-			<span class="mt-1 block text-sm text-slate-600">{link.hint}</span>
-		</a>
-	{/each}
-</div>
+	<dl class="mt-8 grid gap-5 border-y border-rule py-6 sm:grid-cols-2">
+		<div>
+			<dt class="text-sm text-ink/60">Phone</dt>
+			<dd class="mt-1 font-medium">{me.phone ?? 'Not set'}</dd>
+		</div>
+		<div>
+			<dt class="text-sm text-ink/60">Account status</dt>
+			<dd class="mt-1 font-medium">{me.status === 'ACTIVE' ? 'Active' : me.status}</dd>
+		</div>
+		<div>
+			<dt class="text-sm text-ink/60">Member since</dt>
+			<dd class="mt-1 font-medium">{formatTimestamp(me.createdAt)}</dd>
+		</div>
+	</dl>
 
-<div class="mt-6">
-	<SkeletonNotice>
-		Account overview skeleton. Name, email and phone editing lives on this page once PATCH /me is
-		wired.
-	</SkeletonNotice>
-</div>
+	<h2 class="mt-8 text-lg font-semibold">Your area</h2>
+	<nav class="mt-4 grid gap-3 sm:grid-cols-2">
+		{#each linksByRole[me.role] as link (link.href)}
+			<a class="border border-rule bg-card p-4 hover:border-chalk" href={link.href}>
+				<span class="block font-medium">{link.label}</span>
+				<span class="mt-1 block text-sm text-ink/60">{link.hint}</span>
+			</a>
+		{/each}
+	</nav>
+</section>

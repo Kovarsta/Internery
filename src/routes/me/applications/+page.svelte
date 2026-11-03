@@ -2,38 +2,60 @@
 	/**
 	 * My applications (`/me/applications`).
 	 *
-	 * Serves `GET /me/applications`, optionally filtered by status, plus
-	 * `POST /applications/{applicationId}/withdraw` for pending rows. Skeleton only.
+	 * Lists `GET /me/applications`, with a status filter kept in the URL. Each row
+	 * owns its withdraw action; this file composes the header, filters and list.
 	 */
 
-	import PageHeader from '#lib/components/PageHeader.svelte';
-	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
+	import { resolve } from '$app/paths';
+	import ApplicationRow from '#lib/components/applications/ApplicationRow.svelte';
+	import EmptyState from '#lib/components/jobs/EmptyState.svelte';
+	import { Button } from '#lib/components/ui/button/index.ts';
+	import type { ApplicationStatus } from '#lib/api/types.ts';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	const statusFilters: { label: string; value: ApplicationStatus | null }[] = [
+		{ label: 'All', value: null },
+		{ label: 'Pending', value: 'PENDING' },
+		{ label: 'Accepted', value: 'ACCEPTED' },
+		{ label: 'Rejected', value: 'REJECTED' },
+		{ label: 'Withdrawn', value: 'WITHDRAWN' }
+	];
+
+	const total = $derived(data.applications.total);
 </script>
 
-<PageHeader
-	title="My applications"
-	description="Every application you submitted, newest first, with its current status."
-/>
+<h1 class="text-3xl font-extrabold tracking-tight">My applications</h1>
+<p class="mt-2 text-ink/70">
+	{total}
+	{total === 1 ? 'application' : 'applications'}
+	{data.status ? 'with this status' : 'in total'}.
+</p>
 
-<div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
-	<div class="border-b border-slate-200 px-4 py-3">
-		<div class="h-3 w-40 rounded bg-slate-200"></div>
-	</div>
+<nav class="mt-6 flex flex-wrap gap-2" aria-label="Filter by status">
+	{#each statusFilters as filter (filter.label)}
+		<Button
+			href={filter.value ? `?status=${filter.value}` : resolve('/me/applications')}
+			size="sm"
+			variant={data.status === filter.value ? 'default' : 'outline'}
+		>
+			{filter.label}
+		</Button>
+	{/each}
+</nav>
 
-	<div class="divide-y divide-slate-100">
-		{#each [1, 2, 3] as placeholder (placeholder)}
-			<div class="flex items-center gap-4 px-4 py-3">
-				<div class="h-3 w-1/3 rounded bg-slate-100"></div>
-				<div class="h-3 w-24 rounded bg-slate-100"></div>
-				<div class="ml-auto h-3 w-16 rounded bg-slate-100"></div>
-			</div>
+{#if data.applications.items.length > 0}
+	<div class="mt-6 divide-y divide-rule border-t border-rule">
+		{#each data.applications.items as application (application.id)}
+			<ApplicationRow {application} />
 		{/each}
 	</div>
-</div>
-
-<div class="mt-4">
-	<SkeletonNotice>
-		Applications skeleton. GET /me/applications supports a status filter; the withdraw action is
-		already implemented.
-	</SkeletonNotice>
-</div>
+{:else}
+	<EmptyState
+		title="No applications here"
+		description="Applications you submit appear here with their current status."
+		actionLabel="Browse open shifts"
+		actionHref={resolve('/jobs')}
+	/>
+{/if}
