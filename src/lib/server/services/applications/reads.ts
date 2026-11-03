@@ -2,7 +2,7 @@
  * Application reads: the student and employer lists, the applicant profile and
  * the CV attached to an application.
  */
-import { and, count, desc, eq, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, sql, type SQL } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { users } from '#lib/server/db/auth.schema.ts';
@@ -10,6 +10,7 @@ import {
 	applications,
 	employerProfiles,
 	jobs,
+	reviews,
 	studentProfiles
 } from '#lib/server/db/product.schema.ts';
 import {
@@ -135,6 +136,14 @@ export async function listJobApplicants(
 				status: applications.status,
 				message: applications.message,
 				cvKey: applications.cvKey,
+				// The employer's review of this student for this job. The job
+				// owner is already checked above, so the caller's id is enough.
+				hasReviewed: sql<boolean>`exists (
+					select 1 from ${reviews}
+					where ${reviews.jobId} = ${applications.jobId}
+						and ${reviews.reviewerId} = ${options.employerId}
+						and ${reviews.revieweeId} = ${applications.studentId}
+				)`,
 				createdAt: applications.createdAt,
 				studentName: users.name,
 				studentUniversity: studentProfiles.university,

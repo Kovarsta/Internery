@@ -10,6 +10,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
+	import ReviewSection from '#lib/components/reviews/ReviewSection.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -18,6 +19,9 @@
 	const studies = $derived([profile.university, profile.major].filter((part) => part).join(' · '));
 	const backHref = $derived(resolve(`employer/jobs/${encodeURIComponent(data.job.id)}/applicants`));
 	const cvHref = $derived(`/api/v1/applications/${page.params.applicationId}/cv`);
+	const canReviewStudent = $derived(
+		data.job.status === 'COMPLETED' && data.acceptedApplicant !== null
+	);
 </script>
 
 <a class="text-sm font-medium text-chalk hover:underline" href={backHref}>← Back to applicants</a>
@@ -71,4 +75,14 @@
 {#if profile.bio}
 	<h2 class="mt-8 text-sm font-semibold">About</h2>
 	<p class="mt-2 max-w-2xl text-ink/70">{profile.bio}</p>
+{/if}
+
+{#if canReviewStudent && data.acceptedApplicant}
+	<ReviewSection
+		hasReviewed={data.acceptedApplicant.hasReviewed}
+		issuesWorkRecord
+		jobId={data.job.id}
+		revieweeId={profile.userId}
+		revieweeName={profile.fullName}
+	/>
 {/if}

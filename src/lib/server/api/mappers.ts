@@ -162,6 +162,7 @@ export type ApplicationSource = {
 	message: string | null;
 	rejectReason: string | null;
 	cvKey: string | null;
+	hasReviewed: boolean;
 	createdAt: Date | string;
 	decidedAt: Date | null;
 };
@@ -175,6 +176,7 @@ export type Application = {
 	message: string | null;
 	rejectReason: string | null;
 	hasCv: boolean;
+	hasReviewed: boolean;
 	createdAt: string;
 	decidedAt: string | null;
 };
@@ -184,6 +186,7 @@ export type ApplicantSource = {
 	status: ApplicationStatus;
 	message: string | null;
 	cvKey: string | null;
+	hasReviewed: boolean;
 	createdAt: Date | string;
 	studentName: string;
 	studentUniversity: string | null;
@@ -197,6 +200,7 @@ export type Applicant = {
 	status: ApplicationStatus;
 	message: string | null;
 	hasCv: boolean;
+	hasReviewed: boolean;
 	createdAt: string;
 	student: {
 		fullName: string;
@@ -466,6 +470,7 @@ export function toApplication(application: ApplicationSource): Application {
 		message: application.message,
 		rejectReason: application.rejectReason,
 		hasCv: application.cvKey !== null,
+		hasReviewed: application.hasReviewed,
 		createdAt: toIsoString(application.createdAt),
 		decidedAt: application.decidedAt === null ? null : toIsoString(application.decidedAt)
 	};
@@ -478,6 +483,7 @@ export function toApplicant(applicant: ApplicantSource): Applicant {
 		status: applicant.status,
 		message: applicant.message,
 		hasCv: applicant.cvKey !== null,
+		hasReviewed: applicant.hasReviewed,
 		createdAt: toIsoString(applicant.createdAt),
 		student: {
 			fullName: applicant.studentName,

@@ -2003,7 +2003,7 @@ components:
         reason: { type: [string, 'null'], maxLength: 500 }
     Application:
       type: object
-      required: [id, jobId, jobTitle, employerName, status, hasCv, createdAt]
+      required: [id, jobId, jobTitle, employerName, status, hasCv, hasReviewed, createdAt]
       properties:
         id: { type: string, format: uuid }
         jobId: { type: string, format: uuid }
@@ -2013,16 +2013,26 @@ components:
         message: { type: [string, 'null'] }
         rejectReason: { type: [string, 'null'] }
         hasCv: { type: boolean }
+        hasReviewed:
+          {
+            type: boolean,
+            description: True when the student already reviewed the employer for this job.
+          }
         createdAt: { type: string, format: date-time }
         decidedAt: { type: [string, 'null'], format: date-time }
     Applicant:
       type: object
-      required: [id, status, hasCv, createdAt, student]
+      required: [id, status, hasCv, hasReviewed, createdAt, student]
       properties:
         id: { type: string, format: uuid }
         status: { $ref: '#/components/schemas/ApplicationStatus' }
         message: { type: [string, 'null'] }
         hasCv: { type: boolean }
+        hasReviewed:
+          {
+            type: boolean,
+            description: True when the employer already reviewed this student for this job.
+          }
         createdAt: { type: string, format: date-time }
         student:
           type: object

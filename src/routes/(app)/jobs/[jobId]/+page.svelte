@@ -11,11 +11,18 @@
 	import EmployerPanel from '#lib/components/jobs/EmployerPanel.svelte';
 	import JobActions from '#lib/components/jobs/JobActions.svelte';
 	import JobFacts from '#lib/components/jobs/JobFacts.svelte';
+	import ReviewSection from '#lib/components/reviews/ReviewSection.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const job = $derived(data.job);
+
+	const canReviewEmployer = $derived(
+		data.user?.role === 'STUDENT' &&
+			job.status === 'COMPLETED' &&
+			job.myApplication?.status === 'ACCEPTED'
+	);
 </script>
 
 <a class="text-sm font-medium text-chalk hover:underline" href={resolve('jobs')}>Back to jobs</a>
@@ -51,5 +58,14 @@
 		<div class="mt-6 border-t border-rule pt-6">
 			<JobActions {job} role={data.user?.role} />
 		</div>
+
+		{#if canReviewEmployer && job.myApplication}
+			<ReviewSection
+				hasReviewed={job.myApplication.hasReviewed}
+				jobId={job.id}
+				revieweeId={job.employer.userId}
+				revieweeName={job.employer.orgName}
+			/>
+		{/if}
 	</aside>
 </div>

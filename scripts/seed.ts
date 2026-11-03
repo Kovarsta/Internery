@@ -183,7 +183,9 @@ const seedJobs: SeedJob[] = [
 		schedule: 'Saturday and Sunday, 8:00-16:00',
 		salaryAmount: 280_000,
 		salaryType: 'DAILY',
-		positionsNeeded: 2,
+		// Three accepted students: two are reviewed and issued work records, and
+		// Minh is left unreviewed so the employer's review form has a live row.
+		positionsNeeded: 3,
 		status: 'COMPLETED',
 		startDate: '2026-09-05',
 		endDate: '2026-09-27'
@@ -244,6 +246,16 @@ const seedApplications = [
 		jobId: seedJobs[4].id,
 		studentEmail: 'linh@internery.local',
 		message: 'I worked weekends at a cafe for two years.',
+		status: 'ACCEPTED',
+		rejectReason: null
+	},
+	{
+		// Accepted to the completed job without a review yet, so the employer
+		// review form on the applicant profile has a student to act on.
+		id: '30000000-0000-4000-8000-000000000008',
+		jobId: seedJobs[4].id,
+		studentEmail: 'minh@internery.local',
+		message: 'I am free at weekends and would like to try cafe work.',
 		status: 'ACCEPTED',
 		rejectReason: null
 	}

@@ -69,6 +69,8 @@ export type Application = {
 	message: string | null;
 	rejectReason: string | null;
 	hasCv: boolean;
+	/** True when the student already reviewed the employer for this job. */
+	hasReviewed: boolean;
 	createdAt: string;
 	decidedAt: string | null;
 };
@@ -94,6 +96,8 @@ export type Applicant = {
 	status: ApplicationStatus;
 	message: string | null;
 	hasCv: boolean;
+	/** True when the employer already reviewed this student for this job. */
+	hasReviewed: boolean;
 	createdAt: string;
 	student: {
 		fullName: string;

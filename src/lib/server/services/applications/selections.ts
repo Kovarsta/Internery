@@ -4,12 +4,14 @@
  * The row types are exported for the sibling modules only; `index.ts` keeps
  * them out of the public service API.
  */
+import { sql } from 'drizzle-orm';
 import { users } from '#lib/server/db/auth.schema.ts';
 import {
 	applications,
 	employerProfiles,
 	jobs,
 	notifications,
+	reviews,
 	studentProfiles
 } from '#lib/server/db/product.schema.ts';
 
@@ -34,6 +36,7 @@ export type ApplicationListRecord = {
 	message: string | null;
 	rejectReason: string | null;
 	cvKey: string | null;
+	hasReviewed: boolean;
 	createdAt: Date;
 	decidedAt: Date | null;
 };
@@ -56,6 +59,7 @@ export type ApplicantListRecord = {
 	status: ApplicationRecord['status'];
 	message: string | null;
 	cvKey: string | null;
+	hasReviewed: boolean;
 	createdAt: Date;
 	studentName: string;
 	studentUniversity: string | null;
@@ -83,7 +87,9 @@ export type NewApplicationInput = {
  * Columns shared by every application read.
  *
  * `employerUserName` is the fallback for `employerName` when the employer never
- * created a company profile.
+ * created a company profile. `hasReviewed` asks whether this student already
+ * reviewed the employer for the job, so the job page can show the finished
+ * state instead of a form that would answer `409`.
  */
 export const applicationSelection = {
 	id: applications.id,
@@ -95,6 +101,12 @@ export const applicationSelection = {
 	message: applications.message,
 	rejectReason: applications.rejectReason,
 	cvKey: applications.cvKey,
+	hasReviewed: sql<boolean>`exists (
+		select 1 from ${reviews}
+		where ${reviews.jobId} = ${applications.jobId}
+			and ${reviews.reviewerId} = ${applications.studentId}
+			and ${reviews.revieweeId} = ${jobs.employerId}
+	)`,
 	createdAt: applications.createdAt,
 	decidedAt: applications.decidedAt
 };

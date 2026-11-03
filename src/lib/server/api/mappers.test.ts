@@ -183,6 +183,7 @@ describe('toApplication', () => {
 		message: 'I can start next week.',
 		rejectReason: null,
 		cvKey: 'cv/student.pdf',
+		hasReviewed: false,
 		createdAt: new Date('2026-10-01T08:00:00Z'),
 		decidedAt: null
 	};
@@ -197,6 +198,7 @@ describe('toApplication', () => {
 			message: 'I can start next week.',
 			rejectReason: null,
 			hasCv: true,
+			hasReviewed: false,
 			createdAt: '2026-10-01T08:00:00.000Z',
 			decidedAt: null
 		});
@@ -206,6 +208,10 @@ describe('toApplication', () => {
 		expect(toApplication({ ...application, employerOrgName: null }).employerName).toBe(
 			'Tran Thi Binh'
 		);
+	});
+
+	it('carries the review flag', () => {
+		expect(toApplication({ ...application, hasReviewed: true }).hasReviewed).toBe(true);
 	});
 
 	it('derives hasCv and keeps the decision fields', () => {
@@ -229,6 +235,7 @@ describe('toApplicant', () => {
 		status: 'PENDING',
 		message: 'I can start next week.',
 		cvKey: 'cv/writer.pdf',
+		hasReviewed: false,
 		createdAt: new Date('2026-10-05T08:00:00Z'),
 		studentName: 'Writer Student',
 		studentUniversity: 'VNU',
@@ -243,6 +250,7 @@ describe('toApplicant', () => {
 			status: 'PENDING',
 			message: 'I can start next week.',
 			hasCv: true,
+			hasReviewed: false,
 			createdAt: '2026-10-05T08:00:00.000Z',
 			student: {
 				fullName: 'Writer Student',
@@ -252,6 +260,10 @@ describe('toApplicant', () => {
 				ratingCount: 2
 			}
 		});
+	});
+
+	it('carries the review flag', () => {
+		expect(toApplicant({ ...applicant, hasReviewed: true }).hasReviewed).toBe(true);
 	});
 
 	it('defaults the ratings when the student has no profile', () => {
@@ -482,6 +494,7 @@ describe('toJobDetail', () => {
 			message: null,
 			rejectReason: null,
 			cvKey: null,
+			hasReviewed: false,
 			createdAt: new Date('2026-10-01T08:00:00Z'),
 			decidedAt: null
 		};
