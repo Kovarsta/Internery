@@ -33,6 +33,7 @@
 		"gsap": "^3.15.0",
 		"resend": "^6.34.1",
 		"sharp": "^0.35.5",
+		"svelte-easy-crop": "^5.0.1",
 		"svelte-french-toast": "^1.2.0",
 		"zod": "^4.6.7"
 	},

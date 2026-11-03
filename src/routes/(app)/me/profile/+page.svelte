@@ -3,11 +3,11 @@
 	 * Student profile (`/me/profile`).
 	 *
 	 * Reads the profile through `GET /me/student-profile` and saves it with the form action, which
-	 * sends `PUT /me/student-profile`. The CV belongs to its own upload flow and is not edited
-	 * here.
+	 * sends `PUT /me/student-profile`. The CV has its own upload panel below the form.
 	 */
 
 	import PageHeader from '#lib/components/PageHeader.svelte';
+	import CvPanel from '#lib/components/profile/CvPanel.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
@@ -103,3 +103,5 @@
 		<Button type="submit">Save profile</Button>
 	</div>
 </form>
+
+<CvPanel cv={profile.cv} />

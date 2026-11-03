@@ -47,3 +47,16 @@ export function formatPositionsRemaining(count: number): string {
 
 	return count === 1 ? '1 position left' : `${count} positions left`;
 }
+
+/** Formats a byte count for an upload, for example `412 KB` or `1.8 MB`. */
+export function formatFileSize(bytes: number): string {
+	if (bytes < 1024) {
+		return `${bytes} B`;
+	}
+
+	if (bytes < 1024 * 1024) {
+		return `${Math.round(bytes / 1024)} KB`;
+	}
+
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}

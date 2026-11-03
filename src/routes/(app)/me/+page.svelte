@@ -2,12 +2,14 @@
 	/**
 	 * Account hub (`/me`).
 	 *
-	 * Shows the account summary from `GET /me` and links into the area for the
-	 * signed-in role. Editing lives on the profile pages.
+	 * Shows the account summary from `GET /me`, the avatar control and links into
+	 * the area for the signed-in role. The rest of the editing lives on the
+	 * profile pages.
 	 */
 
 	import { resolve } from '$app/paths';
 	import type { ResolvedPathname } from '$app/types';
+	import AvatarPanel from '#lib/components/profile/AvatarPanel.svelte';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import { formatTimestamp } from '#lib/format.ts';
 	import type { UserRole } from '#lib/api/types.ts';
@@ -67,6 +69,10 @@
 		<Badge class="bg-chalk/10 text-chalk" variant="ghost">{roleLabel[me.role]}</Badge>
 	</div>
 	<p class="mt-2 text-ink/70">{me.email}</p>
+
+	<div class="mt-6 border-y border-rule py-5">
+		<AvatarPanel user={me} />
+	</div>
 
 	<dl class="mt-8 grid gap-5 border-y border-rule py-6 sm:grid-cols-2">
 		<div>
