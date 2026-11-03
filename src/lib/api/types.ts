@@ -166,3 +166,29 @@ export type Notification = {
 	read: boolean;
 	createdAt: string;
 };
+
+/** One public card in the work-record directory. */
+export type WorkRecordCard = {
+	id: string;
+	studentName: string;
+	employerName: string;
+	jobTitle: string;
+	startDate: string;
+	endDate: string;
+	rating: number;
+	comment: string | null;
+	issuedAt: string;
+};
+
+/** A student's own record, including its publish state and verify link. */
+export type WorkRecord = WorkRecordCard & {
+	isPublic: boolean;
+	publishedAt: string | null;
+	verifyUrl: string;
+};
+
+/** The signature check for one public record. */
+export type VerifyResult = {
+	valid: boolean;
+	record: WorkRecordCard | null;
+};

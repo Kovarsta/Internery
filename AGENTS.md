@@ -56,10 +56,12 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - `src/lib/server/db/schema.ts` only re-exports the auth and product schemas; Drizzle and
   drizzle-kit consume that aggregate.
 - `scripts/seed.ts` (run with `pnpm db:seed`) inserts fixed-id development data: an admin, three
-  students (An, Linh and Minh) and an employer, five categories, four jobs, five applications and
-  five notifications. The three students have profiles and pending applications to the barista job.
-  It is idempotent, uses `SEED_PASSWORD` (default `Password123!`), and refuses to run when
-  `NODE_ENV=production`.
+  students (An, Linh and Minh) and an employer, five categories, five jobs, seven applications, two
+  reviews, two signed work records and five notifications. Four jobs are hiring; the fifth is
+  completed so the review and work-record pages have data. The three students have profiles and
+  pending applications to the barista job. The seed is idempotent, re-signs the demo work records
+  when `WORK_RECORD_SECRET` changes, uses `SEED_PASSWORD` (default `Password123!`), and refuses to
+  run when `NODE_ENV=production`.
 - Migrations `drizzle/0000_pink_thundra.sql` and `drizzle/0001_fair_lightspeed.sql` have been
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
@@ -72,8 +74,8 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Application writes copy the profile CV onto the application, create an in-app notification, and
   leave email delivery to a later phase.
 - Work-record signatures are HMAC-SHA256 over canonical JSON with sorted keys. The helpers live in
-  `src/lib/server/work-record-signature.ts`; the secret is `WORK_RECORD_SECRET`. Phase 4's
-  `createReview` still has to call the signer when it creates a record.
+  `src/lib/server/work-record-signature.ts`; the secret is `WORK_RECORD_SECRET`. `createReview`
+  signs the employer-to-student record in the same transaction as the review.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
   returned as raw storage or presigned URLs. See `docs/decisions/avatar-storage.md`.
 - `.env` exists locally and `node_modules` is installed.
@@ -82,9 +84,10 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   community images were removed from Docker Hub and Quay in 2025.
 - Product services and API handlers cover phases 0 to 3. The frontend lives in the `(app)` route
   group under `src/routes/(app)`; `src/routes/api` stays outside it. Job browsing, applications,
-  saved jobs, the employer job list and applicant review, notifications and sign-in work against the
-  API. Student and company profile editing work; verification, work records and the admin area are
-  still skeletons.
+  saved jobs, the employer job list and applicant review, notifications, sign-in, both profile
+  editors, employer job editing and the public work-record directory and verify pages work against
+  the API. Verification and the admin area are still skeletons; publishing a work record waits for
+  its write API.
 - File retention and garbage collection are agreed but **not implemented**. See
   `docs/decisions/data-retention.md` for the reference-aware cleanup policy and open decisions.
 

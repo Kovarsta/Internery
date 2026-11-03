@@ -2,34 +2,47 @@
 	/**
 	 * My work records (`/me/work-records`).
 	 *
-	 * Serves `GET /me/work-records`. Records are issued by the review flow, which does not exist
-	 * yet, so this page stays empty until then. Skeleton only.
+	 * Lists `GET /me/work-records`, newest first, with the publish state of each signed record.
+	 * Public records link to their verify page; this file composes the header, rows and pagination.
 	 */
 
-	import PageHeader from '#lib/components/PageHeader.svelte';
-	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
+	import { resolve } from '$app/paths';
+	import EmptyState from '#lib/components/jobs/EmptyState.svelte';
+	import Pagination from '#lib/components/jobs/Pagination.svelte';
+	import MyRecordRow from '#lib/components/work-records/MyRecordRow.svelte';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	const total = $derived(data.records.total);
 </script>
 
-<PageHeader
-	title="My work records"
-	description="Signed records issued by employers after a completed job. Private until you publish them."
+<h1 class="text-3xl font-extrabold tracking-tight">My work records</h1>
+<p class="mt-2 max-w-2xl text-ink/70">
+	{total}
+	{total === 1 ? 'signed record' : 'signed records'}. An employer issues one when they review you
+	after a completed job. Private records stay out of the public directory.
+</p>
+
+{#if data.records.items.length > 0}
+	<div class="mt-6 divide-y divide-rule border-t border-rule">
+		{#each data.records.items as record (record.id)}
+			<MyRecordRow {record} />
+		{/each}
+	</div>
+{:else}
+	<EmptyState
+		title="No work records yet"
+		description="Finish a job and ask the employer for a review. The signed record appears here as soon as it is issued."
+		actionLabel="Browse open shifts"
+		actionHref={resolve('jobs')}
+	/>
+{/if}
+
+<Pagination
+	basePath={resolve('me/work-records')}
+	page={data.page}
+	pageSize={data.pageSize}
+	total={data.records.total}
+	query={data.paginationQuery}
 />
-
-<div class="grid gap-3">
-	{#each [1, 2] as placeholder (placeholder)}
-		<article class="rounded-xl border border-slate-200 bg-white p-4">
-			<div class="h-4 w-1/3 rounded bg-slate-200"></div>
-			<div class="mt-2 h-3 w-1/2 rounded bg-slate-100"></div>
-			<div class="mt-4 flex gap-2">
-				<div class="h-7 w-24 rounded bg-slate-100"></div>
-				<div class="h-7 w-24 rounded bg-slate-100"></div>
-			</div>
-		</article>
-	{/each}
-</div>
-
-<div class="mt-4">
-	<SkeletonNotice>
-		Work-record skeleton. Records are created by the review flow, which is still to be built.
-	</SkeletonNotice>
-</div>

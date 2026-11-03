@@ -140,7 +140,9 @@ grows, generate them from `openapi.yaml` with `openapi-typescript` instead of ma
 | Tran Thi Binh    | `employer@internery.local` | `EMPLOYER` |
 
 All three students have profiles and pending applications to the barista job, so the employer
-applicant list has several rows for accept/reject demos.
+applicant list has several rows for accept/reject demos. One seeded job is completed, with reviews
+and two signed work records: An's record is private and Linh's is public, so the directory, the
+verify page and both states of `/me/work-records` have data.
 
 ## Components
 
@@ -150,6 +152,7 @@ src/lib/components/ui/         generated shadcn-svelte controls
 src/lib/components/jobs/       job list, row, filters, actions, pagination
 src/lib/components/applications/  one application row with its withdraw action
 src/lib/components/employer/   employer job row and applicant row with accept/reject
+src/lib/components/work-records/  public record card and the owner's record row
 ```
 
 Rules:
