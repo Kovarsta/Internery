@@ -11,6 +11,13 @@ implementation and review.
 | `contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501` |
 | `contracts/invariants.ts`            | Transactional service rules and work-record signing      |
 
+## Guides
+
+| File           | Purpose                                             |
+| -------------- | --------------------------------------------------- |
+| `api-guide.md` | How to call `/api/v1` from a client or script       |
+| `frontend.md`  | How the SvelteKit app consumes the API and is built |
+
 ## Planning
 
 | File         | Purpose                                               |
