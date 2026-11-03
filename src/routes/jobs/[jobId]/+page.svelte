@@ -2,53 +2,54 @@
 	/**
 	 * Job detail (`/jobs/[jobId]`).
 	 *
-	 * Serves `GET /jobs/{jobId}` and, for students, the save and apply actions through
-	 * `PUT /me/saved-jobs/{jobId}` and `POST /jobs/{jobId}/applications`. The endpoint already
-	 * hides the student-only fields from other visitors. Skeleton only: no data load yet.
+	 * Shows the shift facts, the description and the employer from `GET /jobs/{jobId}`. The
+	 * apply and save controls live in `JobActions`; the page owns layout only.
 	 */
 
-	import { page } from '$app/state';
-	import PageHeader from '#lib/components/PageHeader.svelte';
-	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
+	import { resolve } from '$app/paths';
+	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
+	import EmployerPanel from '#lib/components/jobs/EmployerPanel.svelte';
+	import JobActions from '#lib/components/jobs/JobActions.svelte';
+	import JobFacts from '#lib/components/jobs/JobFacts.svelte';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	const job = $derived(data.job);
 </script>
 
-<PageHeader
-	title="Job details"
-	description="Description, schedule, pay and employer, with the apply action for students."
-/>
+<a class="text-sm font-medium text-chalk hover:underline" href={resolve('/jobs')}>Back to jobs</a>
 
-<div class="grid gap-6 lg:grid-cols-3">
-	<section class="rounded-xl border border-slate-200 bg-white p-6 lg:col-span-2">
-		<p class="text-xs tracking-wide text-slate-500 uppercase">Job id</p>
-		<p class="mt-1 font-mono text-sm text-slate-700">{page.params.jobId}</p>
+<header class="mt-4 border-b border-rule pb-6">
+	<p class="text-sm text-ink/60">{job.category.name}</p>
+	<h1 class="mt-2 max-w-3xl text-3xl font-extrabold tracking-tight sm:text-4xl">{job.title}</h1>
+	<p class="mt-3 text-ink/70">{job.employer.orgName}</p>
+	<p class="text-sm text-ink/60">{job.location}</p>
 
-		<div class="mt-6 space-y-3">
-			<div class="h-4 w-2/3 rounded bg-slate-200"></div>
-			<div class="h-3 w-full rounded bg-slate-100"></div>
-			<div class="h-3 w-5/6 rounded bg-slate-100"></div>
-			<div class="h-3 w-4/6 rounded bg-slate-100"></div>
-		</div>
+	{#if job.scamWarning}
+		<Alert class="mt-4 border-warning/40 bg-warning/10" variant="destructive">
+			<AlertTitle>Check this listing</AlertTitle>
+			<AlertDescription>
+				This listing matched a scam keyword. Check the employer before sharing personal details.
+			</AlertDescription>
+		</Alert>
+	{/if}
+</header>
+
+<div class="mt-8 grid gap-10 lg:grid-cols-[1fr_19rem]">
+	<section>
+		<h2 class="text-lg font-semibold">The shift</h2>
+		<JobFacts {job} />
+
+		<h2 class="mt-10 text-lg font-semibold">About the job</h2>
+		<p class="mt-3 whitespace-pre-line text-ink/80">{job.description}</p>
 	</section>
 
-	<aside class="rounded-xl border border-slate-200 bg-white p-6">
-		<h2 class="text-sm font-medium text-slate-900">Employer</h2>
-		<div class="mt-3 h-3 w-2/3 rounded bg-slate-100"></div>
-		<div class="mt-2 h-3 w-1/2 rounded bg-slate-100"></div>
+	<aside class="border-t border-rule pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
+		<EmployerPanel employer={job.employer} />
 
-		<button
-			class="mt-6 w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-			disabled
-			type="button"
-		>
-			Apply
-		</button>
-		<p class="mt-2 text-xs text-slate-500">Apply is not wired to the API yet.</p>
+		<div class="mt-6 border-t border-rule pt-6">
+			<JobActions {job} role={data.user?.role} />
+		</div>
 	</aside>
-</div>
-
-<div class="mt-6">
-	<SkeletonNotice>
-		Job detail skeleton. Saved state, application state and the hidden-job rules arrive with the
-		data load.
-	</SkeletonNotice>
 </div>
