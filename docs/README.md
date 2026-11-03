@@ -26,6 +26,7 @@ change; do not leave the mismatch undocumented.
 | File                                | Decision                                               |
 | ----------------------------------- | ------------------------------------------------------ |
 | `decisions/avatar-storage.md`       | Application-served avatar URLs and private storage     |
+| `decisions/ai-features.md`          | DeepSeek provider and local CV text extraction         |
 | `decisions/better-auth-identity.md` | Better Auth owns the identity tables                   |
 | `decisions/better-auth-surface.md`  | Auth endpoints live under `/api/auth`, not `/api/v1`   |
 | `decisions/camel-case-columns.md`   | Product columns are camelCase, auth columns snake_case |

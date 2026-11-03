@@ -172,7 +172,9 @@ done. Account deletion and the system-deletion audit remain open.
 - **M** `POST /me/verification-request` — submit a verification request
 - **M** Audit-log writes for lock, hide, restore, review removal and verification decisions
 
-## Phase 7 — optional extras
+## Phase 7 - optional extras
+
+Status: planned. See `decisions/ai-features.md` for the provider and CV text extraction choices.
 
 Cut these first if time is tight.
 
