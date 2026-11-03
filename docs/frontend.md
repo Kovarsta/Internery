@@ -142,7 +142,8 @@ grows, generate them from `openapi.yaml` with `openapi-typescript` instead of ma
 All three students have profiles and pending applications to the barista job, so the employer
 applicant list has several rows for accept/reject demos. One seeded job is completed, with reviews
 and two signed work records: An's record is private and Linh's is public, so the directory, the
-verify page and both states of `/me/work-records` have data.
+verify page and both states of `/me/work-records` have data. The employer has one approved
+verification request, so `/me/verification` shows a filled-in outcome.
 
 ## Components
 

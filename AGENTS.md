@@ -86,8 +86,9 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   group under `src/routes/(app)`; `src/routes/api` stays outside it. The home page, job browsing,
   applications, saved jobs, the employer job list and applicant review, notifications, sign-in,
   both profile editors, employer job editing and the public work-record directory and verify pages
-  work against the API. Verification and the admin area are still skeletons; publishing a work
-  record waits for its write API.
+  work against the API. The employer verification page reads the badge state and the latest request;
+  submitting a request waits for `POST /me/verification-request`, so its control is disabled. The
+  admin area is still skeletons; publishing a work record waits for its write API.
 - File retention and garbage collection are agreed but **not implemented**. See
   `docs/decisions/data-retention.md` for the reference-aware cleanup policy and open decisions.
 

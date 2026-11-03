@@ -37,7 +37,6 @@
 				label: 'Notifications',
 				hint: 'Application and job updates'
 			},
-			{ href: resolve('me/verification'), label: 'Verification', hint: 'Request the badge' },
 			{
 				href: resolve('me/work-records'),
 				label: 'Work records',

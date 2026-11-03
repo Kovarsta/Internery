@@ -192,3 +192,20 @@ export type VerifyResult = {
 	valid: boolean;
 	record: WorkRecordCard | null;
 };
+
+export type VerificationRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+/** The employer's latest verification request on `/me/verification`. */
+export type VerificationRequest = {
+	id: string;
+	employerId: string;
+	orgName: string;
+	websiteUrl: string | null;
+	contactInfo: string;
+	hasLicense: boolean;
+	licenseUrl: string | null;
+	status: VerificationRequestStatus;
+	rejectReason: string | null;
+	createdAt: string;
+	reviewedAt: string | null;
+};

@@ -477,6 +477,31 @@ async function seedProfiles(userIdsByEmail: Map<string, string>) {
 		});
 }
 
+/**
+ * Writes the approved request behind the demo employer's Verified badge.
+ *
+ * The profile says `VERIFIED`, so the request page needs one approved row to show the outcome.
+ */
+async function seedVerificationRows(userIdsByEmail: Map<string, string>) {
+	const values = {
+		employerId: requireUserId(userIdsByEmail, 'employer@internery.local'),
+		orgName: 'Acme Coffee',
+		websiteUrl: 'https://acme-coffee.example',
+		contactInfo: 'Tran Thi Binh, 0900000003',
+		licenseKey: null,
+		status: 'APPROVED' as const,
+		rejectReason: null,
+		reviewedBy: requireUserId(userIdsByEmail, 'admin@internery.local'),
+		reviewedAt: new Date('2026-08-21T10:00:00.000Z'),
+		createdAt: new Date('2026-08-20T09:00:00.000Z')
+	};
+
+	await db
+		.insert(schema.verificationRequests)
+		.values({ id: '40000000-0000-4000-8000-000000000001', ...values })
+		.onConflictDoUpdate({ target: schema.verificationRequests.id, set: values });
+}
+
 async function seedCategoryRows(): Promise<Map<string, string>> {
 	await db.insert(schema.categories).values(seedCategories).onConflictDoNothing();
 
@@ -656,6 +681,7 @@ async function main() {
 	const userIdsByEmail = await seedUserAccounts(passwordHash);
 
 	await seedProfiles(userIdsByEmail);
+	await seedVerificationRows(userIdsByEmail);
 
 	const employerId = requireUserId(userIdsByEmail, 'employer@internery.local');
 	const categoryIdsByName = await seedCategoryRows();
@@ -672,6 +698,7 @@ async function main() {
 	console.log(`  applications: ${seedApplications.length}`);
 	console.log(`  reviews: ${seedReviews.length}`);
 	console.log(`  work records: ${seedWorkRecords.length}`);
+	console.log('  verification requests: 1');
 	console.log(`  notifications: ${seedNotifications.length}`);
 	console.log('');
 	console.log('Sign in with:');

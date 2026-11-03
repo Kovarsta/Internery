@@ -22,7 +22,6 @@
 			{ href: resolve('me/applications'), label: 'Applications' },
 			{ href: resolve('me/saved-jobs'), label: 'Saved jobs' },
 			{ href: resolve('me/notifications'), label: 'Notifications' },
-			{ href: resolve('me/verification'), label: 'Verification' },
 			{ href: resolve('me/work-records'), label: 'Work records' }
 		],
 		EMPLOYER: [
