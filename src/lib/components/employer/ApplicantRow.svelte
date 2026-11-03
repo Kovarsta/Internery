@@ -29,10 +29,9 @@
 	);
 	const cvHref = $derived(`/api/v1/applications/${applicant.id}/cv`);
 	const profileHref = $derived(
-		resolve('/employer/jobs/[jobId]/applicants/[applicationId]', {
-			jobId,
-			applicationId: applicant.id
-		})
+		resolve(
+			`employer/jobs/${encodeURIComponent(jobId)}/applicants/${encodeURIComponent(applicant.id)}`
+		)
 	);
 
 	async function decide(decision: Decision) {

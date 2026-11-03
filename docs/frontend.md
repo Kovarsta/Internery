@@ -26,6 +26,23 @@ How the SvelteKit app is built and how it gets data. The backend is documented s
 Guards live in `+layout.server.ts` files: signed-out visitors redirect to `/login`, a wrong role gets
 `403` through `+error.svelte`.
 
+Every page route lives in the `(app)` route group, which does not add a URL segment. It holds the
+shared layout, the error page and the stylesheet, so `src/routes` only has two children:
+
+```text
+src/routes/(app)/     the rendered app: layout, stylesheet, and every page
+src/routes/api/       the JSON API, outside the app layout
+```
+
+The API deliberately sits outside `(app)`: it must not inherit the HTML shell or the navigation
+header. Route URLs are unchanged (`/jobs`, not `/(app)/jobs`).
+
+`resolve` takes a pathname relative to the base, without a leading slash: `resolve('jobs')` and
+`resolve('')` for the home page. In SvelteKit 3 a leading slash means a route ID, and route IDs
+include the group name, so `resolve('/jobs')` does not type-check once the routes live in `(app)`.
+Build links with parameters as pathnames too, for example
+``resolve(`jobs/${encodeURIComponent(job.id)}`)``.
+
 ## Getting data
 
 **The UI talks to the API, not to the services.** That keeps one contract for the browser, scripts
@@ -87,7 +104,7 @@ Mutations use one of two patterns:
 
 ## Toasts
 
-`src/routes/+layout.svelte` mounts one `<Toaster>` from `svelte-french-toast`. Use
+`src/routes/(app)/+layout.svelte` mounts one `<Toaster>` from `svelte-french-toast`. Use
 `showSuccess` / `showError` from `src/lib/toast.ts`, which apply the ink surface and the type accent;
 do not call the library directly from components. Toasts are supplementary; the page must still show
 the state after a reload.
@@ -103,8 +120,8 @@ grows, generate them from `openapi.yaml` with `openapi-typescript` instead of ma
 
 - `hooks.server.ts` loads the session into `locals.user` (`id`, `name`, `role`).
 - The root layout exposes only `{ id, name, role }` to pages.
-- Sign-in and registration are form actions in `src/routes/login/+page.server.ts` and
-  `src/routes/register/+page.server.ts`. They call Better Auth's `auth.api`, and the
+- Sign-in and registration are form actions in `src/routes/(app)/login/+page.server.ts` and
+  `src/routes/(app)/register/+page.server.ts`. They call Better Auth's `auth.api`, and the
   `sveltekitCookies` plugin writes the session cookie. The server assigns the signup role.
 - Never render another user's private data from a cached response; the API marks personalised JSON
   `no-store`.
@@ -164,7 +181,7 @@ element; listings lead with when the job happens.
   `prefers-reduced-motion`; do not animate every card.
 - Copy: plain verbs and sentence case. "Find a shift that fits your week", not "Discover opportunity".
 
-The tokens live in `src/routes/layout.css` under `@theme`, so components use `bg-paper`,
+The tokens live in `src/routes/(app)/layout.css` under `@theme`, so components use `bg-paper`,
 `text-ink` and friends instead of raw hex values. shadcn's semantic variables (`--background`,
 `--primary`, `--border`, ...) are mapped onto the same palette, so generated controls sit inside the
 same design.

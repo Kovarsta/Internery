@@ -82,7 +82,7 @@
 {:else if !job.acceptingApplications}
 	<p class="mt-4 text-sm text-ink/60">This job is not accepting applications.</p>
 {:else if !role}
-	<Button class="mt-4 w-full" href={resolve('/login')}>Sign in to apply</Button>
+	<Button class="mt-4 w-full" href={resolve('login')}>Sign in to apply</Button>
 {:else if role === 'STUDENT'}
 	<form class="mt-4 space-y-3" onsubmit={submitApplication}>
 		<div>

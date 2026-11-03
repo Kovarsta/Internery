@@ -80,8 +80,10 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Docker Compose provides Postgres, MinIO, and a one-shot `minio-init` job that creates the
   `${S3_BUCKET:-internery-staging}` bucket. MinIO uses the Chainguard image because the upstream
   community images were removed from Docker Hub and Quay in 2025.
-- Product services and API handlers cover phases 0 to 3; the frontend is route skeletons with no
-  data loading yet.
+- Product services and API handlers cover phases 0 to 3. The frontend lives in the `(app)` route
+  group under `src/routes/(app)`; `src/routes/api` stays outside it. Job browsing, applications,
+  saved jobs, the employer job list and applicant review, notifications and sign-in work against the
+  API. Profile editing, verification, work records and the admin area are still skeletons.
 - File retention and garbage collection are agreed but **not implemented**. See
   `docs/decisions/data-retention.md` for the reference-aware cleanup policy and open decisions.
 
@@ -184,7 +186,9 @@ The readability rules above apply to every change. These are the project-specifi
   extension; keep that style.
 - Server-only code lives under `src/lib/server/` and must never be imported into client code.
   Environment access belongs in server modules.
-- Tailwind 4 utilities; the CSS entry point is `src/routes/layout.css`.
+- Tailwind 4 utilities; the CSS entry point is `src/routes/(app)/layout.css`.
+- `resolve()` takes a base-relative pathname without a leading slash (`resolve('jobs')`,
+  `resolve('')` for home). A leading slash means a route ID, which includes the `(app)` group.
 - Keep API field names, enum values and length limits aligned with `docs/contracts/openapi.yaml`.
 - Money is an integer VND amount. Timestamps are `timestamptz`; job dates are `date`.
 

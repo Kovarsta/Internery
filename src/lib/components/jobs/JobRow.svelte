@@ -13,7 +13,7 @@
 
 	let { job }: { job: JobSummary } = $props();
 
-	const href = $derived(resolve('/jobs/[jobId]', { jobId: job.id }));
+	const href = $derived(resolve(`jobs/${encodeURIComponent(job.id)}`));
 </script>
 
 <article class="grid gap-4 py-5 sm:grid-cols-[11rem_1fr_auto] sm:items-start">

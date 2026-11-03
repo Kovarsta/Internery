@@ -27,7 +27,7 @@
 </script>
 
 <form
-	action={resolve('/jobs')}
+	action={resolve('jobs')}
 	class="grid gap-3 border border-rule bg-card p-4 sm:grid-cols-2 lg:grid-cols-6"
 	method="GET"
 >

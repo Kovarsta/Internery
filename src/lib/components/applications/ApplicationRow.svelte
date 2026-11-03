@@ -42,7 +42,7 @@
 		<div class="flex flex-wrap items-center gap-2">
 			<a
 				class="text-lg font-semibold hover:text-chalk"
-				href={resolve('/jobs/[jobId]', { jobId: application.jobId })}
+				href={resolve(`jobs/${encodeURIComponent(application.jobId)}`)}
 			>
 				{application.jobTitle}
 			</a>

@@ -11,7 +11,7 @@ const WARNING = '#c44536';
  * The toast is the one dark surface in the interface, so it reads as a
  * notification rather than another card. The left rule carries the outcome:
  * chalk for success, warning red for failure. Keep these values in sync with the
- * `@theme` tokens in `src/routes/layout.css`.
+ * `@theme` tokens in `src/routes/(app)/layout.css`.
  */
 function toastStyle(accent: string): string {
 	return [

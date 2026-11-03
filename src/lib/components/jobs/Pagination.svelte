@@ -25,7 +25,7 @@
 		params.set('page', String(target));
 
 		// resolve() handles the path and base; the query string is runtime data.
-		return `${resolve('/jobs')}?${params.toString()}` as ResolvedPathname;
+		return `${resolve('jobs')}?${params.toString()}` as ResolvedPathname;
 	}
 </script>
 

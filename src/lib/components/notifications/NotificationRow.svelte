@@ -20,7 +20,7 @@
 	let isMarking = $state(false);
 
 	const jobHref = $derived(
-		notification.jobId ? resolve('/jobs/[jobId]', { jobId: notification.jobId }) : null
+		notification.jobId ? resolve(`jobs/${encodeURIComponent(notification.jobId)}`) : null
 	);
 
 	async function markRead() {

@@ -21,7 +21,7 @@
 		<div class="flex flex-wrap items-center gap-2">
 			<a
 				class="text-lg font-semibold hover:text-chalk"
-				href={resolve('/jobs/[jobId]', { jobId: job.id })}
+				href={resolve(`jobs/${encodeURIComponent(job.id)}`)}
 			>
 				{job.title}
 			</a>
@@ -49,13 +49,13 @@
 
 	<div class="flex flex-wrap gap-2 sm:justify-end">
 		<Button
-			href={resolve('/employer/jobs/[jobId]/applicants', { jobId: job.id })}
+			href={resolve(`employer/jobs/${encodeURIComponent(job.id)}/applicants`)}
 			size="sm"
 			variant="outline"
 		>
 			Applicants
 		</Button>
-		<Button href={resolve('/jobs/[jobId]', { jobId: job.id })} size="sm" variant="ghost">
+		<Button href={resolve(`jobs/${encodeURIComponent(job.id)}`)} size="sm" variant="ghost">
 			View
 		</Button>
 	</div>
