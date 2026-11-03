@@ -6,6 +6,9 @@ How the SvelteKit app is built and how it gets data. The backend is documented s
 ## Stack and conventions
 
 - SvelteKit 3, Svelte 5 runes (`$props`, `$state`, `$derived`), Tailwind CSS 4, TypeScript.
+- shadcn-svelte for controls (`button`, `input`, `label`, `checkbox`, `native-select`, `textarea`,
+  `alert`, `badge`). Generated files live in `src/lib/components/ui/` and are owned by the project,
+  so they are formatted like the rest of `src/`.
 - App imports go through `#lib/*` and keep the `.ts` extension.
 - Server-only code lives under `src/lib/server/` and must never be imported into a component.
 - Tabs, single quotes, no trailing commas, 100-column width. Run `pnpm format`.
@@ -41,9 +44,11 @@ page load.
 Planned shared modules, added with the first data page:
 
 ```text
-src/lib/api/client.ts   typed apiGet/apiSend, maps the error envelope to SvelteKit errors
-src/lib/api/types.ts    response types mirroring openapi.yaml
-src/lib/format.ts       VND amounts, salary suffixes, dates
+src/lib/api/client.ts        server: apiGet + error envelope -> SvelteKit errors
+src/lib/api/browser.ts       browser: apiSend -> { ok, data } | { ok, message }
+src/lib/api/error-message.ts reads the error envelope for both
+src/lib/api/types.ts         response types mirroring openapi.yaml
+src/lib/format.ts            VND amounts, salary suffixes, dates
 ```
 
 A load looks like this:
@@ -70,8 +75,26 @@ Error mapping:
 other -> error(502, 'The API request failed.')
 ```
 
-Mutations go through form actions, not client-side fetch, so the page still works without JS and the
-session stays server-side. Use `use:enhance` for the progressive upgrade.
+Mutations use one of two patterns:
+
+- **Form action** for a whole-page flow (sign in, register, publish a job). It works without
+  JavaScript and returns `fail(...)` with the API's message, which the page renders in an `Alert`.
+- **Browser write** for an in-page action (apply, save, withdraw). `apiSend` returns the error
+  instead of throwing, so the component can show a toast and call `refreshAll()` to reload the
+  server data. Use this when staying on the page is the point.
+
+`use:enhance` is optional; these forms already return server-rendered state.
+
+## Toasts
+
+`src/routes/+layout.svelte` mounts one `<Toaster>` from `svelte-french-toast`. Use
+`showSuccess` / `showError` from `src/lib/toast.ts`, which apply the ink surface and the type accent;
+do not call the library directly from components. Toasts are supplementary; the page must still show
+the state after a reload.
+
+Toasts are for write results (applied, saved, withdrawn, signed in), never for validation errors
+that belong next to a field. A navigation-level confirmation that must survive without JavaScript
+stays an `Alert`.
 
 Types in `src/lib/api/types.ts` mirror the contract by hand for now. If the number of response shapes
 grows, generate them from `openapi.yaml` with `openapi-typescript` instead of maintaining two copies.
@@ -80,8 +103,9 @@ grows, generate them from `openapi.yaml` with `openapi-typescript` instead of ma
 
 - `hooks.server.ts` loads the session into `locals.user` (`id`, `name`, `role`).
 - The root layout exposes only `{ id, name, role }` to pages.
-- Sign-in posts to Better Auth at `/api/auth/sign-in/email`; use a form action and redirect to the
-  role's dashboard.
+- Sign-in and registration are form actions in `src/routes/login/+page.server.ts` and
+  `src/routes/register/+page.server.ts`. They call Better Auth's `auth.api`, and the
+  `sveltekitCookies` plugin writes the session cookie. The server assigns the signup role.
 - Never render another user's private data from a cached response; the API marks personalised JSON
   `no-store`.
 
@@ -89,8 +113,10 @@ grows, generate them from `openapi.yaml` with `openapi-typescript` instead of ma
 
 ```text
 src/lib/components/            shared across areas
-src/lib/components/jobs/       job list, row, filters, pagination
-src/lib/components/me/         account widgets
+src/lib/components/ui/         generated shadcn-svelte controls
+src/lib/components/jobs/       job list, row, filters, actions, pagination
+src/lib/components/applications/  one application row with its withdraw action
+src/lib/components/employer/   employer job row
 ```
 
 Rules:
@@ -122,8 +148,10 @@ element; listings lead with when the job happens.
   `prefers-reduced-motion`; do not animate every card.
 - Copy: plain verbs and sentence case. "Find a shift that fits your week", not "Discover opportunity".
 
-Put the tokens in `src/routes/layout.css` with Tailwind's `@theme` when the first page adopts them,
-so components use `bg-paper`, `text-ink` and friends instead of raw hex values.
+The tokens live in `src/routes/layout.css` under `@theme`, so components use `bg-paper`,
+`text-ink` and friends instead of raw hex values. shadcn's semantic variables (`--background`,
+`--primary`, `--border`, ...) are mapped onto the same palette, so generated controls sit inside the
+same design.
 
 ## States
 
