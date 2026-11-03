@@ -13,25 +13,12 @@
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { apiSend } from '#lib/api/browser.ts';
 	import { formatTimestamp } from '#lib/format.ts';
-	import type { Application, ApplicationStatus } from '#lib/api/types.ts';
+	import { applicationStatusClass, applicationStatusLabel } from '#lib/labels.ts';
+	import type { Application } from '#lib/api/types.ts';
 
 	let { application }: { application: Application } = $props();
 
 	let isWithdrawing = $state(false);
-
-	const statusLabel: Record<ApplicationStatus, string> = {
-		PENDING: 'Pending',
-		ACCEPTED: 'Accepted',
-		REJECTED: 'Rejected',
-		WITHDRAWN: 'Withdrawn'
-	};
-
-	const statusClass: Record<ApplicationStatus, string> = {
-		PENDING: 'bg-highlight/20 text-ink',
-		ACCEPTED: 'bg-chalk/10 text-chalk',
-		REJECTED: 'bg-warning/10 text-warning',
-		WITHDRAWN: 'bg-muted text-muted-foreground'
-	};
 
 	async function withdraw() {
 		isWithdrawing = true;
@@ -59,8 +46,8 @@
 			>
 				{application.jobTitle}
 			</a>
-			<Badge class={statusClass[application.status]} variant="ghost">
-				{statusLabel[application.status]}
+			<Badge class={applicationStatusClass[application.status]} variant="ghost">
+				{applicationStatusLabel[application.status]}
 			</Badge>
 		</div>
 

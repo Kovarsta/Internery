@@ -10,23 +10,10 @@
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { formatDateRange, formatPositionsRemaining, formatSalary } from '#lib/format.ts';
-	import type { JobStatus, MyJob } from '#lib/api/types.ts';
+	import { jobStatusClass, jobStatusLabel } from '#lib/labels.ts';
+	import type { MyJob } from '#lib/api/types.ts';
 
 	let { job }: { job: MyJob } = $props();
-
-	const statusLabel: Record<JobStatus, string> = {
-		HIRING: 'Hiring',
-		FILLED: 'Filled',
-		COMPLETED: 'Completed',
-		CANCELLED: 'Cancelled'
-	};
-
-	const statusClass: Record<JobStatus, string> = {
-		HIRING: 'bg-chalk/10 text-chalk',
-		FILLED: 'bg-highlight/20 text-ink',
-		COMPLETED: 'bg-muted text-muted-foreground',
-		CANCELLED: 'bg-warning/10 text-warning'
-	};
 </script>
 
 <article class="grid gap-3 py-5 sm:grid-cols-[1fr_auto] sm:items-start">
@@ -38,7 +25,7 @@
 			>
 				{job.title}
 			</a>
-			<Badge class={statusClass[job.status]} variant="ghost">{statusLabel[job.status]}</Badge>
+			<Badge class={jobStatusClass[job.status]} variant="ghost">{jobStatusLabel[job.status]}</Badge>
 			{#if job.isHidden}
 				<Badge class="bg-warning/10 text-warning" variant="ghost">Hidden</Badge>
 			{/if}

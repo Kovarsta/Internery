@@ -15,7 +15,8 @@
 	import { Label } from '#lib/components/ui/label/index.ts';
 	import { Textarea } from '#lib/components/ui/textarea/index.ts';
 	import { apiSend } from '#lib/api/browser.ts';
-	import type { ApplicationStatus, JobDetail } from '#lib/api/types.ts';
+	import { applicationStatusLabel } from '#lib/labels.ts';
+	import type { JobDetail } from '#lib/api/types.ts';
 
 	type ViewerRole = 'STUDENT' | 'EMPLOYER' | 'ADMIN';
 
@@ -24,13 +25,6 @@
 	let message = $state('');
 	let isSubmitting = $state(false);
 	let isSaving = $state(false);
-
-	const applicationLabel: Record<ApplicationStatus, string> = {
-		PENDING: 'Pending',
-		ACCEPTED: 'Accepted',
-		REJECTED: 'Rejected',
-		WITHDRAWN: 'Withdrawn'
-	};
 
 	async function submitApplication(event: SubmitEvent) {
 		event.preventDefault();
@@ -82,7 +76,7 @@
 	<Alert class="mt-4">
 		<AlertTitle>Application sent</AlertTitle>
 		<AlertDescription>
-			Status: {applicationLabel[job.myApplication.status].toLowerCase()}.
+			Status: {applicationStatusLabel[job.myApplication.status].toLowerCase()}.
 		</AlertDescription>
 	</Alert>
 {:else if !job.acceptingApplications}
