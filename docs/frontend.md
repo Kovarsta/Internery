@@ -109,6 +109,22 @@ grows, generate them from `openapi.yaml` with `openapi-typescript` instead of ma
 - Never render another user's private data from a cached response; the API marks personalised JSON
   `no-store`.
 
+### Demo accounts
+
+`pnpm db:seed` creates verified accounts with the `SEED_PASSWORD` password (default
+`Password123!`):
+
+| Name             | Email                      | Role       |
+| ---------------- | -------------------------- | ---------- |
+| Internery Admin  | `admin@internery.local`    | `ADMIN`    |
+| Nguyen Van An    | `student@internery.local`  | `STUDENT`  |
+| Pham Thu Linh    | `linh@internery.local`     | `STUDENT`  |
+| Hoang Quang Minh | `minh@internery.local`     | `STUDENT`  |
+| Tran Thi Binh    | `employer@internery.local` | `EMPLOYER` |
+
+All three students have profiles and pending applications to the barista job, so the employer
+applicant list has several rows for accept/reject demos.
+
 ## Components
 
 ```text

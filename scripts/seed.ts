@@ -35,21 +35,74 @@ const seedUsers = [
 		id: '00000000-0000-4000-8000-000000000001',
 		name: 'Internery Admin',
 		email: 'admin@internery.local',
-		role: 'ADMIN'
+		role: 'ADMIN',
+		phone: '0900000001'
 	},
 	{
 		id: '00000000-0000-4000-8000-000000000002',
 		name: 'Nguyen Van An',
 		email: 'student@internery.local',
-		role: 'STUDENT'
+		role: 'STUDENT',
+		phone: '0900000002'
 	},
 	{
 		id: '00000000-0000-4000-8000-000000000003',
 		name: 'Tran Thi Binh',
 		email: 'employer@internery.local',
-		role: 'EMPLOYER'
+		role: 'EMPLOYER',
+		phone: '0900000003'
+	},
+	{
+		id: '00000000-0000-4000-8000-000000000004',
+		name: 'Pham Thu Linh',
+		email: 'linh@internery.local',
+		role: 'STUDENT',
+		phone: '0900000004'
+	},
+	{
+		id: '00000000-0000-4000-8000-000000000005',
+		name: 'Hoang Quang Minh',
+		email: 'minh@internery.local',
+		role: 'STUDENT',
+		phone: '0900000005'
 	}
 ] as const;
+
+type SeedStudentProfile = {
+	email: string;
+	university: string;
+	major: string;
+	skills: string[];
+	availability: string;
+	bio: string;
+};
+
+const seedStudentProfiles: SeedStudentProfile[] = [
+	{
+		email: 'student@internery.local',
+		university: 'Vietnam National University, Hanoi',
+		major: 'Computer Science',
+		skills: ['TypeScript', 'SQL', 'Customer service'],
+		availability: 'Weekday evenings and weekends',
+		bio: 'Second-year student looking for part-time work in Hanoi.'
+	},
+	{
+		email: 'linh@internery.local',
+		university: 'Hanoi University',
+		major: 'English Language',
+		skills: ['Barista', 'Customer service', 'English'],
+		availability: 'Weekday mornings and weekends',
+		bio: 'Third-year student with two years of café experience.'
+	},
+	{
+		email: 'minh@internery.local',
+		university: 'Hanoi University of Science and Technology',
+		major: 'Mechanical Engineering',
+		skills: ['Teamwork', 'Event support', 'Physical work'],
+		availability: 'Weekends and university holidays',
+		bio: 'First-year student looking for weekend event work.'
+	}
+];
 
 const seedCategories = [
 	{ id: '10000000-0000-4000-8000-000000000001', name: 'Retail' },
@@ -110,6 +163,7 @@ const seedApplications = [
 	{
 		id: '30000000-0000-4000-8000-000000000001',
 		jobId: seedJobs[0].id,
+		studentEmail: 'student@internery.local',
 		message: 'I worked as a barista for six months and can start next week.',
 		status: 'PENDING',
 		rejectReason: null
@@ -117,6 +171,7 @@ const seedApplications = [
 	{
 		id: '30000000-0000-4000-8000-000000000002',
 		jobId: seedJobs[1].id,
+		studentEmail: 'student@internery.local',
 		message: 'I am available every weekend.',
 		status: 'REJECTED',
 		rejectReason: 'The position was filled before the interview.'
@@ -124,8 +179,25 @@ const seedApplications = [
 	{
 		id: '30000000-0000-4000-8000-000000000003',
 		jobId: seedJobs[2].id,
+		studentEmail: 'student@internery.local',
 		message: 'I tutored grade 9 maths last year.',
 		status: 'WITHDRAWN',
+		rejectReason: null
+	},
+	{
+		id: '30000000-0000-4000-8000-000000000004',
+		jobId: seedJobs[0].id,
+		studentEmail: 'linh@internery.local',
+		message: 'I have two years of café experience and can work the morning shift.',
+		status: 'PENDING',
+		rejectReason: null
+	},
+	{
+		id: '30000000-0000-4000-8000-000000000005',
+		jobId: seedJobs[0].id,
+		studentEmail: 'minh@internery.local',
+		message: 'I am a fast learner and free every weekday morning.',
+		status: 'PENDING',
 		rejectReason: null
 	}
 ] as const;
@@ -160,6 +232,26 @@ const seedNotifications = [
 		jobId: seedJobs[1].id,
 		applicationId: seedApplications[1].id,
 		read: false
+	},
+	{
+		id: '40000000-0000-4000-8000-000000000004',
+		recipient: 'employer',
+		type: 'APPLICATION_RECEIVED',
+		title: 'New application',
+		body: 'Pham Thu Linh applied to Part-time barista.',
+		jobId: seedJobs[0].id,
+		applicationId: seedApplications[3].id,
+		read: false
+	},
+	{
+		id: '40000000-0000-4000-8000-000000000005',
+		recipient: 'employer',
+		type: 'APPLICATION_RECEIVED',
+		title: 'New application',
+		body: 'Hoang Quang Minh applied to Part-time barista.',
+		jobId: seedJobs[0].id,
+		applicationId: seedApplications[4].id,
+		read: false
 	}
 ] as const;
 
@@ -168,6 +260,16 @@ function addDays(days: number): string {
 	date.setUTCDate(date.getUTCDate() + days);
 
 	return date.toISOString().slice(0, 10);
+}
+
+function requireUserId(userIdsByEmail: Map<string, string>, email: string): string {
+	const userId = userIdsByEmail.get(email);
+
+	if (!userId) {
+		throw new Error(`Could not find the seed user ${email}.`);
+	}
+
+	return userId;
 }
 
 async function seedUserAccounts(passwordHash: string): Promise<Map<string, string>> {
@@ -227,32 +329,27 @@ async function ensureCredentialAccount(userId: string, passwordHash: string): Pr
 	});
 }
 
-async function seedProfiles(adminId: string, studentId: string, employerId: string) {
-	await db
-		.insert(schema.userProfiles)
-		.values([
-			{ userId: adminId, phone: '0900000001' },
-			{ userId: studentId, phone: '0900000002' },
-			{ userId: employerId, phone: '0900000003' }
-		])
-		.onConflictDoNothing();
+async function seedProfiles(userIdsByEmail: Map<string, string>) {
+	const userProfileRows = seedUsers.map((user) => ({
+		userId: requireUserId(userIdsByEmail, user.email),
+		phone: user.phone
+	}));
 
-	const studentProfile = {
-		university: 'Vietnam National University, Hanoi',
-		major: 'Computer Science',
-		skills: ['TypeScript', 'SQL', 'Customer service'],
-		availability: 'Weekday evenings and weekends',
-		bio: 'Second-year student looking for part-time work in Hanoi.'
-	};
+	await db.insert(schema.userProfiles).values(userProfileRows).onConflictDoNothing();
 
-	await db
-		.insert(schema.studentProfiles)
-		.values({ userId: studentId, ...studentProfile })
-		.onConflictDoUpdate({
-			target: schema.studentProfiles.userId,
-			set: studentProfile
-		});
+	for (const studentProfile of seedStudentProfiles) {
+		const { email, ...profile } = studentProfile;
 
+		await db
+			.insert(schema.studentProfiles)
+			.values({ userId: requireUserId(userIdsByEmail, email), ...profile })
+			.onConflictDoUpdate({
+				target: schema.studentProfiles.userId,
+				set: profile
+			});
+	}
+
+	const employerId = requireUserId(userIdsByEmail, 'employer@internery.local');
 	const employerProfile = {
 		orgName: 'Acme Coffee',
 		orgType: 'COMPANY' as const,
@@ -315,9 +412,10 @@ async function seedJobRows(employerId: string, categoryIdsByName: Map<string, st
 	}
 }
 
-async function seedApplicationRows(studentId: string) {
+async function seedApplicationRows(userIdsByEmail: Map<string, string>) {
 	for (const application of seedApplications) {
 		const isPending = application.status === 'PENDING';
+		const studentId = requireUserId(userIdsByEmail, application.studentEmail);
 
 		await db
 			.insert(schema.applications)
@@ -334,10 +432,10 @@ async function seedApplicationRows(studentId: string) {
 	}
 }
 
-async function seedNotificationRows(studentId: string, employerId: string) {
+async function seedNotificationRows(userIdsByEmail: Map<string, string>) {
 	const recipients = new Map([
-		['student', studentId],
-		['employer', employerId]
+		['student', requireUserId(userIdsByEmail, 'student@internery.local')],
+		['employer', requireUserId(userIdsByEmail, 'employer@internery.local')]
 	]);
 
 	for (const notification of seedNotifications) {
@@ -367,20 +465,13 @@ async function main() {
 	const passwordHash = await hashPassword(seedPassword);
 	const userIdsByEmail = await seedUserAccounts(passwordHash);
 
-	const adminId = userIdsByEmail.get('admin@internery.local');
-	const studentId = userIdsByEmail.get('student@internery.local');
-	const employerId = userIdsByEmail.get('employer@internery.local');
+	await seedProfiles(userIdsByEmail);
 
-	if (!adminId || !studentId || !employerId) {
-		throw new Error('One of the seed users is missing after the insert.');
-	}
-
-	await seedProfiles(adminId, studentId, employerId);
-
+	const employerId = requireUserId(userIdsByEmail, 'employer@internery.local');
 	const categoryIdsByName = await seedCategoryRows();
 	await seedJobRows(employerId, categoryIdsByName);
-	await seedApplicationRows(studentId);
-	await seedNotificationRows(studentId, employerId);
+	await seedApplicationRows(userIdsByEmail);
+	await seedNotificationRows(userIdsByEmail);
 
 	console.log('Seed complete.');
 	console.log(`  users: ${seedUsers.length}`);

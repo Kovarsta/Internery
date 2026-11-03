@@ -55,9 +55,10 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   row means zero failures and no lock.
 - `src/lib/server/db/schema.ts` only re-exports the auth and product schemas; Drizzle and
   drizzle-kit consume that aggregate.
-- `scripts/seed.ts` (run with `pnpm db:seed`) inserts fixed-id development data: an admin, a student
-  and an employer, five categories, four jobs, three applications and three notifications. It is
-  idempotent, uses `SEED_PASSWORD` (default `Password123!`), and refuses to run when
+- `scripts/seed.ts` (run with `pnpm db:seed`) inserts fixed-id development data: an admin, three
+  students (An, Linh and Minh) and an employer, five categories, four jobs, five applications and
+  five notifications. The three students have profiles and pending applications to the barista job.
+  It is idempotent, uses `SEED_PASSWORD` (default `Password123!`), and refuses to run when
   `NODE_ENV=production`.
 - Migrations `drizzle/0000_pink_thundra.sql` and `drizzle/0001_fair_lightspeed.sql` have been
   generated and applied to the local database. All 21 tables exist; auth timestamps are

@@ -84,9 +84,21 @@ Not implemented yet:
    pnpm db:seed
    ```
 
-   This creates an admin, a student and an employer, plus categories, jobs, applications and
+   This creates an admin, three students and an employer, plus categories, jobs, applications and
    notifications. The accounts share the password from `SEED_PASSWORD`, which defaults to
    `Password123!`. The script is safe to rerun and refuses to run when `NODE_ENV=production`.
+
+   The seeded accounts are already verified, so they can sign in at `/login` immediately:
+
+   | Name             | Email                      | Role       |
+   | ---------------- | -------------------------- | ---------- |
+   | Internery Admin  | `admin@internery.local`    | `ADMIN`    |
+   | Nguyen Van An    | `student@internery.local`  | `STUDENT`  |
+   | Pham Thu Linh    | `linh@internery.local`     | `STUDENT`  |
+   | Hoang Quang Minh | `minh@internery.local`     | `STUDENT`  |
+   | Tran Thi Binh    | `employer@internery.local` | `EMPLOYER` |
+
+   Use `student@`, `linh@` or `minh@` for the student side, and `employer@` for the employer side.
 
 7. Start the development server:
 
