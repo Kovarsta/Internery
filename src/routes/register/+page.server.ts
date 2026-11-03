@@ -5,8 +5,7 @@ import { db } from '#lib/server/db/index.ts';
 import { assignSignupRole } from '#lib/server/services/users.ts';
 import type { Actions, PageServerLoad } from './$types';
 
-const SIGNUP_ROLES = ['STUDENT', 'EMPLOYER'] as const;
-type SignupRole = (typeof SIGNUP_ROLES)[number];
+type SignupRole = 'STUDENT' | 'EMPLOYER';
 
 /**
  * Create account (`/register`).

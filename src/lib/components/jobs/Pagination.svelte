@@ -5,6 +5,10 @@
 	 * Keeps the active filters in the URL. Pages are 1-based, matching the API.
 	 */
 
+	import { resolve } from '$app/paths';
+	import type { ResolvedPathname } from '$app/types';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
+
 	type Props = {
 		page: number;
 		pageSize: number;
@@ -16,11 +20,12 @@
 
 	const totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
 
-	function pageHref(target: number): string {
-		const params = new URLSearchParams(query);
+	function pageHref(target: number): ResolvedPathname {
+		const params = new SvelteURLSearchParams(query);
 		params.set('page', String(target));
 
-		return `?${params.toString()}`;
+		// resolve() handles the path and base; the query string is runtime data.
+		return `${resolve('/jobs')}?${params.toString()}` as ResolvedPathname;
 	}
 </script>
 

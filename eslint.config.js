@@ -37,5 +37,11 @@ export default defineConfig(
 		// Override or add rule settings here, such as:
 		// 'svelte/button-has-type': 'error'
 		rules: {}
+	},
+	{
+		// The Button primitive renders the URL its caller passes in; resolving it belongs at the
+		// call site, which `svelte/no-navigation-without-resolve` cannot see.
+		files: ['src/lib/components/ui/button/button.svelte'],
+		rules: { 'svelte/no-navigation-without-resolve': 'off' }
 	}
 );

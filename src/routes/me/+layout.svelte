@@ -8,13 +8,14 @@
 	 */
 
 	import { resolve } from '$app/paths';
+	import type { ResolvedPathname } from '$app/types';
 	import AreaNav from '#lib/components/AreaNav.svelte';
 	import type { UserRole } from '#lib/api/types.ts';
 	import type { LayoutProps } from './$types';
 
 	let { children, data }: LayoutProps = $props();
 
-	const linksByRole: Record<UserRole, { href: string; label: string }[]> = {
+	const linksByRole: Record<UserRole, { href: ResolvedPathname; label: string }[]> = {
 		STUDENT: [
 			{ href: resolve('/me'), label: 'Overview' },
 			{ href: resolve('/me/profile'), label: 'Student profile' },

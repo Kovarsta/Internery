@@ -7,6 +7,7 @@
 	 */
 
 	import { resolve } from '$app/paths';
+	import type { ResolvedPathname } from '$app/types';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import { formatTimestamp } from '#lib/format.ts';
 	import type { UserRole } from '#lib/api/types.ts';
@@ -22,7 +23,7 @@
 		ADMIN: 'Administrator'
 	};
 
-	const linksByRole: Record<UserRole, { href: string; label: string; hint: string }[]> = {
+	const linksByRole: Record<UserRole, { href: ResolvedPathname; label: string; hint: string }[]> = {
 		STUDENT: [
 			{ href: resolve('/me/profile'), label: 'Student profile', hint: 'University, skills, CV' },
 			{

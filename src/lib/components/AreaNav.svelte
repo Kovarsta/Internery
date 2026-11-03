@@ -7,10 +7,11 @@
 	 */
 
 	import { page } from '$app/state';
+	import type { ResolvedPathname } from '$app/types';
 
 	type Props = {
 		label: string;
-		links: { href: string; label: string }[];
+		links: { href: ResolvedPathname; label: string }[];
 	};
 
 	let { label, links }: Props = $props();

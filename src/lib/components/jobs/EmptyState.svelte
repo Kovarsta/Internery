@@ -5,11 +5,13 @@
 	 * Says what is missing and offers the next action instead of leaving a blank area.
 	 */
 
+	import type { ResolvedPathname } from '$app/types';
+
 	type Props = {
 		title: string;
 		description: string;
 		actionLabel?: string;
-		actionHref?: string;
+		actionHref?: ResolvedPathname;
 	};
 
 	let { title, description, actionLabel, actionHref }: Props = $props();

@@ -4,8 +4,7 @@ import { readErrorMessage } from '#lib/api/error-message.ts';
 import type { Category } from '#lib/api/types.ts';
 import type { Actions, PageServerLoad } from './$types';
 
-const SALARY_TYPES = ['HOURLY', 'DAILY', 'FIXED'] as const;
-type SalaryType = (typeof SALARY_TYPES)[number];
+type SalaryType = 'HOURLY' | 'DAILY' | 'FIXED';
 
 type JobFormValues = {
 	title: string;
