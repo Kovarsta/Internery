@@ -2,41 +2,71 @@
 	/**
 	 * Home (`/`).
 	 *
-	 * Entry point for guests and signed-in users: links into job search and registration.
-	 * The featured categories and latest jobs will come from `GET /categories` and `GET /jobs`.
-	 * Skeleton only: no data load yet.
+	 * Composes the hero, category shortcuts, the newest open shifts and the work-record pitch. All
+	 * data comes from `+page.server.ts`; this file owns layout only.
 	 */
 
 	import { resolve } from '$app/paths';
-	import PageHeader from '#lib/components/PageHeader.svelte';
-	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
+	import CategoryRail from '#lib/components/home/CategoryRail.svelte';
+	import HomeHero from '#lib/components/home/HomeHero.svelte';
+	import EmptyState from '#lib/components/jobs/EmptyState.svelte';
+	import JobRow from '#lib/components/jobs/JobRow.svelte';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	const jobsPath = resolve('jobs');
 </script>
 
-<PageHeader
-	title="Part-time work for students"
-	description="Browse open jobs, apply with your profile, and build a signed work record."
-/>
+<HomeHero isSignedIn={data.user !== null} />
 
-<div class="grid gap-4 sm:grid-cols-2">
-	<a
-		class="rounded-xl border border-slate-200 bg-white p-6 hover:border-slate-400"
-		href={resolve('jobs')}
-	>
-		<h2 class="text-lg font-medium text-slate-900">Browse jobs</h2>
-		<p class="mt-1 text-sm text-slate-600">Filter by category, location and pay.</p>
+<section class="mt-10">
+	<div class="flex items-baseline justify-between gap-4 border-b border-rule pb-2">
+		<h2 class="text-base font-semibold">Browse by category</h2>
+	</div>
+
+	<div class="mt-4">
+		<CategoryRail categories={data.categories} />
+	</div>
+</section>
+
+<section class="mt-10">
+	<div class="flex items-baseline justify-between gap-4 border-b border-rule pb-2">
+		<h2 class="text-base font-semibold">Latest shifts</h2>
+		<a class="text-sm font-medium text-chalk hover:underline" href={jobsPath}>
+			See all {data.latestJobs.total} open shifts
+		</a>
+	</div>
+
+	{#if data.latestJobs.items.length > 0}
+		<div class="divide-y divide-rule">
+			{#each data.latestJobs.items as job (job.id)}
+				<JobRow {job} />
+			{/each}
+		</div>
+	{:else}
+		<EmptyState
+			title="No open shifts right now"
+			description="New part-time jobs appear here as soon as an employer posts them."
+			actionLabel="Browse all jobs"
+			actionHref={resolve('jobs')}
+		/>
+	{/if}
+</section>
+
+<section
+	class="mt-10 grid gap-6 border-t-4 border-chalk bg-card p-6 sm:grid-cols-[1fr_auto] sm:items-center sm:p-8"
+>
+	<div>
+		<p class="text-sm font-semibold tracking-wide text-chalk uppercase">Work records</p>
+		<h2 class="mt-2 text-2xl font-bold tracking-tight">A finished shift, signed.</h2>
+		<p class="mt-2 max-w-xl text-sm text-ink/70">
+			After a completed job, the employer reviews the student and signs a record of the dates, the
+			rating and the comment. Students can publish it and anyone can check the signature.
+		</p>
+	</div>
+
+	<a class="font-medium text-chalk hover:underline" href={resolve('work-records')}>
+		See public records
 	</a>
-
-	<a
-		class="rounded-xl border border-slate-200 bg-white p-6 hover:border-slate-400"
-		href={resolve('register')}
-	>
-		<h2 class="text-lg font-medium text-slate-900">Create an account</h2>
-		<p class="mt-1 text-sm text-slate-600">Students apply for work; employers post it.</p>
-	</a>
-</div>
-
-<div class="mt-8">
-	<SkeletonNotice>
-		Home page skeleton. The featured categories and latest jobs are not connected to the API yet.
-	</SkeletonNotice>
-</div>
+</section>

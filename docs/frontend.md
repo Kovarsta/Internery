@@ -149,6 +149,7 @@ verify page and both states of `/me/work-records` have data.
 ```text
 src/lib/components/            shared across areas
 src/lib/components/ui/         generated shadcn-svelte controls
+src/lib/components/home/       landing hero and category shortcuts
 src/lib/components/jobs/       job list, row, filters, actions, pagination
 src/lib/components/applications/  one application row with its withdraw action
 src/lib/components/employer/   employer job row and applicant row with accept/reject
