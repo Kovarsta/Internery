@@ -531,9 +531,9 @@ export function toWorkRecord(record: WorkRecordSource, origin: string): WorkReco
 		...toWorkRecordCard(record),
 		isPublic: record.isPublic,
 		publishedAt: record.publishedAt === null ? null : toIsoString(record.publishedAt),
-		// Points at the JSON endpoint until the public verify page exists; the link
-		// has to resolve today, so a route that 404s would be worse.
-		verifyUrl: `${origin}/api/v1/work-records/${record.id}/verify`
+		// The verify page reads the JSON endpoint itself; link people to the page
+		// so the signature result is explained instead of shown as raw JSON.
+		verifyUrl: `${origin}/work-records/${record.id}/verify`
 	};
 }
 

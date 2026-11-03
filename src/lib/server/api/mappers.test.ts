@@ -569,7 +569,7 @@ describe('toWorkRecord', () => {
 		expect(record.isPublic).toBe(true);
 		expect(record.publishedAt).toBe('2026-03-02T09:00:00.000Z');
 		expect(record.verifyUrl).toBe(
-			'http://localhost:5173/api/v1/work-records/a1b2c3d4-0000-4000-8000-000000000001/verify'
+			'http://localhost:5173/work-records/a1b2c3d4-0000-4000-8000-000000000001/verify'
 		);
 	});
 

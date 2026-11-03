@@ -144,8 +144,8 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   instead of reading the profile columns, so a hidden review never affects the summary.
 - Work-record responses are built from the signed `payload`, not from joined job or user rows, so the
   card shows exactly the content that was signed.
-- `WorkRecord.verifyUrl` points at `/api/v1/work-records/{recordId}/verify`; the public verify page is
-  frontend work and does not exist yet.
+- `WorkRecord.verifyUrl` points at the public `/work-records/{recordId}/verify` page, which reads the
+  JSON endpoint and explains the result.
 - `GET /work-records/{recordId}/verify` returns `record: null` when the signature does not match.
   A `signatureVersion` this build cannot produce is reported as `valid: false` instead of being
   checked against the current rule.

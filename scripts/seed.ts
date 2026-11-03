@@ -12,7 +12,9 @@ import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
+import type { WorkRecordPayload } from '#lib/server/db/product.schema.ts';
 import { hashPassword } from '#lib/server/password.ts';
+import { CURRENT_SIGNATURE_VERSION, signWorkRecord } from '#lib/server/work-record-signature.ts';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -112,7 +114,22 @@ const seedCategories = [
 	{ id: '10000000-0000-4000-8000-000000000005', name: 'Office & Admin' }
 ];
 
-const seedJobs = [
+type SeedJob = {
+	id: string;
+	categoryName: string;
+	title: string;
+	description: string;
+	location: string;
+	schedule: string;
+	salaryAmount: number;
+	salaryType: 'HOURLY' | 'DAILY' | 'FIXED';
+	positionsNeeded: number;
+	status?: 'HIRING' | 'COMPLETED';
+	startDate?: string;
+	endDate?: string;
+};
+
+const seedJobs: SeedJob[] = [
 	{
 		id: '20000000-0000-4000-8000-000000000001',
 		categoryName: 'Food & Beverage',
@@ -156,8 +173,22 @@ const seedJobs = [
 		salaryAmount: 400_000,
 		salaryType: 'FIXED',
 		positionsNeeded: 5
+	},
+	{
+		id: '20000000-0000-4000-8000-000000000005',
+		categoryName: 'Food & Beverage',
+		title: 'Weekend cafe assistant',
+		description: 'Serve customers and keep the counter tidy during the weekend rush.',
+		location: 'Hanoi',
+		schedule: 'Saturday and Sunday, 8:00-16:00',
+		salaryAmount: 280_000,
+		salaryType: 'DAILY',
+		positionsNeeded: 2,
+		status: 'COMPLETED',
+		startDate: '2026-09-05',
+		endDate: '2026-09-27'
 	}
-] as const;
+];
 
 const seedApplications = [
 	{
@@ -199,8 +230,85 @@ const seedApplications = [
 		message: 'I am a fast learner and free every weekday morning.',
 		status: 'PENDING',
 		rejectReason: null
+	},
+	{
+		id: '30000000-0000-4000-8000-000000000006',
+		jobId: seedJobs[4].id,
+		studentEmail: 'student@internery.local',
+		message: 'I can cover both weekend days and I am quick with the till.',
+		status: 'ACCEPTED',
+		rejectReason: null
+	},
+	{
+		id: '30000000-0000-4000-8000-000000000007',
+		jobId: seedJobs[4].id,
+		studentEmail: 'linh@internery.local',
+		message: 'I worked weekends at a cafe for two years.',
+		status: 'ACCEPTED',
+		rejectReason: null
 	}
 ] as const;
+
+type SeedReview = {
+	id: string;
+	jobId: string;
+	reviewerEmail: string;
+	revieweeEmail: string;
+	rating: number;
+	comment: string;
+};
+
+const seedReviews: SeedReview[] = [
+	{
+		id: '50000000-0000-4000-8000-000000000001',
+		jobId: seedJobs[4].id,
+		reviewerEmail: 'employer@internery.local',
+		revieweeEmail: 'student@internery.local',
+		rating: 5,
+		comment: 'Reliable and calm during the weekend rush. Quick to learn the till.'
+	},
+	{
+		id: '50000000-0000-4000-8000-000000000002',
+		jobId: seedJobs[4].id,
+		reviewerEmail: 'employer@internery.local',
+		revieweeEmail: 'linh@internery.local',
+		rating: 4,
+		comment: 'Friendly with customers and always on time.'
+	}
+];
+
+type SeedWorkRecord = {
+	id: string;
+	jobId: string;
+	studentEmail: string;
+	reviewId: string;
+	isPublic: boolean;
+	issuedAt: string;
+	publishedAt: string | null;
+};
+
+// An's record stays private and Linh's is published, so the demo shows both
+// states and the public directory has a card to open.
+const seedWorkRecords: SeedWorkRecord[] = [
+	{
+		id: '60000000-0000-4000-8000-000000000001',
+		jobId: seedJobs[4].id,
+		studentEmail: 'student@internery.local',
+		reviewId: seedReviews[0].id,
+		isPublic: false,
+		issuedAt: '2026-09-28T09:00:00.000Z',
+		publishedAt: null
+	},
+	{
+		id: '60000000-0000-4000-8000-000000000002',
+		jobId: seedJobs[4].id,
+		studentEmail: 'linh@internery.local',
+		reviewId: seedReviews[1].id,
+		isPublic: true,
+		issuedAt: '2026-09-28T09:05:00.000Z',
+		publishedAt: '2026-09-29T08:00:00.000Z'
+	}
+];
 
 const seedNotifications = [
 	{
@@ -387,6 +495,8 @@ async function seedJobRows(employerId: string, categoryIdsByName: Map<string, st
 			throw new Error(`Missing category ${job.categoryName}.`);
 		}
 
+		const isCompleted = job.status === 'COMPLETED';
+
 		const values = {
 			employerId,
 			categoryId,
@@ -396,10 +506,11 @@ async function seedJobRows(employerId: string, categoryIdsByName: Map<string, st
 			schedule: job.schedule,
 			salaryAmount: job.salaryAmount,
 			salaryType: job.salaryType,
-			startDate: addDays(7),
-			endDate: addDays(30),
+			startDate: job.startDate ?? addDays(7),
+			endDate: job.endDate ?? addDays(30),
 			positionsNeeded: job.positionsNeeded,
-			status: 'HIRING' as const
+			status: job.status ?? 'HIRING',
+			completedAt: isCompleted ? new Date('2026-09-28T09:00:00.000Z') : null
 		};
 
 		await db
@@ -429,6 +540,85 @@ async function seedApplicationRows(userIdsByEmail: Map<string, string>) {
 				decidedAt: isPending ? null : new Date()
 			})
 			.onConflictDoNothing();
+	}
+}
+
+async function seedReviewRows(userIdsByEmail: Map<string, string>) {
+	for (const review of seedReviews) {
+		const values = {
+			jobId: review.jobId,
+			reviewerId: requireUserId(userIdsByEmail, review.reviewerEmail),
+			revieweeId: requireUserId(userIdsByEmail, review.revieweeEmail),
+			rating: review.rating,
+			comment: review.comment
+		};
+
+		await db
+			.insert(schema.reviews)
+			.values({ id: review.id, ...values })
+			.onConflictDoUpdate({ target: schema.reviews.id, set: values });
+	}
+}
+
+/**
+ * Writes the signed work records that the demo pages read.
+ *
+ * The payload copies what `createReview` writes, including the employer's
+ * organisation name. Re-seeding re-signs the row, so a changed
+ * `WORK_RECORD_SECRET` does not leave demo records that fail verification.
+ */
+async function seedWorkRecordRows(userIdsByEmail: Map<string, string>) {
+	const secret = process.env.WORK_RECORD_SECRET;
+
+	if (!secret) {
+		console.warn('WORK_RECORD_SECRET is not set; skipping the demo work records.');
+		return;
+	}
+
+	const employerId = requireUserId(userIdsByEmail, 'employer@internery.local');
+	const [employerProfile] = await db
+		.select({ orgName: schema.employerProfiles.orgName })
+		.from(schema.employerProfiles)
+		.where(eq(schema.employerProfiles.userId, employerId))
+		.limit(1);
+
+	for (const record of seedWorkRecords) {
+		const review = seedReviews.find((candidate) => candidate.id === record.reviewId);
+		const job = seedJobs.find((candidate) => candidate.id === record.jobId);
+		const student = seedUsers.find((user) => user.email === record.studentEmail);
+
+		if (!review || !job || !student || !job.startDate || !job.endDate) {
+			throw new Error(`Incomplete seed work record ${record.id}.`);
+		}
+
+		const payload: WorkRecordPayload = {
+			recordId: record.id,
+			studentName: student.name,
+			employerName: employerProfile?.orgName ?? 'Employer',
+			jobTitle: job.title,
+			startDate: job.startDate,
+			endDate: job.endDate,
+			rating: review.rating,
+			comment: review.comment,
+			issuedAt: record.issuedAt
+		};
+
+		const values = {
+			jobId: record.jobId,
+			studentId: requireUserId(userIdsByEmail, record.studentEmail),
+			employerId,
+			reviewId: record.reviewId,
+			payload,
+			signature: signWorkRecord(payload, secret),
+			signatureVersion: CURRENT_SIGNATURE_VERSION,
+			isPublic: record.isPublic,
+			publishedAt: record.publishedAt === null ? null : new Date(record.publishedAt)
+		};
+
+		await db
+			.insert(schema.workRecords)
+			.values({ id: record.id, ...values })
+			.onConflictDoUpdate({ target: schema.workRecords.id, set: values });
 	}
 }
 
@@ -471,6 +661,8 @@ async function main() {
 	const categoryIdsByName = await seedCategoryRows();
 	await seedJobRows(employerId, categoryIdsByName);
 	await seedApplicationRows(userIdsByEmail);
+	await seedReviewRows(userIdsByEmail);
+	await seedWorkRecordRows(userIdsByEmail);
 	await seedNotificationRows(userIdsByEmail);
 
 	console.log('Seed complete.');
@@ -478,6 +670,8 @@ async function main() {
 	console.log(`  categories: ${seedCategories.length}`);
 	console.log(`  jobs: ${seedJobs.length}`);
 	console.log(`  applications: ${seedApplications.length}`);
+	console.log(`  reviews: ${seedReviews.length}`);
+	console.log(`  work records: ${seedWorkRecords.length}`);
 	console.log(`  notifications: ${seedNotifications.length}`);
 	console.log('');
 	console.log('Sign in with:');
