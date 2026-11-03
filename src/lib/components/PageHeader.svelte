@@ -15,8 +15,8 @@
 </script>
 
 <header class="mb-6">
-	<h1 class="text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
+	<h1 class="text-2xl font-semibold tracking-tight text-ink">{title}</h1>
 	{#if description}
-		<p class="mt-1 max-w-2xl text-sm text-slate-600">{description}</p>
+		<p class="mt-1 max-w-2xl text-sm text-ink/70">{description}</p>
 	{/if}
 </header>

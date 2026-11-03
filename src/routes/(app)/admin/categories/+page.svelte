@@ -2,48 +2,42 @@
 	/**
 	 * Admin categories (`/admin/categories`).
 	 *
-	 * Will serve the category create, update and delete operations under `/admin/categories`.
-	 * The public list already comes from `GET /categories`. Skeleton only.
+	 * Lists every category, including the deactivated ones, and lets an admin add,
+	 * rename, deactivate or delete one. A category in use cannot be deleted, so
+	 * deactivation is the safe way to retire it.
 	 */
 
+	import CategoryCreateForm from '#lib/components/admin/CategoryCreateForm.svelte';
+	import CategoryRow from '#lib/components/admin/CategoryRow.svelte';
 	import PageHeader from '#lib/components/PageHeader.svelte';
-	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	const activeCount = $derived(data.categories.filter((category) => category.isActive).length);
 </script>
 
 <PageHeader
 	title="Categories"
-	description="Add categories, rename them, or deactivate unused ones."
+	description="Categories in use can be deactivated but not deleted. Deactivated categories disappear from new-job forms and stay on existing jobs."
 />
 
-<form class="mb-4 flex max-w-md gap-2">
-	<label class="sr-only" for="category-name">Category name</label>
-	<input
-		class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-		id="category-name"
-		name="name"
-		placeholder="Food & Beverage"
-		type="text"
-	/>
-	<button
-		class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-		disabled
-		type="button"
-	>
-		Add
-	</button>
-</form>
+<CategoryCreateForm />
 
-<div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
-	<div class="divide-y divide-slate-100">
-		{#each [1, 2, 3] as placeholder (placeholder)}
-			<div class="flex items-center gap-4 px-4 py-3">
-				<div class="h-3 w-1/3 rounded bg-slate-200"></div>
-				<div class="ml-auto h-3 w-16 rounded bg-slate-100"></div>
-			</div>
+<p class="mt-4 text-sm text-ink/70">
+	{activeCount} active of
+	{data.categories.length}
+	{data.categories.length === 1 ? 'category' : 'categories'}.
+</p>
+
+{#if data.categories.length > 0}
+	<div class="mt-2 divide-y divide-rule border-t border-rule">
+		{#each data.categories as category (category.id)}
+			<CategoryRow {category} />
 		{/each}
 	</div>
-</div>
-
-<div class="mt-4">
-	<SkeletonNotice>Skeleton. Category create, update and delete are still 501.</SkeletonNotice>
-</div>
+{:else}
+	<p class="mt-6 border border-rule bg-card p-5 text-sm text-ink/70">
+		No categories yet. Add the first one above.
+	</p>
+{/if}

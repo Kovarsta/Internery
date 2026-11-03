@@ -1,4 +1,12 @@
-import type { ApplicationStatus, EmployerVerification, JobStatus } from '#lib/api/types.ts';
+import type {
+	AccountStatus,
+	ApplicationStatus,
+	EmployerVerification,
+	JobStatus,
+	ModerationCause,
+	UserRole,
+	VerificationRequestStatus
+} from '#lib/api/types.ts';
 
 /** Display labels for application states. */
 export const applicationStatusLabel: Record<ApplicationStatus, string> = {
@@ -45,5 +53,60 @@ export const verificationStatusClass: Record<EmployerVerification, string> = {
 	UNVERIFIED: 'bg-muted text-muted-foreground',
 	PENDING: 'bg-highlight/20 text-ink',
 	VERIFIED: 'bg-chalk/10 text-chalk',
+	REJECTED: 'bg-warning/10 text-warning'
+};
+
+/** Display labels for account states. */
+export const accountStatusLabel: Record<AccountStatus, string> = {
+	PENDING_VERIFICATION: 'Unverified',
+	ACTIVE: 'Active',
+	SUSPENDED: 'Suspended',
+	LOCKED: 'Locked',
+	DELETED: 'Deleted'
+};
+
+/** Badge classes for account states, using the app palette. */
+export const accountStatusClass: Record<AccountStatus, string> = {
+	PENDING_VERIFICATION: 'bg-highlight/20 text-ink',
+	ACTIVE: 'bg-chalk/10 text-chalk',
+	SUSPENDED: 'bg-warning/10 text-warning',
+	LOCKED: 'bg-warning/10 text-warning',
+	DELETED: 'bg-muted text-muted-foreground'
+};
+
+/** Display labels for user roles. */
+export const userRoleLabel: Record<UserRole, string> = {
+	STUDENT: 'Student',
+	EMPLOYER: 'Employer',
+	ADMIN: 'Admin'
+};
+
+/** Display labels for moderation causes. */
+export const moderationCauseLabel: Record<ModerationCause, string> = {
+	REPORTED: 'Reported',
+	AUTO_HIDDEN: 'Auto-hidden',
+	ADMIN_HIDDEN: 'Hidden by admin',
+	SCAM_FLAG: 'Scam keywords'
+};
+
+/** Badge classes for moderation causes. */
+export const moderationCauseClass: Record<ModerationCause, string> = {
+	REPORTED: 'bg-warning/10 text-warning',
+	AUTO_HIDDEN: 'bg-warning/10 text-warning',
+	ADMIN_HIDDEN: 'bg-muted text-muted-foreground',
+	SCAM_FLAG: 'bg-highlight/20 text-ink'
+};
+
+/** Display labels for verification request states. */
+export const verificationRequestStatusLabel: Record<VerificationRequestStatus, string> = {
+	PENDING: 'Pending',
+	APPROVED: 'Approved',
+	REJECTED: 'Rejected'
+};
+
+/** Badge classes for verification request states. */
+export const verificationRequestStatusClass: Record<VerificationRequestStatus, string> = {
+	PENDING: 'bg-highlight/20 text-ink',
+	APPROVED: 'bg-chalk/10 text-chalk',
 	REJECTED: 'bg-warning/10 text-warning'
 };

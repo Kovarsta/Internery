@@ -13,6 +13,7 @@ export type Paged<T> = PageMeta & {
 export type Category = {
 	id: string;
 	name: string;
+	isActive: boolean;
 };
 
 export type SalaryType = 'HOURLY' | 'DAILY' | 'FIXED';
@@ -198,6 +199,50 @@ export type VerifyResult = {
 };
 
 export type VerificationRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+/** One account in the admin user list, including its lock state. */
+export type AdminUser = {
+	id: string;
+	email: string;
+	role: UserRole;
+	status: AccountStatus;
+	fullName: string;
+	lockedAt: string | null;
+	lockReason: string | null;
+	createdAt: string;
+};
+
+/** Why a job sits in the moderation queue; one job can have several reasons. */
+export type ModerationCause = 'REPORTED' | 'AUTO_HIDDEN' | 'ADMIN_HIDDEN' | 'SCAM_FLAG';
+
+/** One job needing admin attention. */
+export type ModerationItem = {
+	job: JobSummary;
+	isHidden: boolean;
+	hiddenReason: string | null;
+	openReportCount: number;
+	flaggedTerms: string[];
+	causes: ModerationCause[];
+};
+
+/** Platform counts for the admin overview. */
+export type PlatformStats = {
+	from: string | null;
+	to: string | null;
+	users: {
+		students: number;
+		employers: number;
+		admins: number;
+	};
+	jobs: {
+		hiring: number;
+		filled: number;
+		completed: number;
+		cancelled: number;
+	};
+	applicationsTotal: number;
+	completedJobs: number;
+};
 
 /** The employer's latest verification request on `/me/verification`. */
 export type VerificationRequest = {

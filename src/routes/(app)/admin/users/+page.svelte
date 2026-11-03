@@ -2,46 +2,96 @@
 	/**
 	 * Admin users (`/admin/users`).
 	 *
-	 * Will serve `GET /admin/users` plus the lock and unlock actions. Skeleton only: the handler
-	 * still returns `501`.
+	 * Searches `GET /admin/users` by name or email and filters by role and
+	 * status. The filter is a plain GET form, so it works without JavaScript and
+	 * the URL keeps the active search.
 	 */
 
+	import { resolve } from '$app/paths';
+	import AdminUserRow from '#lib/components/admin/AdminUserRow.svelte';
+	import EmptyState from '#lib/components/jobs/EmptyState.svelte';
 	import PageHeader from '#lib/components/PageHeader.svelte';
-	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
+	import Pagination from '#lib/components/jobs/Pagination.svelte';
+	import { Button } from '#lib/components/ui/button/index.ts';
+	import { Input } from '#lib/components/ui/input/index.ts';
+	import { Label } from '#lib/components/ui/label/index.ts';
+	import { NativeSelect, NativeSelectOption } from '#lib/components/ui/native-select/index.ts';
+	import { userRoleLabel } from '#lib/labels.ts';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	const total = $derived(data.users.total);
+	const hasFilter = $derived(data.search !== '' || data.role !== '' || data.status !== '');
 </script>
 
 <PageHeader title="Users" description="Search accounts, then lock or unlock them with a reason." />
 
-<form class="mb-4 flex max-w-md gap-2">
-	<label class="sr-only" for="admin-user-search">Search users</label>
-	<input
-		class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-		id="admin-user-search"
-		name="q"
-		placeholder="Name or email"
-		type="search"
-	/>
-	<button
-		class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-		disabled
-		type="button"
-	>
-		Search
-	</button>
+<form class="flex flex-wrap items-end gap-2" method="get">
+	<div class="min-w-56 flex-1">
+		<Label class="mb-1" for="admin-user-search">Name or email</Label>
+		<Input
+			id="admin-user-search"
+			name="q"
+			placeholder="linh@internery.local"
+			type="search"
+			value={data.search}
+		/>
+	</div>
+
+	<div>
+		<Label class="mb-1" for="admin-user-role">Role</Label>
+		<NativeSelect id="admin-user-role" name="role" value={data.role}>
+			<NativeSelectOption value="">Any role</NativeSelectOption>
+			{#each Object.entries(userRoleLabel) as [value, label] (value)}
+				<NativeSelectOption {value}>{label}</NativeSelectOption>
+			{/each}
+		</NativeSelect>
+	</div>
+
+	<div>
+		<Label class="mb-1" for="admin-user-status">Status</Label>
+		<NativeSelect id="admin-user-status" name="status" value={data.status}>
+			<NativeSelectOption value="">Any status</NativeSelectOption>
+			<NativeSelectOption value="ACTIVE">Active</NativeSelectOption>
+			<NativeSelectOption value="PENDING_VERIFICATION">Unverified</NativeSelectOption>
+			<NativeSelectOption value="LOCKED">Locked</NativeSelectOption>
+			<NativeSelectOption value="SUSPENDED">Suspended</NativeSelectOption>
+			<NativeSelectOption value="DELETED">Deleted</NativeSelectOption>
+		</NativeSelect>
+	</div>
+
+	<Button size="sm" type="submit">Search</Button>
+	{#if hasFilter}
+		<Button href={resolve('admin/users')} size="sm" variant="ghost">Clear</Button>
+	{/if}
 </form>
 
-<div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
-	<div class="divide-y divide-slate-100">
-		{#each [1, 2, 3] as placeholder (placeholder)}
-			<div class="flex items-center gap-4 px-4 py-3">
-				<div class="h-3 w-1/4 rounded bg-slate-200"></div>
-				<div class="h-3 w-1/3 rounded bg-slate-100"></div>
-				<div class="ml-auto h-7 w-20 rounded bg-slate-100"></div>
-			</div>
+<p class="mt-4 text-sm text-ink/70">
+	{total}
+	{total === 1 ? 'account' : 'accounts'}
+	{hasFilter ? 'match the filter' : 'in total'}.
+</p>
+
+{#if data.users.items.length > 0}
+	<div class="mt-2 divide-y divide-rule border-t border-rule">
+		{#each data.users.items as user (user.id)}
+			<AdminUserRow {user} />
 		{/each}
 	</div>
-</div>
 
-<div class="mt-4">
-	<SkeletonNotice>Skeleton. GET /admin/users is still a 501 handler.</SkeletonNotice>
-</div>
+	<Pagination
+		basePath={resolve('admin/users')}
+		page={data.users.page}
+		pageSize={data.users.pageSize}
+		query={data.filterQuery}
+		total={data.users.total}
+	/>
+{:else}
+	<EmptyState
+		title="No accounts found"
+		description="Try a shorter search, or clear the role and status filters."
+		actionLabel="Clear filters"
+		actionHref={resolve('admin/users')}
+	/>
+{/if}
