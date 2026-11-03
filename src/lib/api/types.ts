@@ -123,3 +123,29 @@ export type StudentProfile = {
 	ratingAvg: number;
 	ratingCount: number;
 };
+
+export type NotificationType =
+	| 'APPLICATION_RECEIVED'
+	| 'APPLICATION_WITHDRAWN'
+	| 'APPLICATION_ACCEPTED'
+	| 'APPLICATION_REJECTED'
+	| 'JOB_FILLED'
+	| 'JOB_COMPLETED'
+	| 'JOB_CANCELLED'
+	| 'JOB_HIDDEN'
+	| 'JOB_AUTO_HIDDEN'
+	| 'VERIFICATION_APPROVED'
+	| 'VERIFICATION_REJECTED'
+	| 'REVIEW_RECEIVED'
+	| 'WORK_RECORD_CREATED';
+
+export type Notification = {
+	id: string;
+	type: NotificationType;
+	title: string;
+	body: string | null;
+	jobId: string | null;
+	applicationId: string | null;
+	read: boolean;
+	createdAt: string;
+};

@@ -2,43 +2,91 @@
 	/**
 	 * Notifications (`/me/notifications`).
 	 *
-	 * Serves `GET /me/notifications`, the unread badge from `GET /me/notifications/unread-count`,
-	 * and the read actions. Skeleton only: the list is static.
+	 * Lists `GET /me/notifications` with an unread filter kept in the URL. Marking
+	 * all read belongs to the page; each row owns marking one read.
 	 */
 
-	import PageHeader from '#lib/components/PageHeader.svelte';
-	import SkeletonNotice from '#lib/components/SkeletonNotice.svelte';
+	import { refreshAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import NotificationRow from '#lib/components/notifications/NotificationRow.svelte';
+	import EmptyState from '#lib/components/jobs/EmptyState.svelte';
+	import { showError, showSuccess } from '#lib/toast.ts';
+	import { apiSend } from '#lib/api/browser.ts';
+	import { Button } from '#lib/components/ui/button/index.ts';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	let isMarkingAll = $state(false);
+
+	const filters: { label: string; unreadOnly: boolean }[] = [
+		{ label: 'All', unreadOnly: false },
+		{ label: 'Unread', unreadOnly: true }
+	];
+
+	async function markAllRead() {
+		isMarkingAll = true;
+
+		const result = await apiSend('/api/v1/me/notifications/read-all', 'POST');
+
+		isMarkingAll = false;
+
+		if (!result.ok) {
+			showError(result.message);
+			return;
+		}
+
+		showSuccess('All notifications marked read.');
+		await refreshAll();
+	}
 </script>
 
-<PageHeader title="Notifications" description="Application decisions, job changes and reminders." />
-
-<div class="rounded-xl border border-slate-200 bg-white">
-	<div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-		<div class="h-3 w-32 rounded bg-slate-200"></div>
-		<button
-			class="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-600 disabled:cursor-not-allowed"
-			disabled
-			type="button"
-		>
-			Mark all read
-		</button>
+<div class="flex flex-wrap items-start justify-between gap-3">
+	<div>
+		<h1 class="text-3xl font-extrabold tracking-tight">Notifications</h1>
+		<p class="mt-2 text-ink/70">
+			{data.unreadCount}
+			unread
+			{#if !data.unreadOnly}
+				· {data.notifications.total} in total
+			{/if}
+		</p>
 	</div>
 
-	<div class="divide-y divide-slate-100">
-		{#each [1, 2, 3] as placeholder (placeholder)}
-			<div class="flex gap-3 px-4 py-3">
-				<div class="mt-1 size-2 rounded-full bg-slate-300"></div>
-				<div class="flex-1">
-					<div class="h-3 w-1/3 rounded bg-slate-200"></div>
-					<div class="mt-2 h-3 w-2/3 rounded bg-slate-100"></div>
-				</div>
-			</div>
+	<Button
+		disabled={isMarkingAll || data.unreadCount === 0}
+		onclick={markAllRead}
+		size="sm"
+		type="button"
+		variant="outline"
+	>
+		{isMarkingAll ? 'Marking…' : 'Mark all read'}
+	</Button>
+</div>
+
+<nav class="mt-6 flex flex-wrap gap-2" aria-label="Filter by read state">
+	{#each filters as filter (filter.label)}
+		<Button
+			href={filter.unreadOnly
+				? resolve('/me/notifications?unread=true')
+				: resolve('/me/notifications')}
+			size="sm"
+			variant={data.unreadOnly === filter.unreadOnly ? 'default' : 'outline'}
+		>
+			{filter.label}
+		</Button>
+	{/each}
+</nav>
+
+{#if data.notifications.items.length > 0}
+	<div class="mt-6 divide-y divide-rule border-t border-rule">
+		{#each data.notifications.items as notification (notification.id)}
+			<NotificationRow {notification} />
 		{/each}
 	</div>
-</div>
-
-<div class="mt-4">
-	<SkeletonNotice>
-		Notifications skeleton. Reads, unread count and mark-as-read are implemented.
-	</SkeletonNotice>
-</div>
+{:else}
+	<EmptyState
+		title="No notifications here"
+		description="Application decisions, job changes and reminders appear here."
+	/>
+{/if}
