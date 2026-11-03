@@ -57,7 +57,7 @@
 {#if data.applicants.items.length > 0}
 	<div class="mt-6 divide-y divide-rule border-t border-rule">
 		{#each data.applicants.items as applicant (applicant.id)}
-			<ApplicantRow {applicant} />
+			<ApplicantRow {applicant} jobId={data.job.id} />
 		{/each}
 	</div>
 {:else}

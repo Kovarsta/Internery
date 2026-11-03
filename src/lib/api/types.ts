@@ -103,3 +103,23 @@ export type Applicant = {
 		ratingCount: number;
 	};
 };
+
+export type CvInfo = {
+	fileName: string;
+	mimeType: string;
+	sizeBytes: number;
+};
+
+/** The full student profile an employer sees for one application. */
+export type StudentProfile = {
+	userId: string;
+	fullName: string;
+	university: string;
+	major: string;
+	skills: string[];
+	availability: string | null;
+	bio: string | null;
+	cv: CvInfo | null;
+	ratingAvg: number;
+	ratingCount: number;
+};

@@ -8,6 +8,7 @@
 	 */
 
 	import { refreshAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { apiSend } from '#lib/api/browser.ts';
 	import { showError, showSuccess } from '#lib/toast.ts';
 	import { formatTimestamp } from '#lib/format.ts';
@@ -18,7 +19,7 @@
 
 	type Decision = 'accept' | 'reject';
 
-	let { applicant }: { applicant: Applicant } = $props();
+	let { applicant, jobId }: { applicant: Applicant; jobId: string } = $props();
 
 	let pendingDecision = $state<Decision | null>(null);
 
@@ -27,6 +28,12 @@
 		[applicant.student.university, applicant.student.major].filter((part) => part).join(' · ')
 	);
 	const cvHref = $derived(`/api/v1/applications/${applicant.id}/cv`);
+	const profileHref = $derived(
+		resolve('/employer/jobs/[jobId]/applicants/[applicationId]', {
+			jobId,
+			applicationId: applicant.id
+		})
+	);
 
 	async function decide(decision: Decision) {
 		pendingDecision = decision;
@@ -61,7 +68,9 @@
 <article class="grid gap-3 py-5 sm:grid-cols-[1fr_auto] sm:items-start">
 	<div>
 		<div class="flex flex-wrap items-center gap-2">
-			<h2 class="text-lg font-semibold">{applicant.student.fullName}</h2>
+			<a class="text-lg font-semibold hover:text-chalk" href={profileHref}>
+				{applicant.student.fullName}
+			</a>
 			<Badge class={applicationStatusClass[applicant.status]} variant="ghost">
 				{applicationStatusLabel[applicant.status]}
 			</Badge>
