@@ -1,1 +1,77 @@
 @import 'tailwindcss';
+@import '@fontsource/be-vietnam-pro/400.css';
+@import '@fontsource/be-vietnam-pro/500.css';
+@import '@fontsource/be-vietnam-pro/600.css';
+@import '@fontsource/be-vietnam-pro/700.css';
+@import '@fontsource/be-vietnam-pro/800.css';
+
+@theme {
+	--font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
+	--color-paper: #f5f6f2;
+	--color-ink: #17211b;
+	--color-chalk: #1e5b43;
+	--color-highlight: #f4d35e;
+	--color-warning: #c44536;
+	--color-rule: #d8ddd6;
+}
+
+/*
+ * shadcn-svelte reads these semantic tokens. They point at the same palette as
+ * the utilities above, so generated components sit inside the same design.
+ */
+:root {
+	--background: #f5f6f2;
+	--foreground: #17211b;
+	--card: #ffffff;
+	--card-foreground: #17211b;
+	--popover: #ffffff;
+	--popover-foreground: #17211b;
+	--primary: #1e5b43;
+	--primary-foreground: #ffffff;
+	--secondary: #eceee8;
+	--secondary-foreground: #17211b;
+	--muted: #eceee8;
+	--muted-foreground: #5b645d;
+	--accent: #e3e8e0;
+	--accent-foreground: #17211b;
+	--destructive: #c44536;
+	--destructive-foreground: #ffffff;
+	--border: #d8ddd6;
+	--input: #d8ddd6;
+	--ring: #1e5b43;
+	--radius: 0.5rem;
+}
+
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+	body {
+		background-color: var(--color-paper);
+		color: var(--color-ink);
+		font-family: var(--font-sans);
+	}
+}
