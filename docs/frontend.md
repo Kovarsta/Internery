@@ -58,7 +58,7 @@ page load.
 `event.fetch` forwards the session cookie and resolves relative paths, so a server load can call
 `/api/v1/me` without building a full URL.
 
-Planned shared modules, added with the first data page:
+Shared modules:
 
 ```text
 src/lib/api/client.ts        server: apiGet + error envelope -> SvelteKit errors
@@ -94,11 +94,13 @@ other -> error(502, 'The API request failed.')
 
 Mutations use one of two patterns:
 
-- **Form action** for a whole-page flow (sign in, register, publish a job). It works without
-  JavaScript and returns `fail(...)` with the API's message, which the page renders in an `Alert`.
-- **Browser write** for an in-page action (apply, save, withdraw, accept an applicant). `apiSend`
-  returns the error instead of throwing, so the component can show a toast and call `refreshAll()`
-  to reload the server data. Use this when staying on the page is the point.
+- **Form action** for a whole-page flow (sign in, register, publish a job, submit a verification
+  request). It works without JavaScript and returns `fail(...)` with the API's message, which the
+  page renders in an `Alert`.
+- **Browser write** for an in-page action (apply, save, withdraw, accept an applicant, lock a
+  user, hide a job, report a job, add a category, approve verification, publish a work record).
+  `apiSend` returns the error instead of throwing, so the component can show a toast and call
+  `refreshAll()` to reload the server data. Use this when staying on the page is the point.
 
 `use:enhance` is optional; these forms already return server-rendered state.
 
@@ -109,9 +111,19 @@ Mutations use one of two patterns:
 do not call the library directly from components. Toasts are supplementary; the page must still show
 the state after a reload.
 
-Toasts are for write results (applied, saved, withdrawn, accepted, rejected, signed in), never for
-validation errors that belong next to a field. A navigation-level confirmation that must survive
-without JavaScript stays an `Alert`.
+Toasts are for write results (applied, saved, withdrawn, accepted, rejected, signed in, locked,
+hidden, restored, reported, published), never for validation errors that belong next to a field. A
+navigation-level confirmation that must survive without JavaScript stays an `Alert`.
+
+## Uploads
+
+Avatars are prepared in the browser before they are sent. Choosing a file opens `svelte-easy-crop`,
+and `src/lib/crop-image.ts` copies the chosen rectangle onto a 512 × 512 canvas and encodes it as
+JPEG at quality 0.92. The original can be up to 10 MB, but the request carries only the cropped
+square, normally 50–150 KB; the API then re-encodes it to WebP.
+
+CVs and verification licences are sent as they are (PDF/DOCX and PDF/PNG/JPEG, up to 5 MB), so there
+is no browser-side compression for them.
 
 Types in `src/lib/api/types.ts` mirror the contract by hand for now. If the number of response shapes
 grows, generate them from `openapi.yaml` with `openapi-typescript` instead of maintaining two copies.
@@ -140,10 +152,19 @@ grows, generate them from `openapi.yaml` with `openapi-typescript` instead of ma
 | Tran Thi Binh    | `employer@internery.local` | `EMPLOYER` |
 
 All three students have profiles and pending applications to the barista job, so the employer
-applicant list has several rows for accept/reject demos. One seeded job is completed, with reviews
+applicant list has several rows for accept/reject demos. The seeded profiles have no CV or avatar
+file yet; `/me` and `/me/profile` accept both, so the demo can upload them live and a later
+application carries the CV snapshot. One seeded job is completed, with reviews
 and two signed work records: An's record is private and Linh's is public, so the directory, the
-verify page and both states of `/me/work-records` have data. The employer has one approved
-verification request, so `/me/verification` shows a filled-in outcome.
+verify page and both states of `/me/work-records` have data, and the publish control works on either.
+The employer has one approved verification request, so `/me/verification` shows a filled-in outcome
+and no submit form.
+
+The admin area has data to act on. The retail job carries the scam flag with two open reports, and
+the event job is auto-hidden with three, so `/admin/moderation` shows both causes. An admin can hide,
+restore, clear a flag, lock and unlock a student, and manage categories. The verification queue is
+empty until an employer submits, which the employer can do from `/me/verification` while its badge
+is not `VERIFIED`.
 
 ## Components
 
@@ -151,9 +172,12 @@ verification request, so `/me/verification` shows a filled-in outcome.
 src/lib/components/            shared across areas
 src/lib/components/ui/         generated shadcn-svelte controls
 src/lib/components/home/       landing hero and category shortcuts
-src/lib/components/jobs/       job list, row, filters, actions, pagination
+src/lib/components/jobs/       job list, row, filters, actions, report control, pagination
 src/lib/components/applications/  one application row with its withdraw action
 src/lib/components/employer/   employer job row and applicant row with accept/reject
+src/lib/components/profile/    avatar cropper, avatar control and CV upload
+src/lib/components/reviews/    review form and the reviewed-state block
+src/lib/components/admin/      stats, user row, moderation row, category controls, verification row
 src/lib/components/work-records/  public record card and the owner's record row
 ```
 

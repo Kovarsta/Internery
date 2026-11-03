@@ -6,9 +6,9 @@ The OpenAPI document is the source of truth for paths, methods, request bodies, 
 It lives in [`docs/contracts/openapi.yaml`](../../../docs/contracts/openapi.yaml); the implemented
 operations are listed in
 [`docs/contracts/implementation-status.md`](../../../docs/contracts/implementation-status.md).
-Most handlers are still **skeletons** that return `501 Not Implemented`. The account, notification,
-saved-job, application, profile and job-read operations are implemented and show the reference
-pattern for the rest.
+The account, notification, saved-job, application, profile, job, review, admin and trust operations
+are implemented and show the reference pattern for the rest. The AI reads and the shareable
+work-record card still return `501`.
 
 ## Layout
 
@@ -66,10 +66,11 @@ handler.
 The shared helpers live in `src/lib/server/api/`:
 
 - `errors.ts` — `ApiError`, `DomainError`, status mapping and the error envelope
-- `validation.ts` — Zod parsing for JSON, params and query strings
+- `validation.ts` — Zod parsing for JSON, params, query strings and multipart text fields
 - `auth.ts` — session, role and account-status guards
 - `pagination.ts` — page/pageSize parsing and paged responses
 - `mappers.ts` — database row to API response mapping
+- `sql.ts` — the LIKE-pattern helper for literal substring filters
 
 Services live in `src/lib/server/services/` and receive the Drizzle `Database` or `Transaction`
 type. Route handlers should stay thin.

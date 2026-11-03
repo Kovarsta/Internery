@@ -22,10 +22,11 @@ Phase 1  done      errors, validation, auth, pagination, mappers, tests
 Phase 2  done      every read
 Phase 3  done      every straightforward write
 Phase 4  done      transactional core
-Phase 5  now       storage
+Phase 5  done      storage
+Phase 6  done      admin, trust and the demo frontend
 ```
 
-42 of 65 API operations are implemented. See the checklist in
+61 of 66 API operations are implemented. See the checklist in
 [`contracts/implementation-status.md`](contracts/implementation-status.md).
 
 ## Done
@@ -36,7 +37,7 @@ Phase 5  now       storage
 - Product schema: profiles, jobs, applications, reviews, notifications, trust, AI, audit
 - Baseline and auth-type migrations applied
 - Eager `user_profiles` creation and lazy `user_moderation`
-- `/api/v1` route tree: 51 paths, 65 operations
+- `/api/v1` route tree: 51 paths, 66 operations
 - Private-storage, avatar, retention and auth-surface decisions recorded
 - Work-record canonical JSON and HMAC helpers, used by the public verify read
 
@@ -136,8 +137,8 @@ The signing and verification helpers live in `src/lib/server/work-record-signatu
 
 ## Phase 5 - storage
 
-Status: in progress. Every storage endpoint, the orphan sweep and the timestamped retention jobs are
-done. Account deletion and the system-deletion audit remain open.
+Status: done. Every storage endpoint, the orphan sweep and the timestamped retention jobs are
+implemented. Account deletion and the system-deletion audit remain open.
 
 - **M** S3/MinIO client configuration and a `StorageService` abstraction
 - **M** `PUT /me/cv` — PDF/DOCX, 5 MB, magic-byte validation, new unique key
@@ -151,7 +152,10 @@ done. Account deletion and the system-deletion audit remain open.
 - **L** Retention jobs: application CV expiry, orphan sweep, notifications/AI/auth cleanup
 - **M** Apply-vs-reupload race test
 
-## Phase 6 — admin and trust
+## Phase 6 - admin and trust
+
+Status: done. The admin area, verification flow, reports and work-record visibility are implemented
+and covered by the demo pages.
 
 - **M** `GET /admin/users`
 - **M** `POST /admin/users/{userId}/lock`
@@ -169,7 +173,8 @@ done. Account deletion and the system-deletion audit remain open.
 - **M** `POST /admin/verification-requests/{requestId}/approve`
 - **M** `POST /admin/verification-requests/{requestId}/reject`
 - **M** `POST /jobs/{jobId}/reports` — three distinct reporters auto-hide
-- **M** `POST /me/verification-request` — submit a verification request
+- **M** `POST /me/verification-request` - submit a verification request
+- **M** `PATCH /me/work-records/{recordId}` - visibility update
 - **M** Audit-log writes for lock, hide, restore, review removal and verification decisions
 
 ## Phase 7 - optional extras
@@ -181,13 +186,12 @@ Cut these first if time is tight.
 - **S** `GET /me/ai/consent` / `PUT /me/ai/consent`
 - **L** AI suggestions: CV text extraction, PII removal, quota, caching
 - **L** AI fit explanation: quote verification against the CV, cache by CV hash
-- **L** `GET /me/work-records/{recordId}/card` — public card image
-- **M** `PATCH /me/work-records/{recordId}` — visibility update
+- **L** `GET /me/work-records/{recordId}/card` - public card image
 
-## Phase 8 — frontend
+## Phase 8 - frontend
 
-Route skeletons exist under `src/routes`; every page still needs data loading, forms, states and
-styling. Build after the backend endpoints are real and tested, easiest first.
+Status: done for the demo scope. Every page for the implemented operations loads real data and has
+its empty, error and write states. The AI suggestion and fit panels and the work-record card remain.
 
 - **S** Layout, navigation, route guards and session-aware header
 - **S** Better Auth pages: register, login, verify email, resend verification, password reset

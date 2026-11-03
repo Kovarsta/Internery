@@ -65,6 +65,15 @@ categories and the job list keep the normal response.
 
 ## Upload and replacement
 
+The browser prepares the picture before the API sees it. `/me` opens the selected image in a square
+cropper (`svelte-easy-crop`), and `src/lib/crop-image.ts` draws the chosen rectangle onto a
+512 × 512 canvas and encodes it as JPEG at quality 0.92. The original may be up to 10 MB; that cap
+only protects the browser from decoding something enormous, and the original never leaves the
+machine. The request carries the cropped square, typically 50–150 KB.
+
+The API still applies the rules below. The 2 MB limit is a guard for direct callers, not something
+the UI reaches; the canvas output is already 512 × 512, so sharp only re-encodes it.
+
 - Accept PNG or JPEG, up to 2 MB.
 - Let the decoder identify the format; never trust the client MIME type or file extension.
 - Cap the decoder at 16 MP, so a small compressed file cannot expand into an enormous raster.

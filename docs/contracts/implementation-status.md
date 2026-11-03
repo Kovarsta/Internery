@@ -1,6 +1,6 @@
 # Implementation status
 
-Base path: `/api/v1`. The contract lists 65 operations on 51 paths.
+Base path: `/api/v1`. The contract lists 66 operations on 51 paths.
 
 `[x]` means the handler is implemented, tested, and no longer returns `501`. `[ ]` means the skeleton
 still returns `501 Not Implemented` from the shared helper. That `501` uses the internal
@@ -9,7 +9,7 @@ endpoint is implemented.
 
 Authentication is provided by Better Auth under `/api/auth/*` and is outside this contract.
 
-**42 of 65 operations implemented.**
+**61 of 66 operations implemented.**
 
 ## Checklist
 
@@ -71,27 +71,28 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 
 ### Admin
 
-- [ ] `GET /admin/users` — Search users
-- [ ] `POST /admin/users/{userId}/lock` — Lock an account
-- [ ] `POST /admin/users/{userId}/unlock` — Unlock an account
-- [ ] `GET /admin/moderation-queue` — Jobs needing attention
-- [ ] `POST /admin/jobs/{jobId}/hide` — Hide a job with a reason
-- [ ] `POST /admin/jobs/{jobId}/restore` — Restore a hidden job
-- [ ] `POST /admin/jobs/{jobId}/clear-flag` — Remove the scam warning after checking
-- [ ] `POST /admin/reviews/{reviewId}/remove` — Remove a spam or abusive review
-- [ ] `POST /admin/categories` — Add a category
-- [ ] `PATCH /admin/categories/{categoryId}` — Rename or deactivate a category
-- [ ] `DELETE /admin/categories/{categoryId}` — Delete an unused category
-- [ ] `GET /admin/stats` — Basic platform statistics
+- [x] `GET /admin/users` — Search users
+- [x] `POST /admin/users/{userId}/lock` — Lock an account
+- [x] `POST /admin/users/{userId}/unlock` — Unlock an account
+- [x] `GET /admin/moderation-queue` — Jobs needing attention
+- [x] `POST /admin/jobs/{jobId}/hide` — Hide a job with a reason
+- [x] `POST /admin/jobs/{jobId}/restore` — Restore a hidden job
+- [x] `POST /admin/jobs/{jobId}/clear-flag` — Remove the scam warning after checking
+- [x] `POST /admin/reviews/{reviewId}/remove` — Remove a spam or abusive review
+- [x] `GET /admin/categories` — List every category, active or not
+- [x] `POST /admin/categories` — Add a category
+- [x] `PATCH /admin/categories/{categoryId}` — Rename or deactivate a category
+- [x] `DELETE /admin/categories/{categoryId}` — Delete an unused category
+- [x] `GET /admin/stats` — Basic platform statistics
 
 ### Trust
 
 - [x] `GET /me/verification-request` — Latest verification request of the employer
-- [ ] `POST /me/verification-request` — Ask for the Verified badge
-- [ ] `GET /admin/verification-requests` — Verification queue
-- [ ] `POST /admin/verification-requests/{requestId}/approve` — Approve a request
-- [ ] `POST /admin/verification-requests/{requestId}/reject` — Reject a request with a reason
-- [ ] `POST /jobs/{jobId}/reports` — Report a suspicious job
+- [x] `POST /me/verification-request` — Ask for the Verified badge
+- [x] `GET /admin/verification-requests` — Verification queue
+- [x] `POST /admin/verification-requests/{requestId}/approve` — Approve a request
+- [x] `POST /admin/verification-requests/{requestId}/reject` — Reject a request with a reason
+- [x] `POST /jobs/{jobId}/reports` — Report a suspicious job
 
 ### AI
 
@@ -103,7 +104,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 ### WorkRecords
 
 - [x] `GET /me/work-records` — My signed work records
-- [ ] `PATCH /me/work-records/{recordId}` — Make a record public or private
+- [x] `PATCH /me/work-records/{recordId}` — Make a record public or private
 - [ ] `GET /me/work-records/{recordId}/card` — Shareable card image
 - [x] `GET /work-records` — Public directory of work records
 - [x] `GET /work-records/{recordId}/verify` — Check a record's signature
@@ -231,3 +232,46 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   the `/me/*` lists and profiles, the applicant profile, and the job detail with its applicant list.
   Public reads such as `/categories`, `/jobs` and the work-record verify endpoint keep the normal
   response.
+
+- `GET /admin/categories` was added to the contract. The public `GET /categories` returns active
+  rows only, so without it an admin could deactivate a category but never see or reactivate it.
+  The admin read includes `isActive` and is ordered by name.
+- Admin user search matches name or email with a literal, case-insensitive substring. The lock
+  writes `users.status = LOCKED` plus the actor, time and reason in `user_moderation`, and the audit
+  entry in the same transaction. Administrator accounts cannot be locked, and locking yourself is
+  refused. A second lock or unlock answers `409 INVALID_STATE_TRANSITION`. Unlocking also clears a
+  temporary login lockout and restores `ACTIVE` only when the address is verified; otherwise the
+  account returns to `PENDING_VERIFICATION`.
+- The sign-in action refuses a session for an account that is not `ACTIVE`. Better Auth checks the
+  password only, so the status is inspected after the credentials are proven and the new session is
+  deleted, which keeps the refusal from revealing whether an address exists.
+- Hiding a job stores the admin and reason, notifies the employer with the same reason, and audits
+  the change. Hiding an already hidden job updates the reason. Restoring a job clears the hidden
+  fields and resolves its open reports; clearing the scam flag empties `flaggedTerms` and resolves
+  them too. Both are idempotent.
+- The moderation queue lists jobs that are hidden, flagged by the scam scan, or have an open report,
+  oldest first. `causes` distinguishes `REPORTED`, `AUTO_HIDDEN` (hidden with no admin actor),
+  `ADMIN_HIDDEN` and `SCAM_FLAG`.
+- Removing a review hides it and recalculates the reviewed person's rating under the same user-row
+  lock `POST /jobs/{jobId}/reviews` takes. Removing an already hidden review succeeds and only
+  recalculates again.
+- Creating a category maps a case-insensitive duplicate name to `409 NAME_TAKEN`. Deleting a
+  category that any job uses maps the PostgreSQL restrict violation to `409 CATEGORY_IN_USE`;
+  deactivate it instead.
+- `GET /admin/stats` counts users, jobs and applications by `createdAt`, so a date range answers
+  "what was created in this window". Job counts use the current status and `completedJobs` equals
+  the completed count.
+- `POST /me/verification-request` stores the request as `PENDING`, marks the employer profile
+  pending, and refuses a second pending request with `409 VERIFICATION_PENDING`. An employer whose
+  badge is already `VERIFIED` cannot submit, because a second review would have to lower the badge.
+  The optional licence is validated by its bytes (PDF, PNG or JPEG, 5 MB) and stored privately;
+  `licenseUrl` stays `null` because the storage decision forbids presigned links.
+- Approving a verification request sets the request `APPROVED` and the employer profile `VERIFIED`;
+  rejecting stores the reason and sets the profile `REJECTED`. Both notify the employer and write an
+  audit entry. A decided request answers `409 INVALID_STATE_TRANSITION`.
+- `POST /jobs/{jobId}/reports` allows one open report per student per job (`409 ALREADY_REPORTED`
+  otherwise). The job row is locked while counting, and the third distinct open reporter hides the
+  job with no admin actor, notifies the employer and returns `autoHidden: true`.
+- `PATCH /me/work-records/{recordId}` sets `publishedAt` on the first publish and clears it when the
+  record is hidden. Repeating the same state leaves the timestamp alone so the record does not jump
+  to the top of the directory. Another student's record answers `404`.

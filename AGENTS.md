@@ -20,7 +20,7 @@ code; copy what is needed into `src/` when adopting it.
 
 | File                                      | Role                                                           |
 | ----------------------------------------- | -------------------------------------------------------------- |
-| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 65 operations under `/api/v1`       |
+| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 66 operations under `/api/v1`       |
 | `docs/contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501`       |
 | `docs/contracts/invariants.ts`            | Transactional service rules + work-record signing              |
 | `docs/roadmap.md`                         | Phase plan from the API foundation through deployment          |
@@ -65,12 +65,12 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Migrations `drizzle/0000_pink_thundra.sql` and `drizzle/0001_fair_lightspeed.sql` have been
   generated and applied to the local database. All 21 tables exist; auth timestamps are
   `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
-- The `/api/v1` route tree exists under `src/routes/api/v1` (51 paths, 65 operations). Most handlers
-  are skeletons that return `501`; the account, notification, saved-job, application, own-profile and
-  job read/write operations are implemented. Shared API helpers live in `src/lib/server/api/`;
-  services live in `src/lib/server/services/`. Authentication endpoints are Better Auth's
-  `/api/auth/*` and deliberately not duplicated under `/api/v1`. See `src/routes/api/README.md` for
-  route conventions and the implementation checklist.
+- The `/api/v1` route tree exists under `src/routes/api/v1` (51 paths, 66 operations). The account,
+  notification, saved-job, application, own-profile, job read/write, review, admin and trust
+  operations are implemented; the AI reads and the shareable work-record card still return `501`.
+  Shared API helpers live in `src/lib/server/api/`; services live in `src/lib/server/services/`.
+  Authentication endpoints are Better Auth's `/api/auth/*` and deliberately not duplicated under
+  `/api/v1`. See `src/routes/api/README.md` for route conventions and the implementation checklist.
 - Application writes copy the profile CV onto the application, create an in-app notification, and
   leave email delivery to a later phase.
 - Work-record signatures are HMAC-SHA256 over canonical JSON with sorted keys. The helpers live in
@@ -85,10 +85,13 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Product services and API handlers cover phases 0 to 3. The frontend lives in the `(app)` route
   group under `src/routes/(app)`; `src/routes/api` stays outside it. The home page, job browsing,
   applications, saved jobs, the employer job list and applicant review, notifications, sign-in,
-  both profile editors, employer job editing and the public work-record directory and verify pages
-  work against the API. The employer verification page reads the badge state and the latest request;
-  submitting a request waits for `POST /me/verification-request`, so its control is disabled. The
-  admin area is still skeletons; publishing a work record waits for its write API.
+  both profile editors, avatar and CV uploads, employer job editing, the review flow, employer
+  verification and the public work-record directory and verify pages work against the API. The admin
+  area (overview, users, moderation, categories, verification) is implemented, and students can
+  report a job from the job page and publish or hide their work records from `/me/work-records`.
+- Seed data for the moderation demo: the retail job is flagged by the scam scan and has two open
+  reports, and the event job is auto-hidden with three. The admin queue shows both with their
+  causes, and restoring or clearing a flag resolves the reports.
 - File retention and garbage collection are agreed but **not implemented**. See
   `docs/decisions/data-retention.md` for the reference-aware cleanup policy and open decisions.
 
@@ -240,7 +243,7 @@ See `.agents/schema-review.md` for evidence and proposed patches.
 `docs/contracts/openapi.yaml` is the published contract,
 `docs/contracts/implementation-status.md` is the per-operation checklist, and
 `docs/contracts/invariants.ts` is the transaction specification. The original design schema has been
-retired. The current contract is 65 operations on 51 paths.
+retired. The current contract is 66 operations on 51 paths.
 
 The identity conflict is resolved in favour of Better Auth: the app uses the generated `users`,
 `sessions`, `accounts` and `verifications` tables. The contract's `users` and `user_tokens` tables
