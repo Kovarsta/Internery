@@ -19,11 +19,8 @@ Early development. What exists:
 
 Not implemented yet:
 
-- Remaining API handlers and the marketplace service layer
-- UI beyond the SvelteKit demo pages
-- Object storage upload/download endpoints
-- File retention and garbage-collection jobs
-- Production deployment adapter
+- The AI suggestion and fit endpoints
+- The shareable work-record card image
 
 ## Stack
 
@@ -34,6 +31,7 @@ Not implemented yet:
 - MinIO locally, S3-compatible storage in production
 - Resend for transactional email
 - pnpm
+- `@sveltejs/adapter-node` for the Docker demo
 
 ## Requirements
 
@@ -116,6 +114,47 @@ The Compose stack exposes:
 
 `minio-init` creates the `${S3_BUCKET:-internery-staging}` bucket on first start.
 
+## Docker demo
+
+`Dockerfile` builds a production bundle with `@sveltejs/adapter-node`, and `docker-compose.yaml`
+adds an `app` service behind the `demo` profile. Plain `docker compose up` still starts only
+PostgreSQL and MinIO for development, so a running dev server on `:5173` is unaffected.
+
+1. Apply migrations and seed data once, if the quick start has not done it yet:
+
+   ```sh
+   pnpm db:migrate
+   pnpm db:seed
+   ```
+
+2. Build and start the app:
+
+   ```sh
+   docker compose --profile demo up -d --build app
+   ```
+
+   Open <http://localhost:3000>.
+
+3. Follow the logs, or stop the app without stopping the database and MinIO:
+
+   ```sh
+   docker compose --profile demo logs -f app
+   docker compose --profile demo stop app
+   ```
+
+`APP_ORIGIN` is the address people open the demo at. It becomes both Better Auth's base URL and
+SvelteKit's trusted origin, so it must match exactly:
+
+```sh
+APP_ORIGIN=https://demo.example.com docker compose --profile demo up -d --build app
+```
+
+Changing `APP_ORIGIN` requires the rebuild, because SvelteKit bakes the trusted origin into the
+build. `APP_PORT` changes the host port (default `3000`).
+
+The image never contains `.env`; compose passes the variables at runtime. Adapter-node's request
+body limit is raised to 10 MB so CV and verification-licence uploads (up to 5 MB) reach the API.
+
 ## Environment
 
 The application reads these variables through `src/env.ts` and `$app/env/private`:
@@ -147,7 +186,7 @@ address are needed to complete signup. Without them, an account can be created b
 verification.
 
 The `.env.example` file also contains the MinIO root credentials and bucket name used by Docker
-Compose. The application storage client is not wired yet.
+Compose.
 
 ## Authentication
 

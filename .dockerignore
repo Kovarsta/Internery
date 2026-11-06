@@ -1,0 +1,22 @@
+# Dependencies and build output are recreated inside the image.
+node_modules
+.svelte-kit
+build
+
+# Secrets must never enter the build context.
+.env
+.env.*
+
+# Development-only files.
+.git
+.gitignore
+.vscode
+.tmp
+.agents
+
+# Documentation and the local compose file are not part of the image.
+docs
+README.md
+docker-compose.yaml
+Dockerfile
+.dockerignore

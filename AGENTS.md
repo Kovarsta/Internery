@@ -10,7 +10,7 @@ copy planned). Two roles: `STUDENT` and `EMPLOYER`, plus `ADMIN` moderation. The
 46 user stories, 55 functional requirements and 30 non-functional requirements.
 
 Stack: SvelteKit 3 (Svelte 5, runes only), Tailwind CSS 4, Better Auth, Drizzle ORM, PostgreSQL,
-pnpm. Adapter is `adapter-auto`; no deployment target chosen yet.
+pnpm. Adapter is `@sveltejs/adapter-node`; the Docker demo is the only deployment target so far.
 
 ## Source of truth
 
@@ -94,6 +94,11 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   causes, and restoring or clearing a flag resolves the reports.
 - File retention and garbage collection are agreed but **not implemented**. See
   `docs/decisions/data-retention.md` for the reference-aware cleanup policy and open decisions.
+- `Dockerfile` builds a production image with adapter-node. The `app` service in
+  `docker-compose.yaml` sits behind the `demo` profile, so the normal dev stack is unchanged:
+  `docker compose --profile demo up -d --build app` serves the app on `:3000` next to the dev
+  server. `APP_ORIGIN` is both the Better Auth base URL and the trusted SvelteKit origin, so it must
+  match the demo address and requires a rebuild when it changes.
 
 ## Commands
 
@@ -111,6 +116,12 @@ pnpm db:seed             # insert development data (requires .env)
 pnpm db:push             # drizzle-kit push (prototyping only)
 pnpm db:studio           # drizzle-kit studio
 pnpm auth:schema         # regenerate Better Auth tables into src/lib/server/db/auth.schema.ts
+```
+
+```sh
+docker compose --profile demo up -d --build app   # production-style demo on :3000
+docker compose --profile demo logs -f app
+docker compose --profile demo stop app
 ```
 
 Env vars are declared in `src/env.ts` and read from `$app/env/private` in server code:

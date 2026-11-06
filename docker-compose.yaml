@@ -10,6 +10,11 @@ services:
       POSTGRES_DB: internery
     volumes:
       - internery:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U internery -d internery']
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # MinIO stopped publishing community images to Docker Hub and Quay in 2025.
   # Chainguard maintains a public build of the same server. Pin the digest for
@@ -73,6 +78,70 @@ services:
         'local/${S3_BUCKET:-internery-staging}/avatars/_blank.png'
       ]
     restart: 'no'
+
+  # Production-style app container for a teammate demo. It is behind the
+  # `demo` profile, so `pnpm db:start` (plain `docker compose up`) still starts
+  # only the database and MinIO for local development.
+  #
+  #   docker compose --profile demo up -d --build app
+  #
+  # The database must already be migrated and seeded:
+  #
+  #   pnpm db:migrate
+  #   pnpm db:seed
+  #
+  # `APP_ORIGIN` must match the address the demo is opened at, because Better
+  # Auth uses it for cookies and OAuth callbacks, and SvelteKit trusts it for
+  # form submissions. Changing it requires a rebuild:
+  #
+  #   APP_ORIGIN=https://demo.example.com docker compose --profile demo up -d --build app
+  app:
+    profiles: ['demo']
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      minio-blank-avatar:
+        condition: service_completed_successfully
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '3000'
+      # Adapter-node allows 512 KB per request by default. CVs and verification
+      # licences are accepted up to 5 MB, so leave room for multipart overhead.
+      BODY_SIZE_LIMIT: 10M
+      ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+      DATABASE_URL: postgres://internery:internery@db:5432/internery
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-internery-staging}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-admin}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-change-me-please}
+      BETTER_AUTH_SECRET: '${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}'
+      WORK_RECORD_SECRET: '${WORK_RECORD_SECRET:?Set WORK_RECORD_SECRET in .env}'
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM_ADDRESS: '${EMAIL_FROM_ADDRESS:-Internery <no-reply@example.com>}'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   internery:
