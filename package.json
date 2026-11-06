@@ -34,7 +34,7 @@
 		"resend": "^6.34.1",
 		"sharp": "^0.35.5",
 		"svelte-easy-crop": "^5.0.1",
-		"svelte-french-toast": "^1.2.0",
+		"svelte-sonner": "^1.2.3",
 		"zod": "^4.6.7"
 	},
 	"devDependencies": {

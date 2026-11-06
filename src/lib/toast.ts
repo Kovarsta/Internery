@@ -1,4 +1,4 @@
-import { toast } from 'svelte-french-toast';
+import { toast } from 'svelte-sonner';
 
 const INK = '#17211b';
 const PAPER = '#f5f6f2';
@@ -30,16 +30,10 @@ function toastStyle(accent: string): string {
 
 /** Shows a success toast styled for the app. */
 export function showSuccess(message: string): void {
-	toast.success(message, {
-		style: toastStyle(CHALK),
-		iconTheme: { primary: PAPER, secondary: CHALK }
-	});
+	toast.success(message, { style: toastStyle(CHALK) });
 }
 
 /** Shows an error toast styled for the app. */
 export function showError(message: string): void {
-	toast.error(message, {
-		style: toastStyle(WARNING),
-		iconTheme: { primary: PAPER, secondary: WARNING }
-	});
+	toast.error(message, { style: toastStyle(WARNING) });
 }

@@ -9,7 +9,7 @@
 
 	import { resolve } from '$app/paths';
 	import './layout.css';
-	import { Toaster } from 'svelte-french-toast';
+	import { Toaster } from 'svelte-sonner';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
@@ -57,4 +57,4 @@
 	{@render children()}
 </main>
 
-<Toaster gutter={12} position="bottom-right" />
+<Toaster position="bottom-right" />

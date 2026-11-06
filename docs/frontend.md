@@ -106,7 +106,7 @@ Mutations use one of two patterns:
 
 ## Toasts
 
-`src/routes/(app)/+layout.svelte` mounts one `<Toaster>` from `svelte-french-toast`. Use
+`src/routes/(app)/+layout.svelte` mounts one `<Toaster>` from `svelte-sonner`. Use
 `showSuccess` / `showError` from `src/lib/toast.ts`, which apply the ink surface and the type accent;
 do not call the library directly from components. Toasts are supplementary; the page must still show
 the state after a reload.
