@@ -11,6 +11,16 @@ implementation and review.
 | `contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501` |
 | `contracts/invariants.ts`            | Transactional service rules and work-record signing      |
 
+## Data
+
+| File       | Purpose                                               |
+| ---------- | ----------------------------------------------------- |
+| `erd.dbml` | Entity-relationship diagram of the 21 tables, in DBML |
+
+`erd.dbml` mirrors `src/lib/server/db/auth.schema.ts` and `product.schema.ts`. Open it at
+<https://dbdiagram.io> or with a DBML extension in the editor. Update it in the same change that adds
+a table, column or foreign key.
+
 ## Guides
 
 | File           | Purpose                                             |

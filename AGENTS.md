@@ -24,6 +24,7 @@ code; copy what is needed into `src/` when adopting it.
 | `docs/contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501`       |
 | `docs/contracts/invariants.ts`            | Transactional service rules + work-record signing              |
 | `docs/roadmap.md`                         | Phase plan from the API foundation through deployment          |
+| `docs/erd.dbml`                           | Entity-relationship diagram of the 21 tables, in DBML          |
 | `src/lib/server/db/product.schema.ts`     | Product tables, enums, constraints and indexes used by the app |
 
 The original design schema has been retired. The product schema above is what the running code uses;
