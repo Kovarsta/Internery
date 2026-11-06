@@ -20,5 +20,8 @@ export default defineConfig({
 			// See https://svelte.dev/docs/kit/adapters for more information about adapters.
 			adapter: adapter()
 		})
-	]
+	],
+	server: {
+		allowedHosts: ['internery.kovarsta.com']
+	}
 });
