@@ -112,7 +112,24 @@ const seedCategories = [
 	{ id: '10000000-0000-4000-8000-000000000002', name: 'Food & Beverage' },
 	{ id: '10000000-0000-4000-8000-000000000003', name: 'Tutoring' },
 	{ id: '10000000-0000-4000-8000-000000000004', name: 'Events' },
-	{ id: '10000000-0000-4000-8000-000000000005', name: 'Office & Admin' }
+	{ id: '10000000-0000-4000-8000-000000000005', name: 'Office & Admin' },
+	{ id: '10000000-0000-4000-8000-000000000006', name: 'Hospitality & Tourism' },
+	{ id: '10000000-0000-4000-8000-000000000007', name: 'Customer Service' },
+	{ id: '10000000-0000-4000-8000-000000000008', name: 'Delivery & Logistics' },
+	{ id: '10000000-0000-4000-8000-000000000009', name: 'Sales' },
+	{ id: '10000000-0000-4000-8000-000000000010', name: 'Marketing & Social Media' },
+	{ id: '10000000-0000-4000-8000-000000000011', name: 'Design & Creative' },
+	{ id: '10000000-0000-4000-8000-000000000012', name: 'IT & Software' },
+	{ id: '10000000-0000-4000-8000-000000000013', name: 'Translation' },
+	{ id: '10000000-0000-4000-8000-000000000014', name: 'Education & Training' },
+	{ id: '10000000-0000-4000-8000-000000000015', name: 'Healthcare & Pharmacy' },
+	{ id: '10000000-0000-4000-8000-000000000016', name: 'Beauty & Wellness' },
+	{ id: '10000000-0000-4000-8000-000000000017', name: 'Fitness & Sports' },
+	{ id: '10000000-0000-4000-8000-000000000018', name: 'Warehouse & Inventory' },
+	{ id: '10000000-0000-4000-8000-000000000019', name: 'Cleaning & Housekeeping' },
+	{ id: '10000000-0000-4000-8000-000000000020', name: 'Childcare & Babysitting' },
+	{ id: '10000000-0000-4000-8000-000000000021', name: 'Security' },
+	{ id: '10000000-0000-4000-8000-000000000022', name: 'Finance & Accounting' }
 ];
 
 type SeedJob = {
@@ -327,7 +344,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000014',
-		categoryName: 'Office & Admin',
+		categoryName: 'Marketing & Social Media',
 		title: 'Social media content assistant',
 		description: 'Draft short posts and schedule them for a small local brand.',
 		location: 'Online',
@@ -354,7 +371,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000016',
-		categoryName: 'Food & Beverage',
+		categoryName: 'Hospitality & Tourism',
 		title: 'Hotel breakfast server',
 		description: 'Set the buffet, refill dishes and clear tables during breakfast.',
 		location: 'Da Nang',
@@ -367,7 +384,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000017',
-		categoryName: 'Events',
+		categoryName: 'Customer Service',
 		title: 'Cinema usher',
 		description: 'Check tickets, help guests find their screen and tidy the lobby.',
 		location: 'Hanoi',
@@ -380,7 +397,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000018',
-		categoryName: 'Office & Admin',
+		categoryName: 'Customer Service',
 		title: 'Call centre assistant',
 		description: 'Answer routine customer questions and log each call.',
 		location: 'Hanoi',
@@ -393,7 +410,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000019',
-		categoryName: 'Retail',
+		categoryName: 'Warehouse & Inventory',
 		title: 'Warehouse packing assistant',
 		description: 'Pack online orders and label boxes for the afternoon courier.',
 		location: 'Hai Phong',
@@ -406,7 +423,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000020',
-		categoryName: 'Events',
+		categoryName: 'Hospitality & Tourism',
 		title: 'Tour guide assistant',
 		description: 'Meet the group, hand out tickets and keep the walking tour on time.',
 		location: 'Hue',
@@ -419,7 +436,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000021',
-		categoryName: 'Retail',
+		categoryName: 'Fitness & Sports',
 		title: 'Gym front desk assistant',
 		description: 'Welcome members, check passes and keep the entrance tidy.',
 		location: 'Hanoi',
@@ -432,7 +449,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000022',
-		categoryName: 'Office & Admin',
+		categoryName: 'Translation',
 		title: 'Translator for a student club',
 		description: 'Translate short announcements and event notes between English and Vietnamese.',
 		location: 'Online',
@@ -445,7 +462,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000023',
-		categoryName: 'Office & Admin',
+		categoryName: 'Education & Training',
 		title: 'Exam invigilator',
 		description: 'Check candidate details and keep the exam room quiet.',
 		location: 'Hue',
@@ -458,7 +475,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000024',
-		categoryName: 'Office & Admin',
+		categoryName: 'Cleaning & Housekeeping',
 		title: 'Co-working space cleaner',
 		description: 'Tidy the desks and meeting rooms after the working day.',
 		location: 'Hanoi',
@@ -471,7 +488,7 @@ const seedJobs: SeedJob[] = [
 	},
 	{
 		id: '20000000-0000-4000-8000-000000000025',
-		categoryName: 'Events',
+		categoryName: 'Hospitality & Tourism',
 		title: 'Campus tour assistant',
 		description: 'Guide visiting students around the campus and answer questions.',
 		location: 'Hanoi',
@@ -481,6 +498,125 @@ const seedJobs: SeedJob[] = [
 		salaryAmount: 35_000,
 		salaryType: 'HOURLY',
 		positionsNeeded: 4
+	},
+	{
+		id: '20000000-0000-4000-8000-000000000026',
+		categoryName: 'Sales',
+		title: 'Phone shop sales assistant',
+		description: 'Greet walk-in customers, show phone models and explain the plans.',
+		location: 'Hanoi',
+		daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+		startTime: '17:00',
+		endTime: '21:00',
+		salaryAmount: 35_000,
+		salaryType: 'HOURLY',
+		positionsNeeded: 2
+	},
+	{
+		id: '20000000-0000-4000-8000-000000000027',
+		categoryName: 'Design & Creative',
+		title: 'Junior graphic designer',
+		description: 'Prepare simple social posts and event posters from existing templates.',
+		location: 'Online',
+		daysOfWeek: ['MONDAY', 'WEDNESDAY', 'FRIDAY'],
+		startTime: '09:00',
+		endTime: '12:00',
+		scheduleNote: 'A portfolio or two sample designs is welcome.',
+		salaryAmount: 80_000,
+		salaryType: 'HOURLY',
+		positionsNeeded: 1
+	},
+	{
+		id: '20000000-0000-4000-8000-000000000028',
+		categoryName: 'IT & Software',
+		title: 'Front-end web assistant',
+		description: 'Fix small layout issues and update components on a student club website.',
+		location: 'Online',
+		daysOfWeek: ['TUESDAY', 'THURSDAY'],
+		startTime: '18:00',
+		endTime: '21:00',
+		salaryAmount: 100_000,
+		salaryType: 'HOURLY',
+		positionsNeeded: 1
+	},
+	{
+		id: '20000000-0000-4000-8000-000000000029',
+		categoryName: 'Healthcare & Pharmacy',
+		title: 'Pharmacy counter assistant',
+		description: 'Arrange shelves, check stock and help customers find basic products.',
+		location: 'Hanoi',
+		daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
+		startTime: '08:00',
+		endTime: '12:00',
+		salaryAmount: 32_000,
+		salaryType: 'HOURLY',
+		positionsNeeded: 2
+	},
+	{
+		id: '20000000-0000-4000-8000-000000000030',
+		categoryName: 'Beauty & Wellness',
+		title: 'Nail salon assistant',
+		description: 'Welcome guests, prepare stations and keep the salon tidy.',
+		location: 'Ho Chi Minh City',
+		daysOfWeek: ['SATURDAY', 'SUNDAY'],
+		startTime: '09:00',
+		endTime: '18:00',
+		salaryAmount: 260_000,
+		salaryType: 'DAILY',
+		positionsNeeded: 2
+	},
+	{
+		id: '20000000-0000-4000-8000-000000000031',
+		categoryName: 'Childcare & Babysitting',
+		title: 'Weekend babysitter',
+		description: 'Look after two primary-school children at home on weekend days.',
+		location: 'Hanoi',
+		daysOfWeek: ['SATURDAY', 'SUNDAY'],
+		startTime: '08:00',
+		endTime: '17:00',
+		scheduleNote: 'Two children, ages 5 and 8.',
+		salaryAmount: 300_000,
+		salaryType: 'DAILY',
+		positionsNeeded: 1
+	},
+	{
+		id: '20000000-0000-4000-8000-000000000032',
+		categoryName: 'Security',
+		title: 'Event security assistant',
+		description: 'Check wristbands, guide queues and keep the event entrance clear.',
+		location: 'Ho Chi Minh City',
+		daysOfWeek: ['SATURDAY'],
+		startTime: '16:00',
+		endTime: '22:00',
+		salaryAmount: 400_000,
+		salaryType: 'FIXED',
+		positionsNeeded: 4
+	},
+	{
+		id: '20000000-0000-4000-8000-000000000033',
+		categoryName: 'Finance & Accounting',
+		title: 'Accounting intern',
+		description: 'Organise receipts and enter monthly expenses into the ledger.',
+		location: 'Hanoi',
+		daysOfWeek: ['MONDAY', 'WEDNESDAY', 'FRIDAY'],
+		startTime: '08:00',
+		endTime: '12:00',
+		salaryAmount: 45_000,
+		salaryType: 'HOURLY',
+		positionsNeeded: 1
+	},
+	{
+		id: '20000000-0000-4000-8000-000000000034',
+		categoryName: 'Delivery & Logistics',
+		title: 'Delivery rider assistant',
+		description: 'Collect parcels from the shop and deliver them around the district.',
+		location: 'Hanoi',
+		daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
+		startTime: '10:00',
+		endTime: '14:00',
+		salaryAmount: 40_000,
+		salaryType: 'HOURLY',
+		positionsNeeded: 3
 	}
 ];
 
