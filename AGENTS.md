@@ -20,7 +20,7 @@ code; copy what is needed into `src/` when adopting it.
 
 | File                                      | Role                                                           |
 | ----------------------------------------- | -------------------------------------------------------------- |
-| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 66 operations under `/api/v1`       |
+| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 68 operations under `/api/v1`       |
 | `docs/contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501`       |
 | `docs/contracts/invariants.ts`            | Transactional service rules + work-record signing              |
 | `docs/roadmap.md`                         | Phase plan from the API foundation through deployment          |
@@ -63,10 +63,10 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   pending applications to the barista job. The seed is idempotent, re-signs the demo work records
   when `WORK_RECORD_SECRET` changes, uses `SEED_PASSWORD` (default `Password123!`), and refuses to
   run when `NODE_ENV=production`.
-- Migrations `drizzle/0000_pink_thundra.sql` and `drizzle/0001_fair_lightspeed.sql` have been
-  generated and applied to the local database. All 21 tables exist; auth timestamps are
-  `timestamptz`, and `users.role` / `users.status` are PostgreSQL enums.
-- The `/api/v1` route tree exists under `src/routes/api/v1` (51 paths, 66 operations). The account,
+- Migrations through `drizzle/0004_volatile_inhumans.sql` have been generated and applied; all 22
+  tables exist. Auth timestamps are `timestamptz`, and `users.role` / `users.status` are PostgreSQL
+  enums.
+- The `/api/v1` route tree exists under `src/routes/api/v1` (53 paths, 68 operations). The account,
   notification, saved-job, application, own-profile, job read/write, review, admin and trust
   operations are implemented; the AI reads and the shareable work-record card still return `501`.
   Shared API helpers live in `src/lib/server/api/`; services live in `src/lib/server/services/`.
@@ -261,7 +261,7 @@ See `.agents/schema-review.md` for evidence and proposed patches.
 `docs/contracts/openapi.yaml` is the published contract,
 `docs/contracts/implementation-status.md` is the per-operation checklist, and
 `docs/contracts/invariants.ts` is the transaction specification. The original design schema has been
-retired. The current contract is 66 operations on 51 paths.
+retired. The current contract is 68 operations on 53 paths.
 
 The identity conflict is resolved in favour of Better Auth: the app uses the generated `users`,
 `sessions`, `accounts` and `verifications` tables. The contract's `users` and `user_tokens` tables

@@ -194,6 +194,47 @@ export const employerProfiles = pgTable(
 );
 
 /* ------------------------------------------------------------------ */
+/* Locations                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Canonical places used by jobs and, later, student profiles.
+ *
+ * The display name is not the key: jobs will store `locationId`. `searchText`
+ * is the normalized name + aliases + country, searched with `pg_trgm` so the
+ * browser never receives the full city list.
+ */
+export const locations = pgTable(
+	'locations',
+	{
+		id: pk(),
+		countryCode: varchar({ length: 2 }).notNull(),
+		countryName: varchar({ length: 80 }).notNull(),
+		name: varchar({ length: 160 }).notNull(),
+		displayName: varchar({ length: 220 }).notNull(),
+		slug: varchar({ length: 200 }).notNull(),
+		adminArea: varchar({ length: 160 }),
+		aliases: text()
+			.array()
+			.notNull()
+			.default(sql`ARRAY[]::text[]`),
+		searchText: text().notNull(),
+		isRemote: boolean().notNull().default(false),
+		isActive: boolean().notNull().default(true),
+		createdAt: createdAt(),
+		updatedAt: updatedAt()
+	},
+	(t) => [
+		unique('locations_country_slug_uq').on(t.countryCode, t.slug),
+		// Typo-tolerant search: the API queries this with `%` and `similarity`.
+		index('locations_search_idx').using('gin', sql`${t.searchText} gin_trgm_ops`),
+		index('locations_country_name_idx')
+			.on(t.countryCode, t.name)
+			.where(sql`${t.isActive}`)
+	]
+);
+
+/* ------------------------------------------------------------------ */
 /* Categories                                US-34                     */
 /* ------------------------------------------------------------------ */
 

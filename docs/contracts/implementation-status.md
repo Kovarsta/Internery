@@ -1,6 +1,6 @@
 # Implementation status
 
-Base path: `/api/v1`. The contract lists 66 operations on 51 paths.
+Base path: `/api/v1`. The contract lists 68 operations on 53 paths.
 
 `[x]` means the handler is implemented, tested, and no longer returns `501`. `[ ]` means the skeleton
 still returns `501 Not Implemented` from the shared helper. That `501` uses the internal
@@ -9,7 +9,7 @@ endpoint is implemented.
 
 Authentication is provided by Better Auth under `/api/auth/*` and is outside this contract.
 
-**61 of 66 operations implemented.**
+**63 of 68 operations implemented.**
 
 ## Checklist
 
@@ -32,6 +32,11 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - [x] `GET /me/saved-jobs` — Bookmarked jobs
 - [x] `PUT /me/saved-jobs/{jobId}` — Bookmark a job (idempotent)
 - [x] `DELETE /me/saved-jobs/{jobId}` — Remove a bookmark (idempotent)
+
+### Locations
+
+- [x] `GET /locations` - Search canonical locations by name, alias or country
+- [x] `GET /locations/{locationId}` - One canonical location
 
 ### Jobs
 

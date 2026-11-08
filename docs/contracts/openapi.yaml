@@ -390,6 +390,52 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Category' }
+  /locations:
+    get:
+      tags: [Jobs]
+      operationId: searchLocations
+      summary: Search canonical locations
+      description: |
+        Matches active locations by name, aliases or country. The browser should
+        call this as the user types instead of downloading the full list.
+      security: []
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 100 } }
+        - {
+            name: country,
+            in: query,
+            schema: { type: string, minLength: 2, maxLength: 2 },
+            description: ISO 3166-1 alpha-2 country code
+          }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 20, default: 10 }
+          }
+      responses:
+        '200':
+          description: Matching locations, best match first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Location' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /locations/{locationId}:
+    parameters:
+      - { name: locationId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Jobs]
+      operationId: getLocation
+      summary: One canonical location
+      security: []
+      responses:
+        '200':
+          description: The location, used to label a selected filter.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Location' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /jobs:
     get:
       tags: [Jobs]
@@ -1905,6 +1951,16 @@ components:
         id: { type: string, format: uuid }
         name: { type: string }
         isActive: { type: boolean }
+    Location:
+      type: object
+      required: [id, name, displayName, countryCode, countryName, isRemote]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, description: Canonical city name. }
+        displayName: { type: string, description: City plus country, for disambiguation. }
+        countryCode: { type: string, description: ISO 3166-1 alpha-2. }
+        countryName: { type: string }
+        isRemote: { type: boolean, description: True for Online / remote work. }
     CategoryInput:
       type: object
       required: [name]

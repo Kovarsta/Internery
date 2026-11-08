@@ -229,6 +229,29 @@ Table categories {
   Note: 'Names are unique case-insensitively via a lower(name) index. In-use categories are deactivated, never deleted.'
 }
 
+Table locations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  country_code varchar(2) [not null]
+  country_name varchar(80) [not null]
+  name varchar(160) [not null]
+  display_name varchar(220) [not null]
+  slug varchar(200) [not null]
+  admin_area varchar(160)
+  aliases text[] [not null, default: `ARRAY[]::text[]`]
+  search_text text [not null]
+  is_remote boolean [not null, default: false]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (country_code, slug) [unique]
+    search_text [type: gin, note: 'pg_trgm']
+  }
+
+  Note: 'Canonical city/province rows. Jobs will reference this table by location_id.'
+}
+
 Table jobs {
   id uuid [pk, default: `gen_random_uuid()`]
   employer_id uuid [not null]

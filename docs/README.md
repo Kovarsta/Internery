@@ -7,7 +7,7 @@ implementation and review.
 
 | File                                 | Purpose                                                  |
 | ------------------------------------ | -------------------------------------------------------- |
-| `contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 66 operations under `/api/v1` |
+| `contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 68 operations under `/api/v1` |
 | `contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501` |
 | `contracts/invariants.ts`            | Transactional service rules and work-record signing      |
 
@@ -51,6 +51,7 @@ change; do not leave the mismatch undocumented.
 | `decisions/data-retention.md`       | Reference-aware file cleanup and retention             |
 | `decisions/drizzle-style.md`        | Table objects, projections and service record types    |
 | `decisions/email-delivery.md`       | Resend sender, shared template and notification mail   |
+| `decisions/locations.md`            | Canonical locations and server-side city search        |
 | `decisions/minio-staging.md`        | MinIO configuration for local and staging              |
 
 ## Agent workspace

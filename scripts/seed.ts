@@ -13,6 +13,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
 import type { WorkRecordPayload } from '#lib/server/db/product.schema.ts';
+import { normalizeSearchText } from '#lib/search.ts';
 import type { DayOfWeek } from '#lib/schedule.ts';
 import { hashPassword } from '#lib/server/password.ts';
 import { CURRENT_SIGNATURE_VERSION, signWorkRecord } from '#lib/server/work-record-signature.ts';
@@ -130,6 +131,86 @@ const seedCategories = [
 	{ id: '10000000-0000-4000-8000-000000000020', name: 'Childcare & Babysitting' },
 	{ id: '10000000-0000-4000-8000-000000000021', name: 'Security' },
 	{ id: '10000000-0000-4000-8000-000000000022', name: 'Finance & Accounting' }
+];
+
+/**
+ * Canonical places for the demo.
+ *
+ * The ids match the reference rows inserted by the locations migration, so the
+ * seed updates them instead of creating duplicates. `searchText` is generated
+ * from the name, country and aliases at write time.
+ */
+const seedLocations = [
+	{
+		id: '80000000-0000-4000-8000-000000000001',
+		countryCode: 'VN',
+		countryName: 'Vietnam',
+		name: 'Hanoi',
+		displayName: 'Hanoi, Vietnam',
+		slug: 'hanoi',
+		aliases: ['Ha Noi', 'Hà Nội', 'HN'],
+		isRemote: false
+	},
+	{
+		id: '80000000-0000-4000-8000-000000000002',
+		countryCode: 'VN',
+		countryName: 'Vietnam',
+		name: 'Ho Chi Minh City',
+		displayName: 'Ho Chi Minh City, Vietnam',
+		slug: 'ho-chi-minh-city',
+		aliases: ['HCM', 'HCMC', 'TPHCM', 'TP.HCM', 'Ho Chi Minh', 'Saigon', 'Sai Gon', 'Sài Gòn'],
+		isRemote: false
+	},
+	{
+		id: '80000000-0000-4000-8000-000000000003',
+		countryCode: 'VN',
+		countryName: 'Vietnam',
+		name: 'Da Nang',
+		displayName: 'Da Nang, Vietnam',
+		slug: 'da-nang',
+		aliases: ['Đà Nẵng', 'DN'],
+		isRemote: false
+	},
+	{
+		id: '80000000-0000-4000-8000-000000000004',
+		countryCode: 'VN',
+		countryName: 'Vietnam',
+		name: 'Hai Phong',
+		displayName: 'Hai Phong, Vietnam',
+		slug: 'hai-phong',
+		aliases: ['Hải Phòng', 'HP'],
+		isRemote: false
+	},
+	{
+		id: '80000000-0000-4000-8000-000000000005',
+		countryCode: 'VN',
+		countryName: 'Vietnam',
+		name: 'Can Tho',
+		displayName: 'Can Tho, Vietnam',
+		slug: 'can-tho',
+		aliases: ['Cần Thơ', 'CT'],
+		isRemote: false
+	},
+	{
+		id: '80000000-0000-4000-8000-000000000006',
+		countryCode: 'VN',
+		countryName: 'Vietnam',
+		name: 'Hue',
+		displayName: 'Hue, Vietnam',
+		slug: 'hue',
+		aliases: ['Huế'],
+		isRemote: false
+	},
+	{
+		id: '80000000-0000-4000-8000-000000000007',
+		countryCode: 'VN',
+		countryName: 'Vietnam',
+		name: 'Online',
+		displayName: 'Online',
+		slug: 'online',
+		aliases: ['Remote', 'Work from home', 'WFH'],
+		isRemote: true
+	}
 ];
 
 type SeedJob = {
@@ -1000,6 +1081,21 @@ async function seedVerificationRows(userIdsByEmail: Map<string, string>) {
 		.onConflictDoUpdate({ target: schema.verificationRequests.id, set: values });
 }
 
+async function seedLocationRows() {
+	for (const location of seedLocations) {
+		const searchText = normalizeSearchText(
+			[location.name, location.displayName, location.countryName, ...location.aliases].join(' ')
+		);
+
+		const values = { ...location, searchText };
+
+		await db
+			.insert(schema.locations)
+			.values(values)
+			.onConflictDoUpdate({ target: schema.locations.id, set: values });
+	}
+}
+
 async function seedCategoryRows(): Promise<Map<string, string>> {
 	await db.insert(schema.categories).values(seedCategories).onConflictDoNothing();
 
@@ -1213,6 +1309,7 @@ async function main() {
 	await seedVerificationRows(userIdsByEmail);
 
 	const employerId = requireUserId(userIdsByEmail, 'employer@internery.local');
+	await seedLocationRows();
 	const categoryIdsByName = await seedCategoryRows();
 	await seedJobRows(employerId, categoryIdsByName);
 	await seedApplicationRows(userIdsByEmail);
@@ -1223,6 +1320,7 @@ async function main() {
 
 	console.log('Seed complete.');
 	console.log(`  users: ${seedUsers.length}`);
+	console.log(`  locations: ${seedLocations.length}`);
 	console.log(`  categories: ${seedCategories.length}`);
 	console.log(`  jobs: ${seedJobs.length}`);
 	console.log(`  applications: ${seedApplications.length}`);
