@@ -9,6 +9,7 @@
 
 	import { resolve } from '$app/paths';
 	import type { ResolvedPathname } from '$app/types';
+	import SearchSelect from '#lib/components/SearchSelect.svelte';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
@@ -27,6 +28,10 @@
 	} from '#lib/schedule.ts';
 
 	let { categories, filters }: { categories: Category[]; filters: JobBrowseFilters } = $props();
+
+	const categoryOptions = $derived(
+		categories.map((category) => ({ value: category.id, label: category.name }))
+	);
 
 	/** The resolved path every form action and link on this page points at. */
 	const jobsPath = resolve('jobs');
@@ -58,17 +63,16 @@
 
 		<div class="min-w-0">
 			<Label class="mb-1" for="job-category">Category</Label>
-			<NativeSelect
+			<SearchSelect
+				allowEmpty
 				class="w-full"
+				emptyLabel="All categories"
 				id="job-category"
+				items={categoryOptions}
 				name="categoryId"
+				placeholder="All categories"
 				value={filters.categoryId ?? ''}
-			>
-				<NativeSelectOption value="">Any category</NativeSelectOption>
-				{#each categories as category (category.id)}
-					<NativeSelectOption value={category.id}>{category.name}</NativeSelectOption>
-				{/each}
-			</NativeSelect>
+			/>
 		</div>
 
 		<div class="min-w-0">

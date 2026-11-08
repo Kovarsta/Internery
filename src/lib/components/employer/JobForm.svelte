@@ -7,6 +7,7 @@
 	 */
 
 	import type { ResolvedPathname } from '$app/types';
+	import SearchSelect from '#lib/components/SearchSelect.svelte';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
 	import { Label } from '#lib/components/ui/label/index.ts';
@@ -24,6 +25,10 @@
 	};
 
 	let { categories, values, submitLabel, cancelHref }: Props = $props();
+
+	const categoryOptions = $derived(
+		categories.map((category) => ({ value: category.id, label: category.name }))
+	);
 </script>
 
 <form
@@ -37,18 +42,15 @@
 
 	<div>
 		<Label class="mb-1" for="job-category">Category</Label>
-		<NativeSelect
+		<SearchSelect
 			class="w-full"
 			id="job-category"
+			items={categoryOptions}
 			name="categoryId"
+			placeholder="Search categories"
 			required
 			value={values.categoryId}
-		>
-			<NativeSelectOption value="">Choose a category</NativeSelectOption>
-			{#each categories as category (category.id)}
-				<NativeSelectOption value={category.id}>{category.name}</NativeSelectOption>
-			{/each}
-		</NativeSelect>
+		/>
 	</div>
 
 	<div>
