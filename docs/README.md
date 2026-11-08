@@ -30,9 +30,10 @@ a table, column or foreign key.
 
 ## Planning
 
-| File         | Purpose                                               |
-| ------------ | ----------------------------------------------------- |
-| `roadmap.md` | Phase plan from the API foundation through deployment |
+| File                  | Purpose                                                         |
+| --------------------- | --------------------------------------------------------------- |
+| `roadmap.md`          | Phase plan from the API foundation through deployment           |
+| `demo-fix-roadmap.md` | Post-demo fixes: suggestions, filters, close, email, account UI |
 
 The API contract is **provisional**. Update it in the same change that alters a request or response
 shape. When the implementation and the contract disagree, decide which one is right and record the
