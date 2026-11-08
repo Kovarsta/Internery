@@ -22,15 +22,15 @@ Make the demo feel like a working student job marketplace:
 
 ## What already exists
 
-| Area                | Today                                                                                                                           | Missing                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Suggestions         | `/` shows newest jobs; `/jobs` is unpersonalised                                                                                | no location or structured time preference in the profile  |
-| Filters             | keyword, category, location, day, time of day, verified, sort; API also supports `salaryMin`, `salaryMax`, `startFrom`, `endTo` | pay and date filters are not in the UI                    |
-| Job cards           | dates, schedule, positions left, title, employer and rating, category, location, pay                                            | no time-of-day badges                                     |
-| Sign out            | `POST /logout` from the header and footer                                                                                       | —                                                         |
-| Close submissions   | `cancel` (`CANCELLED`) and `complete` (`FILLED → COMPLETED`)                                                                    | no way to stop accepting applications early               |
-| Name and phone      | `PATCH /me` supports `fullName` and `phone`                                                                                     | `/me` is read-only                                        |
-| Email notifications | verification email via Resend; event notifications are in-app only                                                              | event emails do not exist; verification depends on Resend |
+| Area                | Today                                                                                                                           | Missing                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Suggestions         | `/` shows newest jobs; `/jobs` is unpersonalised                                                                                | no location or structured time preference in the profile |
+| Filters             | keyword, category, location, day, time of day, verified, sort; API also supports `salaryMin`, `salaryMax`, `startFrom`, `endTo` | pay and date filters are not in the UI                   |
+| Job cards           | dates, schedule, positions left, title, employer and rating, category, location, pay                                            | no time-of-day badges                                    |
+| Sign out            | `POST /logout` from the header and footer                                                                                       | —                                                        |
+| Close submissions   | `cancel` (`CANCELLED`) and `complete` (`FILLED → COMPLETED`)                                                                    | no way to stop accepting applications early              |
+| Name and phone      | `PATCH /me` supports `fullName` and `phone`                                                                                     | `/me` is read-only                                       |
+| Email notifications | verification and every notification event sent through Resend                                                                   | no opt-out or retry; the demo needs a verified sender    |
 
 ## Decisions
 
@@ -128,23 +128,19 @@ Effort: **S–M**.
 
 ## Phase 5 — Email
 
-Two separate problems.
+Implemented:
 
-**Verification mail**
+- one Resend sender in `email.ts` and one pure template in `email-template.ts`;
+- every in-app notification also sends an email after the transaction commits;
+- delivery failures are logged and never fail the request;
+- the sender format in `.env` was fixed and `pnpm email:test` previews the real template.
 
-- Confirm the Resend key and verified sender in `.env`; `@internery.local` seed accounts cannot
-  receive mail.
-- In development, log the verification URL when sending fails, so signup is testable without a
-  provider.
-- Optionally add a “resend verification” link.
+Still open:
 
-**Event mail**
-
-- One `sendNotificationEmail` helper with plain text and HTML, called **after** the database
-  transaction commits, never inside it. A failed send is logged and never fails the request.
-- Cover the events agreed in decision 6.
-- If decision 5 is Mailpit, add it to Compose and send through SMTP instead of Resend, so the demo
-  works with any address.
+- in development, log the verification URL when sending fails, so signup is testable without a
+  provider;
+- optionally add a “resend verification” link;
+- per-user opt-out, an outbox and retry when production needs guaranteed delivery.
 
 Acceptance: a verification email arrives (or its link appears in the log); an application decision
 sends an email; a provider failure does not break the action.

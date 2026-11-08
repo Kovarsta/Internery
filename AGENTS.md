@@ -72,8 +72,13 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   Shared API helpers live in `src/lib/server/api/`; services live in `src/lib/server/services/`.
   Authentication endpoints are Better Auth's `/api/auth/*` and deliberately not duplicated under
   `/api/v1`. See `src/routes/api/README.md` for route conventions and the implementation checklist.
-- Application writes copy the profile CV onto the application, create an in-app notification, and
-  leave email delivery to a later phase.
+- Application writes copy the profile CV onto the application and create an in-app notification; the
+  matching email is sent after the transaction commits through
+  `src/lib/server/email-notifications.ts`.
+- Transactional email has one Resend sender (`src/lib/server/email.ts`) and one pure template
+  (`src/lib/server/email-template.ts`). Every notification type maps to an email sender; delivery
+  failures are logged and never fail the request, and tests skip the provider. There is no outbox,
+  retry or opt-out yet. See `docs/decisions/email-delivery.md`.
 - Work-record signatures are HMAC-SHA256 over canonical JSON with sorted keys. The helpers live in
   `src/lib/server/work-record-signature.ts`; the secret is `WORK_RECORD_SECRET`. `createReview`
   signs the employer-to-student record in the same transaction as the review.

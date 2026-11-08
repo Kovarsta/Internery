@@ -50,6 +50,7 @@ change; do not leave the mismatch undocumented.
 | `decisions/camel-case-columns.md`   | Product columns are camelCase, auth columns snake_case |
 | `decisions/data-retention.md`       | Reference-aware file cleanup and retention             |
 | `decisions/drizzle-style.md`        | Table objects, projections and service record types    |
+| `decisions/email-delivery.md`       | Resend sender, shared template and notification mail   |
 | `decisions/minio-staging.md`        | MinIO configuration for local and staging              |
 
 ## Agent workspace

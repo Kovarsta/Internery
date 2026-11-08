@@ -314,7 +314,9 @@ not contain `test`. Set `ALLOW_NON_TEST_DATABASE=1` only when the target is genu
 src/
   lib/server/
     auth.ts                 # Better Auth configuration
-    email.ts                # Resend verification sender
+    email.ts                # Resend sender and verification mail
+    email-template.ts       # shared HTML and text template
+    email-notifications.ts  # notification type to email mapping
     moderation.ts           # lazy moderation-row helper
     api/                    # errors, validation, auth, pagination, mappers
     services/               # domain services used by route handlers
