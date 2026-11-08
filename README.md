@@ -266,24 +266,47 @@ Files are not stored in PostgreSQL. The database stores object keys and metadata
 - Application CVs are snapshots; replacing a profile CV must not break an existing application.
 - Retention and garbage collection are defined but not implemented yet.
 
+## Tests and databases
+
+`pnpm test` runs the unit tests. The database-backed tests are skipped unless `TEST_DATABASE_URL` is
+set.
+
+Use the dedicated test database, never a development or production one:
+
+```sh
+# once: create and migrate the test database
+docker compose exec -T db createdb -U internery internery_test
+$env:DATABASE_URL = "postgres://internery:internery@localhost:5432/internery_test"
+pnpm db:migrate
+Remove-Item Env:DATABASE_URL
+
+# every run: load .env.test and run the whole suite
+pnpm test:db
+```
+
+`.env.test` points `TEST_DATABASE_URL` at `internery_test`, and `pnpm test:db` loads that file. The
+tests create and delete real rows, so `vitest.global-setup.ts` refuses any database whose name does
+not contain `test`. Set `ALLOW_NON_TEST_DATABASE=1` only when the target is genuinely disposable.
+
 ## Scripts
 
-| Command            | Purpose                                                        |
-| ------------------ | -------------------------------------------------------------- |
-| `pnpm dev`         | Start the Vite development server.                             |
-| `pnpm build`       | Build for production.                                          |
-| `pnpm preview`     | Preview the production build.                                  |
-| `pnpm check`       | Run SvelteKit sync and `svelte-check`.                         |
-| `pnpm test`        | Run the Vitest suite. Database tests need `TEST_DATABASE_URL`. |
-| `pnpm test:watch`  | Run Vitest in watch mode.                                      |
-| `pnpm lint`        | Run Prettier check and ESLint.                                 |
-| `pnpm format`      | Format the repository with Prettier.                           |
-| `pnpm db:start`    | Start PostgreSQL and MinIO with Docker Compose.                |
-| `pnpm db:generate` | Generate a Drizzle migration.                                  |
-| `pnpm db:migrate`  | Apply pending Drizzle migrations.                              |
-| `pnpm db:seed`     | Insert the development seed data.                              |
-| `pnpm db:studio`   | Open Drizzle Studio.                                           |
-| `pnpm auth:schema` | Regenerate and normalise the Better Auth Drizzle schema.       |
+| Command            | Purpose                                                     |
+| ------------------ | ----------------------------------------------------------- |
+| `pnpm dev`         | Start the Vite development server.                          |
+| `pnpm build`       | Build for production.                                       |
+| `pnpm preview`     | Preview the production build.                               |
+| `pnpm check`       | Run SvelteKit sync and `svelte-check`.                      |
+| `pnpm test`        | Run unit tests; database tests are skipped.                 |
+| `pnpm test:db`     | Run the whole suite against `.env.test` (`internery_test`). |
+| `pnpm test:watch`  | Run Vitest in watch mode.                                   |
+| `pnpm lint`        | Run Prettier check and ESLint.                              |
+| `pnpm format`      | Format the repository with Prettier.                        |
+| `pnpm db:start`    | Start PostgreSQL and MinIO with Docker Compose.             |
+| `pnpm db:generate` | Generate a Drizzle migration.                               |
+| `pnpm db:migrate`  | Apply pending Drizzle migrations.                           |
+| `pnpm db:seed`     | Insert the development seed data.                           |
+| `pnpm db:studio`   | Open Drizzle Studio.                                        |
+| `pnpm auth:schema` | Regenerate and normalise the Better Auth Drizzle schema.    |
 
 ## Project layout
 

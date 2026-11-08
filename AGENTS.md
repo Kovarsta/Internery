@@ -107,7 +107,8 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 pnpm dev                 # Vite dev server
 pnpm build               # production build
 pnpm check               # svelte-kit sync + svelte-check
-pnpm test                # vitest run
+pnpm test                # vitest run; database tests are skipped
+pnpm test:db             # vitest run against .env.test (internery_test)
 pnpm lint                # prettier --check + eslint
 pnpm format              # prettier --write
 pnpm db:start            # docker compose up (Postgres :5432, MinIO :9000/:9001)

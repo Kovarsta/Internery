@@ -141,5 +141,6 @@ pnpm build    # production build
 pnpm lint     # Prettier + ESLint
 ```
 
-Database-backed tests run only when `TEST_DATABASE_URL` is set. Point it at a database with the
-migrations applied; the test suite skips that file otherwise.
+Database-backed tests run only when `TEST_DATABASE_URL` is set. Use `pnpm test:db`, which loads
+`.env.test` and targets the dedicated `internery_test` database; a guard in `vitest.global-setup.ts`
+refuses database names without `test`. Without the variable, those files are skipped.
