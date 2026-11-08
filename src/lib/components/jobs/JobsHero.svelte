@@ -28,7 +28,7 @@
 
 <section bind:this={root} class="mb-8 border-b border-rule pb-8">
 	<h1 data-reveal class="max-w-2xl text-4xl font-extrabold tracking-tight sm:text-5xl">
-		Find a shift that fits your week.
+		Time for a new opportunity?
 	</h1>
 	<p data-reveal class="mt-4 max-w-xl text-base text-ink/70">
 		Part-time work from Hanoi employers, with the dates and pay up front.
