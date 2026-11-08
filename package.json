@@ -21,6 +21,7 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"db:seed": "node --env-file=.env scripts/seed.ts",
+		"email:test": "node --env-file=.env scripts/send-test-email.ts",
 		"auth:schema": "auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes && node scripts/normalize-auth-schema.mjs && prettier --write src/lib/server/db/auth.schema.ts",
 		"storage:sweep": "node --env-file=.env scripts/storage-sweep.ts",
 		"retention:run": "node --env-file=.env scripts/retention.ts"

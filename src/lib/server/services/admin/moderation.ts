@@ -8,6 +8,7 @@
  */
 import { and, asc, count, eq, or, sql, type SQL } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
+import { sendNotificationEmails } from '#lib/server/email-notifications.ts';
 import type { Database, Transaction } from '#lib/server/db/types.ts';
 import {
 	categories,
@@ -22,6 +23,7 @@ import {
 	type JobDetailRecord,
 	type JobSummaryRecord
 } from '../jobs/selections.ts';
+import type { NotificationInsert } from '../notifications.ts';
 import { recordAuditLog } from './audit.ts';
 
 export type ModerationCause = 'REPORTED' | 'AUTO_HIDDEN' | 'ADMIN_HIDDEN' | 'SCAM_FLAG';
@@ -116,6 +118,8 @@ export async function listModerationQueue(
  * reason, and the employer should be told the latest one.
  */
 export async function hideJob(database: Database, input: HideJobInput): Promise<JobDetailRecord> {
+	const pendingEmails: NotificationInsert[] = [];
+
 	await database.transaction(async (tx) => {
 		const [job] = await tx
 			.select({ id: jobs.id, employerId: jobs.employerId, title: jobs.title })
@@ -137,13 +141,16 @@ export async function hideJob(database: Database, input: HideJobInput): Promise<
 			})
 			.where(eq(jobs.id, job.id));
 
-		await tx.insert(notifications).values({
+		const notification: NotificationInsert = {
 			userId: job.employerId,
 			type: 'JOB_HIDDEN',
 			title: `Your job "${job.title}" was hidden`,
 			body: input.reason,
 			jobId: job.id
-		});
+		};
+
+		await tx.insert(notifications).values(notification);
+		pendingEmails.push(notification);
 
 		await recordAuditLog(tx, {
 			actorId: input.adminId,
@@ -154,7 +161,11 @@ export async function hideJob(database: Database, input: HideJobInput): Promise<
 		});
 	});
 
-	return requireJobDetail(database, input.jobId);
+	const job = await requireJobDetail(database, input.jobId);
+
+	await sendNotificationEmails(database, pendingEmails);
+
+	return job;
 }
 
 /**

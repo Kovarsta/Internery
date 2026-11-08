@@ -14,7 +14,12 @@ import {
 	studentProfiles
 } from '#lib/server/db/product.schema.ts';
 import { findApplicationForStudent, findStudentApplicationForJob } from './reads.ts';
-import type { ApplicationListRecord, NewApplicationInput } from './selections.ts';
+import type {
+	ApplicationListRecord,
+	NewApplicationInput,
+	NotificationInsert
+} from './selections.ts';
+import { sendNotificationEmails } from '#lib/server/email-notifications.ts';
 
 /**
  * Creates a `PENDING` application for a student.
@@ -34,6 +39,8 @@ export async function applyToJob(
 	jobId: string,
 	input: NewApplicationInput
 ): Promise<ApplicationListRecord> {
+	const pendingEmails: NotificationInsert[] = [];
+
 	await database.transaction(async (tx) => {
 		const [job] = await tx
 			.select({
@@ -112,14 +119,17 @@ export async function applyToJob(
 			throw new DomainError('ALREADY_APPLIED');
 		}
 
-		await tx.insert(notifications).values({
+		const notification: NotificationInsert = {
 			userId: job.employerId,
 			type: 'APPLICATION_RECEIVED',
 			title: `New application for "${job.title}"`,
 			body: `${student.name} applied to your job.`,
 			jobId,
 			applicationId: created.id
-		});
+		};
+
+		await tx.insert(notifications).values(notification);
+		pendingEmails.push(notification);
 	});
 
 	const application = await findStudentApplicationForJob(database, student.id, jobId);
@@ -127,6 +137,8 @@ export async function applyToJob(
 	if (!application) {
 		throw new Error('The new application could not be read back.');
 	}
+
+	await sendNotificationEmails(database, pendingEmails);
 
 	return application;
 }
@@ -143,6 +155,8 @@ export async function withdrawApplication(
 	studentId: string,
 	applicationId: string
 ): Promise<ApplicationListRecord> {
+	const pendingEmails: NotificationInsert[] = [];
+
 	await database.transaction(async (tx) => {
 		const [application] = await tx
 			.select({
@@ -179,13 +193,16 @@ export async function withdrawApplication(
 			.limit(1);
 
 		if (job) {
-			await tx.insert(notifications).values({
+			const notification: NotificationInsert = {
 				userId: job.employerId,
 				type: 'APPLICATION_WITHDRAWN',
 				title: `An applicant withdrew from "${job.title}"`,
 				jobId: job.id,
 				applicationId
-			});
+			};
+
+			await tx.insert(notifications).values(notification);
+			pendingEmails.push(notification);
 		}
 	});
 
@@ -194,6 +211,8 @@ export async function withdrawApplication(
 	if (!application) {
 		throw new Error('The withdrawn application could not be read back.');
 	}
+
+	await sendNotificationEmails(database, pendingEmails);
 
 	return application;
 }

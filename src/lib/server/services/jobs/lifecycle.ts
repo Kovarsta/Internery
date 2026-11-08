@@ -5,6 +5,7 @@
  */
 import { and, eq, inArray } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
+import { sendNotificationEmails } from '#lib/server/email-notifications.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { applications, jobs, notifications } from '#lib/server/db/product.schema.ts';
 import { findJobDetail } from './reads.ts';
@@ -54,6 +55,8 @@ async function changeJobStatus(
 	jobId: string,
 	to: 'CANCELLED' | 'COMPLETED'
 ): Promise<JobDetailRecord> {
+	const pendingEmails: NotificationInsert[] = [];
+
 	await database.transaction(async (tx) => {
 		const [job] = await tx
 			.select({
@@ -114,6 +117,7 @@ async function changeJobStatus(
 			}));
 
 			await tx.insert(notifications).values(audienceNotifications);
+			pendingEmails.push(...audienceNotifications);
 		}
 	});
 
@@ -122,6 +126,8 @@ async function changeJobStatus(
 	if (!job) {
 		throw new Error('The updated job could not be read back.');
 	}
+
+	await sendNotificationEmails(database, pendingEmails);
 
 	return job;
 }

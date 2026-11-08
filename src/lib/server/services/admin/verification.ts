@@ -7,12 +7,14 @@
  */
 import { and, asc, count, eq, type SQL } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
+import { sendNotificationEmails } from '#lib/server/email-notifications.ts';
 import type { Database, Transaction } from '#lib/server/db/types.ts';
 import {
 	employerProfiles,
 	notifications,
 	verificationRequests
 } from '#lib/server/db/product.schema.ts';
+import type { NotificationInsert } from '#lib/server/services/notifications.ts';
 import { recordAuditLog } from './audit.ts';
 
 export type VerificationRequestRecord = typeof verificationRequests.$inferSelect;
@@ -74,6 +76,8 @@ export async function approveVerification(
 	database: Database,
 	input: ApproveVerificationInput
 ): Promise<VerificationRequestRecord> {
+	const pendingEmails: NotificationInsert[] = [];
+
 	await database.transaction(async (tx) => {
 		const request = await lockPendingRequest(tx, input.requestId);
 		const reviewedAt = new Date();
@@ -88,11 +92,14 @@ export async function approveVerification(
 			.set({ verificationStatus: 'VERIFIED', verifiedAt: reviewedAt })
 			.where(eq(employerProfiles.userId, request.employerId));
 
-		await tx.insert(notifications).values({
+		const notification: NotificationInsert = {
 			userId: request.employerId,
 			type: 'VERIFICATION_APPROVED',
 			title: 'Your organisation is verified'
-		});
+		};
+
+		await tx.insert(notifications).values(notification);
+		pendingEmails.push(notification);
 
 		await recordAuditLog(tx, {
 			actorId: input.adminId,
@@ -102,7 +109,11 @@ export async function approveVerification(
 		});
 	});
 
-	return requireRequest(database, input.requestId);
+	const request = await requireRequest(database, input.requestId);
+
+	await sendNotificationEmails(database, pendingEmails);
+
+	return request;
 }
 
 /** Rejects a pending request and stores the reason for the employer. */
@@ -110,6 +121,8 @@ export async function rejectVerification(
 	database: Database,
 	input: RejectVerificationInput
 ): Promise<VerificationRequestRecord> {
+	const pendingEmails: NotificationInsert[] = [];
+
 	await database.transaction(async (tx) => {
 		const request = await lockPendingRequest(tx, input.requestId);
 
@@ -128,12 +141,15 @@ export async function rejectVerification(
 			.set({ verificationStatus: 'REJECTED', verifiedAt: null })
 			.where(eq(employerProfiles.userId, request.employerId));
 
-		await tx.insert(notifications).values({
+		const notification: NotificationInsert = {
 			userId: request.employerId,
 			type: 'VERIFICATION_REJECTED',
 			title: 'Your verification request was rejected',
 			body: input.reason
-		});
+		};
+
+		await tx.insert(notifications).values(notification);
+		pendingEmails.push(notification);
 
 		await recordAuditLog(tx, {
 			actorId: input.adminId,
@@ -144,7 +160,11 @@ export async function rejectVerification(
 		});
 	});
 
-	return requireRequest(database, input.requestId);
+	const request = await requireRequest(database, input.requestId);
+
+	await sendNotificationEmails(database, pendingEmails);
+
+	return request;
 }
 
 type LockedRequest = {

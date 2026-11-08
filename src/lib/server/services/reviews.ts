@@ -13,6 +13,8 @@ import {
 	type WorkRecordPayload
 } from '#lib/server/db/product.schema.ts';
 import { recalculateUserRating } from './ratings.ts';
+import { sendNotificationEmails } from '#lib/server/email-notifications.ts';
+import type { NotificationInsert } from './notifications.ts';
 import { CURRENT_SIGNATURE_VERSION, signWorkRecord } from '#lib/server/work-record-signature.ts';
 
 export type ReviewListRecord = {
@@ -135,6 +137,8 @@ export async function createReview(
 ): Promise<CreatedReview> {
 	let workRecordId: string | null = null;
 
+	const pendingEmails: NotificationInsert[] = [];
+
 	const review = await database.transaction(async (tx) => {
 		const [job] = await tx
 			.select({
@@ -228,12 +232,15 @@ export async function createReview(
 
 		await recalculateUserRating(tx, input.revieweeId);
 
-		await tx.insert(notifications).values({
+		const reviewNotification: NotificationInsert = {
 			userId: input.revieweeId,
 			type: 'REVIEW_RECEIVED',
 			title: `You received a ${input.rating}-star review`,
 			jobId: job.id
-		});
+		};
+
+		await tx.insert(notifications).values(reviewNotification);
+		pendingEmails.push(reviewNotification);
 
 		if (isEmployerReviewingStudent) {
 			const [employerProfile] = await tx
@@ -268,12 +275,15 @@ export async function createReview(
 				signatureVersion: CURRENT_SIGNATURE_VERSION
 			});
 
-			await tx.insert(notifications).values({
+			const recordNotification: NotificationInsert = {
 				userId: input.revieweeId,
 				type: 'WORK_RECORD_CREATED',
 				title: `Your verified work record for "${job.title}" is ready`,
 				jobId: job.id
-			});
+			};
+
+			await tx.insert(notifications).values(recordNotification);
+			pendingEmails.push(recordNotification);
 		}
 
 		const [reviewer] = await tx
@@ -287,6 +297,8 @@ export async function createReview(
 
 		return { ...created, reviewerName: reviewer.name };
 	});
+
+	await sendNotificationEmails(database, pendingEmails);
 
 	return { review, workRecordId };
 }

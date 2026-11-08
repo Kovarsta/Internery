@@ -10,6 +10,8 @@ import { DomainError } from '#lib/server/api/errors.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { isUniqueViolation } from '#lib/server/db/errors.ts';
 import { jobs, notifications, reports } from '#lib/server/db/product.schema.ts';
+import { sendNotificationEmails } from '#lib/server/email-notifications.ts';
+import type { NotificationInsert } from './notifications.ts';
 
 /** Open reports from distinct students before a job is hidden automatically. */
 export const AUTO_HIDE_THRESHOLD = 3;
@@ -37,7 +39,9 @@ export async function submitReport(
 	database: Database,
 	input: SubmitReportInput
 ): Promise<SubmitReportResult> {
-	return database.transaction(async (tx) => {
+	const pendingEmails: NotificationInsert[] = [];
+
+	const result = await database.transaction(async (tx) => {
 		const [job] = await tx
 			.select({
 				id: jobs.id,
@@ -89,13 +93,20 @@ export async function submitReport(
 			})
 			.where(eq(jobs.id, job.id));
 
-		await tx.insert(notifications).values({
+		const notification: NotificationInsert = {
 			userId: job.employerId,
 			type: 'JOB_AUTO_HIDDEN',
 			title: `"${job.title}" was hidden after reports and is awaiting review`,
 			jobId: job.id
-		});
+		};
+
+		await tx.insert(notifications).values(notification);
+		pendingEmails.push(notification);
 
 		return { autoHidden: true };
 	});
+
+	await sendNotificationEmails(database, pendingEmails);
+
+	return result;
 }

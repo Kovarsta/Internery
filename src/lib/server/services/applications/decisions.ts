@@ -10,6 +10,7 @@ import type { Database } from '#lib/server/db/types.ts';
 import { applications, jobs, notifications } from '#lib/server/db/product.schema.ts';
 import { findApplicationById } from './reads.ts';
 import type { ApplicationListRecord, NotificationInsert } from './selections.ts';
+import { sendNotificationEmails } from '#lib/server/email-notifications.ts';
 
 /**
  * Rejects a pending application.
@@ -24,6 +25,8 @@ export async function rejectApplication(
 	applicationId: string,
 	reason: string | null
 ): Promise<ApplicationListRecord> {
+	const pendingEmails: NotificationInsert[] = [];
+
 	await database.transaction(async (tx) => {
 		const [application] = await tx
 			.select({
@@ -65,14 +68,17 @@ export async function rejectApplication(
 			.set({ status: 'REJECTED', rejectReason: reason, decidedAt: new Date() })
 			.where(eq(applications.id, applicationId));
 
-		await tx.insert(notifications).values({
+		const notification: NotificationInsert = {
 			userId: application.studentId,
 			type: 'APPLICATION_REJECTED',
 			title: `Your application for "${job.title}" was not accepted`,
 			body: reason,
 			jobId: job.id,
 			applicationId
-		});
+		};
+
+		await tx.insert(notifications).values(notification);
+		pendingEmails.push(notification);
 	});
 
 	const application = await findApplicationById(database, applicationId);
@@ -80,6 +86,8 @@ export async function rejectApplication(
 	if (!application) {
 		throw new Error('The rejected application could not be read back.');
 	}
+
+	await sendNotificationEmails(database, pendingEmails);
 
 	return application;
 }
@@ -104,6 +112,7 @@ export async function acceptApplication(
 	applicationId: string
 ): Promise<AcceptedApplication> {
 	let jobFilled = false;
+	const pendingEmails: NotificationInsert[] = [];
 
 	await database.transaction(async (tx) => {
 		const [application] = await tx
@@ -185,16 +194,20 @@ export async function acceptApplication(
 				}));
 
 				await tx.insert(notifications).values(pendingNotifications);
+				pendingEmails.push(...pendingNotifications);
 			}
 		}
 
-		await tx.insert(notifications).values({
+		const acceptedNotification: NotificationInsert = {
 			userId: application.studentId,
 			type: 'APPLICATION_ACCEPTED',
 			title: `Your application for "${job.title}" was accepted`,
 			jobId: job.id,
 			applicationId: application.id
-		});
+		};
+
+		await tx.insert(notifications).values(acceptedNotification);
+		pendingEmails.push(acceptedNotification);
 	});
 
 	const application = await findApplicationById(database, applicationId);
@@ -202,6 +215,8 @@ export async function acceptApplication(
 	if (!application) {
 		throw new Error('The accepted application could not be read back.');
 	}
+
+	await sendNotificationEmails(database, pendingEmails);
 
 	return { application, jobFilled };
 }

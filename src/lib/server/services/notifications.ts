@@ -4,6 +4,7 @@ import type { Database } from '#lib/server/db/types.ts';
 import { notifications } from '#lib/server/db/product.schema.ts';
 
 export type NotificationRecord = typeof notifications.$inferSelect;
+export type NotificationInsert = typeof notifications.$inferInsert;
 
 export type NotificationListOptions = {
 	userId: string;
