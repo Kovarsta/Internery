@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { readJobBrowseFilters, toJobSearchQuery } from './job-search.ts';
+import type { ResolvedPathname } from '$app/types';
+import { readJobBrowseFilters, toJobSearchQuery, toJobsHref } from './job-search.ts';
+import type { JobBrowseFilters } from './job-search.ts';
 
 describe('readJobBrowseFilters', () => {
 	it('reads repeated day and time parameters', () => {
@@ -77,5 +79,32 @@ describe('toJobSearchQuery', () => {
 		});
 
 		expect(query.toString()).toBe('');
+	});
+});
+
+describe('toJobsHref', () => {
+	const jobsPath = '/jobs' as ResolvedPathname;
+	const filters: JobBrowseFilters = {
+		location: 'Hanoi',
+		daysOfWeek: ['SATURDAY'],
+		timeOfDay: ['MORNING'],
+		sort: 'newest',
+		verifiedOnly: false
+	};
+
+	it('keeps every filter except the changed one', () => {
+		expect(toJobsHref(jobsPath, filters, { timeOfDay: [] })).toBe(
+			'/jobs?location=Hanoi&dayOfWeek=SATURDAY'
+		);
+	});
+
+	it('returns the bare path when every filter is removed', () => {
+		expect(
+			toJobsHref(jobsPath, filters, {
+				location: undefined,
+				daysOfWeek: [],
+				timeOfDay: []
+			})
+		).toBe('/jobs');
 	});
 });

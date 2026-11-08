@@ -16,6 +16,7 @@ import {
 	type TimeOfDay,
 	sortDaysOfWeek
 } from '#lib/schedule.ts';
+import type { ResolvedPathname } from '$app/types';
 
 export type JobBrowseFilters = {
 	/** Free-text keyword, absent when the search box is empty. */
@@ -105,6 +106,27 @@ export function toJobSearchQuery(filters: JobBrowseFilters): URLSearchParams {
 	}
 
 	return query;
+}
+
+/**
+ * Builds a `/jobs` link starting from the current filters.
+ *
+ * Fields named in `changes` replace the current value; `undefined` or `[]`
+ * removes that filter. Every other filter is kept.
+ *
+ * @param jobsPath - The resolved `/jobs` path, so the link respects the base path.
+ * @param filters - The filters currently in the URL.
+ * @param changes - Only the filters that should differ.
+ * @returns The resolved link, with a query string when anything remains.
+ */
+export function toJobsHref(
+	jobsPath: ResolvedPathname,
+	filters: JobBrowseFilters,
+	changes: Partial<JobBrowseFilters>
+): ResolvedPathname {
+	const query = toJobSearchQuery({ ...filters, ...changes }).toString();
+
+	return (query ? `${jobsPath}?${query}` : jobsPath) as ResolvedPathname;
 }
 
 function readDaysOfWeek(values: string[]): DayOfWeek[] {
