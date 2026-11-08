@@ -9,12 +9,18 @@
 	import { resolve } from '$app/paths';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import type { JobSummary } from '#lib/api/types.ts';
-	import { formatDateRange, formatPositionsRemaining, formatSalary } from '#lib/format.ts';
+	import {
+		formatDateRange,
+		formatPositionsRemaining,
+		formatRelativeTime,
+		formatSalary
+	} from '#lib/format.ts';
 	import type { Snippet } from 'svelte';
 
 	let { job, children }: { job: JobSummary; children?: Snippet } = $props();
 
 	const href = $derived(resolve(`jobs/${encodeURIComponent(job.id)}`));
+	const postedLabel = $derived(formatRelativeTime(job.createdAt));
 
 	const ratingLabel = $derived.by(() => {
 		if (job.employer.ratingCount === 0) {
@@ -51,7 +57,7 @@
 			{/if}
 		</p>
 		<p class="mt-1 text-sm text-ink/60">{job.category.name}</p>
-		<p class="text-sm text-ink/60">{job.location}</p>
+		<p class="text-sm text-ink/60">{job.location} · Posted {postedLabel.toLowerCase()}</p>
 	</div>
 
 	<div class="sm:text-right">

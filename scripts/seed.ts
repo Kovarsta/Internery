@@ -875,7 +875,9 @@ async function seedCategoryRows(): Promise<Map<string, string>> {
 }
 
 async function seedJobRows(employerId: string, categoryIdsByName: Map<string, string>) {
-	for (const job of seedJobs) {
+	const hour = 60 * 60 * 1000;
+
+	for (const [index, job] of seedJobs.entries()) {
 		const categoryId = categoryIdsByName.get(job.categoryName);
 
 		if (!categoryId) {
@@ -883,6 +885,10 @@ async function seedJobRows(employerId: string, categoryIdsByName: Map<string, st
 		}
 
 		const isCompleted = job.status === 'COMPLETED';
+
+		// Stagger creation times so the cards show "Just now", "3 hours ago", ...
+		// instead of every job looking identical. The last fixed id is the newest.
+		const createdAt = new Date(Date.now() - (seedJobs.length - 1 - index) * 3 * hour);
 
 		const values = {
 			employerId,
@@ -901,6 +907,7 @@ async function seedJobRows(employerId: string, categoryIdsByName: Map<string, st
 			positionsNeeded: job.positionsNeeded,
 			status: job.status ?? 'HIRING',
 			completedAt: isCompleted ? new Date('2026-09-28T09:00:00.000Z') : null,
+			createdAt,
 			needsReview: job.needsReview ?? false,
 			flaggedTerms: job.flaggedTerms ?? [],
 			isHidden: job.isHidden ?? false,
