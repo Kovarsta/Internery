@@ -27,7 +27,7 @@ Make the demo feel like a working student job marketplace:
 | Suggestions         | `/` shows newest jobs; `/jobs` is unpersonalised                                                                                | no location or structured time preference in the profile  |
 | Filters             | keyword, category, location, day, time of day, verified, sort; API also supports `salaryMin`, `salaryMax`, `startFrom`, `endTo` | pay and date filters are not in the UI                    |
 | Job cards           | dates, schedule, positions left, title, employer and rating, category, location, pay                                            | no time-of-day badges                                     |
-| Sign out            | —                                                                                                                               | no control in the header                                  |
+| Sign out            | `POST /logout` from the header and footer                                                                                       | —                                                         |
 | Close submissions   | `cancel` (`CANCELLED`) and `complete` (`FILLED → COMPLETED`)                                                                    | no way to stop accepting applications early               |
 | Name and phone      | `PATCH /me` supports `fullName` and `phone`                                                                                     | `/me` is read-only                                        |
 | Email notifications | verification email via Resend; event notifications are in-app only                                                              | event emails do not exist; verification depends on Resend |
@@ -50,8 +50,8 @@ their phases.
 
 Goal: fix the obvious demo gaps without touching the database.
 
-- **Sign out**: `POST /logout` action calls `auth.api.signOut`, then redirects to `/`. The header
-  shows the name and a sign-out button for signed-in users.
+- **Sign out** (implemented): `POST /logout` calls `auth.api.signOut`, then redirects to `/`. The
+  header and footer show a sign-out control for signed-in users.
 - **Account details**: a form on `/me` for name and phone, using the existing `PATCH /me`. Show the
   API message inline. Leave email out of the first pass.
 - **Job cards**: add the schedule line and the employer rating/review count. `JobSummary` gains
@@ -76,7 +76,8 @@ Implemented:
 - the employer form takes day checkboxes and a start and end time;
 - `GET /jobs` accepts comma-separated `dayOfWeek` and `timeOfDay`; values are OR-ed inside each
   list and the two lists combine with AND;
-- `/jobs` has Day and Time of day controls, Weekdays/Weekend shortcuts and removable chips;
+- `/jobs` has Day and Time of day controls, Weekdays/Weekend shortcuts and removable chips in a
+  sticky sidebar; on small screens the chips follow the scroll as a sticky bar with an Edit link;
 - job cards show the schedule and the employer rating.
 
 Still open:
