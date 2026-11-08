@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CLOCK_TIME_PATTERN, DAY_OF_WEEK_VALUES } from '#lib/schedule.ts';
 
 /**
  * The contract's `JobFields`, shared by create and update so the two routes
@@ -12,7 +13,10 @@ export const jobFields = {
 	categoryId: z.uuid(),
 	description: z.string().trim().min(1),
 	location: z.string().trim().min(1).max(300),
-	schedule: z.string().trim().min(1),
+	daysOfWeek: z.array(z.enum(DAY_OF_WEEK_VALUES)).min(1).max(7),
+	startTime: z.string().regex(CLOCK_TIME_PATTERN, 'Use HH:MM, for example 08:00.'),
+	endTime: z.string().regex(CLOCK_TIME_PATTERN, 'Use HH:MM, for example 17:00.'),
+	scheduleNote: z.string().trim().max(300).nullable().optional(),
 	salaryAmount: z.number().int().positive(),
 	salaryType: z.enum(['HOURLY', 'DAILY', 'FIXED']),
 	startDate: z.iso.date(),
@@ -28,4 +32,15 @@ export const jobFields = {
  */
 export function hasOrderedDates(job: { startDate?: string; endDate?: string }): boolean {
 	return job.startDate === undefined || job.endDate === undefined || job.endDate > job.startDate;
+}
+
+/**
+ * True when the shift ends after it starts on the same day.
+ *
+ * Overnight shifts are not supported yet, so a missing side passes here for the
+ * same reason as `hasOrderedDates`: the service checks an update against the
+ * stored other bound.
+ */
+export function hasOrderedTimes(job: { startTime?: string; endTime?: string }): boolean {
+	return job.startTime === undefined || job.endTime === undefined || job.endTime > job.startTime;
 }

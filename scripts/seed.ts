@@ -13,6 +13,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
 import type { WorkRecordPayload } from '#lib/server/db/product.schema.ts';
+import type { DayOfWeek } from '#lib/schedule.ts';
 import { hashPassword } from '#lib/server/password.ts';
 import { CURRENT_SIGNATURE_VERSION, signWorkRecord } from '#lib/server/work-record-signature.ts';
 
@@ -120,7 +121,10 @@ type SeedJob = {
 	title: string;
 	description: string;
 	location: string;
-	schedule: string;
+	daysOfWeek: DayOfWeek[];
+	startTime: string;
+	endTime: string;
+	scheduleNote?: string;
 	salaryAmount: number;
 	salaryType: 'HOURLY' | 'DAILY' | 'FIXED';
 	positionsNeeded: number;
@@ -142,7 +146,9 @@ const seedJobs: SeedJob[] = [
 		title: 'Part-time barista',
 		description: 'Prepare drinks and serve customers during the morning shift.',
 		location: 'Hanoi',
-		schedule: 'Weekday mornings, 6:00-10:00',
+		daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+		startTime: '06:00',
+		endTime: '10:00',
 		salaryAmount: 30_000,
 		salaryType: 'HOURLY',
 		positionsNeeded: 2
@@ -153,7 +159,9 @@ const seedJobs: SeedJob[] = [
 		title: 'Weekend retail assistant',
 		description: 'Help customers, restock shelves and keep the shop tidy.',
 		location: 'Hanoi',
-		schedule: 'Saturday and Sunday, 9:00-18:00',
+		daysOfWeek: ['SATURDAY', 'SUNDAY'],
+		startTime: '09:00',
+		endTime: '18:00',
 		salaryAmount: 250_000,
 		salaryType: 'DAILY',
 		positionsNeeded: 1,
@@ -168,7 +176,9 @@ const seedJobs: SeedJob[] = [
 		title: 'Math tutor for grade 9',
 		description: 'Two evening sessions per week preparing a student for the entrance exam.',
 		location: 'Online',
-		schedule: 'Tuesday and Thursday, 19:00-20:30',
+		daysOfWeek: ['TUESDAY', 'THURSDAY'],
+		startTime: '19:00',
+		endTime: '20:30',
 		salaryAmount: 150_000,
 		salaryType: 'HOURLY',
 		positionsNeeded: 1
@@ -179,10 +189,15 @@ const seedJobs: SeedJob[] = [
 		title: 'Event staff for a product launch',
 		description: 'Welcome guests, hand out samples and support the event team.',
 		location: 'Ho Chi Minh City',
-		schedule: 'One day, 8:00-17:00',
+		daysOfWeek: ['SUNDAY'],
+		startTime: '08:00',
+		endTime: '17:00',
+		scheduleNote: 'A single day: Sunday 15 November 2026.',
 		salaryAmount: 400_000,
 		salaryType: 'FIXED',
 		positionsNeeded: 5,
+		startDate: '2026-11-15',
+		endDate: '2026-11-16',
 		// Auto-hidden by the report threshold, so the moderation queue has an
 		// item the admin can restore (AC-42.3).
 		isHidden: true,
@@ -194,7 +209,9 @@ const seedJobs: SeedJob[] = [
 		title: 'Weekend cafe assistant',
 		description: 'Serve customers and keep the counter tidy during the weekend rush.',
 		location: 'Hanoi',
-		schedule: 'Saturday and Sunday, 8:00-16:00',
+		daysOfWeek: ['SATURDAY', 'SUNDAY'],
+		startTime: '08:00',
+		endTime: '16:00',
 		salaryAmount: 280_000,
 		salaryType: 'DAILY',
 		// Three accepted students: two are reviewed and issued work records, and
@@ -600,7 +617,10 @@ async function seedJobRows(employerId: string, categoryIdsByName: Map<string, st
 			title: job.title,
 			description: job.description,
 			location: job.location,
-			schedule: job.schedule,
+			daysOfWeek: job.daysOfWeek,
+			startTime: job.startTime,
+			endTime: job.endTime,
+			scheduleNote: job.scheduleNote ?? null,
 			salaryAmount: job.salaryAmount,
 			salaryType: job.salaryType,
 			startDate: job.startDate ?? addDays(7),

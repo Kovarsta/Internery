@@ -26,6 +26,9 @@
 	<div>
 		<dt class="text-sm text-ink/60">Schedule</dt>
 		<dd class="mt-1 font-medium">{job.schedule}</dd>
+		{#if job.scheduleNote}
+			<p class="mt-1 text-sm text-ink/60">{job.scheduleNote}</p>
+		{/if}
 	</div>
 	<div>
 		<dt class="text-sm text-ink/60">Pay</dt>

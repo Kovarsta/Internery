@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import type { DayOfWeek } from '#lib/schedule.ts';
+import { formatSchedule, toClockTime } from '#lib/schedule.ts';
 import type { WorkRecordPayload } from '#lib/server/db/product.schema.ts';
 import type { UserRole } from './auth.ts';
 
@@ -109,6 +111,9 @@ export type JobSummarySource = {
 	id: string;
 	title: string;
 	location: string;
+	daysOfWeek: DayOfWeek[];
+	startTime: string;
+	endTime: string;
 	salaryAmount: number;
 	salaryType: SalaryType;
 	startDate: string;
@@ -133,6 +138,10 @@ export type JobSummary = {
 	title: string;
 	category: { id: string; name: string };
 	location: string;
+	schedule: string;
+	daysOfWeek: DayOfWeek[];
+	startTime: string;
+	endTime: string;
 	salaryAmount: number;
 	salaryType: SalaryType;
 	startDate: string;
@@ -226,13 +235,13 @@ export type MyJob = JobSummary & {
 
 export type JobDetailSource = JobSummarySource & {
 	description: string;
-	schedule: string;
+	scheduleNote: string | null;
 	isHidden: boolean;
 };
 
 export type JobDetail = JobSummary & {
 	description: string;
-	schedule: string;
+	scheduleNote: string | null;
 	acceptingApplications: boolean;
 	saved?: boolean;
 	myApplication?: Application | null;
@@ -401,6 +410,10 @@ export function toJobSummary(job: JobSummarySource): JobSummary {
 			name: job.categoryName
 		},
 		location: job.location,
+		schedule: formatSchedule(job.daysOfWeek, job.startTime, job.endTime),
+		daysOfWeek: job.daysOfWeek,
+		startTime: toClockTime(job.startTime),
+		endTime: toClockTime(job.endTime),
 		salaryAmount: job.salaryAmount,
 		salaryType: job.salaryType,
 		startDate: job.startDate,
@@ -447,7 +460,7 @@ export function toJobDetail(
 	const detail: JobDetail = {
 		...toJobSummary(job),
 		description: job.description,
-		schedule: job.schedule,
+		scheduleNote: job.scheduleNote,
 		acceptingApplications: job.status === 'HIRING'
 	};
 

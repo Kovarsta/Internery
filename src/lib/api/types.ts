@@ -1,5 +1,7 @@
 /** Response shapes the demo pages consume. Keep them aligned with `openapi.yaml`. */
 
+import type { DayOfWeek } from '#lib/schedule.ts';
+
 export type PageMeta = {
 	page: number;
 	pageSize: number;
@@ -42,6 +44,11 @@ export type JobSummary = {
 	title: string;
 	category: { id: string; name: string };
 	location: string;
+	/** Read-only summary derived from the structured schedule. */
+	schedule: string;
+	daysOfWeek: DayOfWeek[];
+	startTime: string;
+	endTime: string;
 	salaryAmount: number;
 	salaryType: SalaryType;
 	startDate: string;
@@ -78,7 +85,7 @@ export type Application = {
 
 export type JobDetail = JobSummary & {
 	description: string;
-	schedule: string;
+	scheduleNote: string | null;
 	acceptingApplications: boolean;
 	saved?: boolean;
 	myApplication?: Application | null;

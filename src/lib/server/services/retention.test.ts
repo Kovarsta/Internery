@@ -102,14 +102,20 @@ describe.skipIf(!testDatabase)('retention', () => {
 			name: `Retention ${categoryId}`
 		});
 
-		const job = (id: string, title: string, completedAt: Date) => ({
+		const job = (
+			id: string,
+			title: string,
+			completedAt: Date
+		): typeof schema.jobs.$inferInsert => ({
 			id,
 			employerId,
 			categoryId,
 			title,
 			description: `${title} fixture.`,
 			location: 'Hanoi',
-			schedule: 'Mornings',
+			daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+			startTime: '06:00',
+			endTime: '10:00',
 			salaryAmount: 30_000,
 			salaryType: 'HOURLY' as const,
 			startDate: '2024-01-01',

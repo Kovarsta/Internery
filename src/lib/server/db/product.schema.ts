@@ -12,6 +12,7 @@ import {
 	primaryKey,
 	smallint,
 	text,
+	time,
 	timestamp,
 	unique,
 	uniqueIndex,
@@ -46,6 +47,15 @@ export const employerVerification = pgEnum('employer_verification', [
 	'REJECTED'
 ]);
 export const salaryType = pgEnum('salary_type', ['HOURLY', 'DAILY', 'FIXED']);
+export const dayOfWeek = pgEnum('day_of_week', [
+	'MONDAY',
+	'TUESDAY',
+	'WEDNESDAY',
+	'THURSDAY',
+	'FRIDAY',
+	'SATURDAY',
+	'SUNDAY'
+]);
 export const jobStatus = pgEnum('job_status', ['HIRING', 'FILLED', 'COMPLETED', 'CANCELLED']);
 export const applicationStatus = pgEnum('application_status', [
 	'PENDING',
@@ -215,7 +225,14 @@ export const jobs = pgTable(
 		title: varchar({ length: 200 }).notNull(),
 		description: text().notNull(),
 		location: varchar({ length: 300 }).notNull(),
-		schedule: text().notNull(), // working time, free text for v1
+		// One recurring weekly pattern. `schedule` text is derived from these
+		// values when a job is read, never stored, so display and filters match.
+		daysOfWeek: dayOfWeek().array().notNull(),
+		startTime: time().notNull(),
+		endTime: time().notNull(),
+		// Free text for anything the pattern cannot express; never used for
+		// matching or filtering.
+		scheduleNote: text(),
 		salaryAmount: integer().notNull(), // VND
 		salaryType: salaryType().notNull(),
 		startDate: date({ mode: 'string' }).notNull(),
@@ -240,6 +257,10 @@ export const jobs = pgTable(
 	(t) => [
 		check('jobs_positions_chk', sql`${t.positionsNeeded} >= 1`),
 		check('jobs_salary_chk', sql`${t.salaryAmount} > 0`),
+		// A job must run on at least one day, and a same-day shift must end
+		// after it starts. Overnight shifts are not modelled yet.
+		check('jobs_schedule_days_chk', sql`cardinality(${t.daysOfWeek}) > 0`),
+		check('jobs_schedule_times_chk', sql`${t.startTime} < ${t.endTime}`),
 		// Spec rule: end_date later than start_date (a 1-day shift would need >= ; see README open questions)
 		check('jobs_dates_chk', sql`${t.endDate} > ${t.startDate}`),
 		// Full-text search (AC-09.1). 'simple' config: Vietnamese has no stemmer.

@@ -5,6 +5,7 @@
  * accepted applicants cannot be deleted.
  */
 import { and, eq } from 'drizzle-orm';
+import { toClockTime } from '#lib/schedule.ts';
 import { DomainError } from '#lib/server/api/errors.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { applications, jobs } from '#lib/server/db/product.schema.ts';
@@ -18,7 +19,10 @@ export type NewJobInput = {
 	categoryId: string;
 	description: string;
 	location: string;
-	schedule: string;
+	daysOfWeek: JobRecord['daysOfWeek'];
+	startTime: string;
+	endTime: string;
+	scheduleNote?: string | null;
 	salaryAmount: number;
 	salaryType: JobRecord['salaryType'];
 	startDate: string;
@@ -54,7 +58,10 @@ export async function createJob(
 			categoryId: input.categoryId,
 			description: input.description,
 			location: input.location,
-			schedule: input.schedule,
+			daysOfWeek: input.daysOfWeek,
+			startTime: input.startTime,
+			endTime: input.endTime,
+			scheduleNote: input.scheduleNote ?? null,
 			salaryAmount: input.salaryAmount,
 			salaryType: input.salaryType,
 			startDate: input.startDate,
@@ -113,7 +120,9 @@ export async function updateJob(
 				title: jobs.title,
 				description: jobs.description,
 				startDate: jobs.startDate,
-				endDate: jobs.endDate
+				endDate: jobs.endDate,
+				startTime: jobs.startTime,
+				endTime: jobs.endTime
 			})
 			.from(jobs)
 			.where(eq(jobs.id, jobId))
@@ -138,6 +147,15 @@ export async function updateJob(
 
 		if (endDate <= startDate) {
 			throw validationError('endDate', 'endDate must be after startDate.');
+		}
+
+		// The update may move one side of the clock range, so compare the
+		// effective values, normalised to the same `HH:MM` form.
+		const startTime = input.startTime ?? toClockTime(job.startTime);
+		const endTime = input.endTime ?? toClockTime(job.endTime);
+
+		if (endTime <= startTime) {
+			throw validationError('endTime', 'endTime must be after startTime.');
 		}
 
 		const title = input.title ?? job.title;

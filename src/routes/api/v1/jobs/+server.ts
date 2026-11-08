@@ -2,7 +2,7 @@ import type { RequestHandler } from './$types';
 import { z } from 'zod';
 import { requireRole } from '#lib/server/api/auth.ts';
 import { handleApiError } from '#lib/server/api/errors.ts';
-import { hasOrderedDates, jobFields } from '#lib/server/api/job-fields.ts';
+import { hasOrderedDates, hasOrderedTimes, jobFields } from '#lib/server/api/job-fields.ts';
 import { toJobDetail, toJobSummary } from '#lib/server/api/mappers.ts';
 import { paged, parsePagination } from '#lib/server/api/pagination.ts';
 import { parseJson, parseQuery } from '#lib/server/api/validation.ts';
@@ -53,7 +53,14 @@ const querySchema = z
 /** Job fields enforced by the contract; `endDate` must be strictly after `startDate`. */
 const createJobSchema = z
 	.object(jobFields)
-	.refine(hasOrderedDates, { path: ['endDate'], message: 'endDate must be after startDate.' });
+	.refine(hasOrderedDates, {
+		path: ['endDate'],
+		message: 'endDate must be after startDate.'
+	})
+	.refine(hasOrderedTimes, {
+		path: ['endTime'],
+		message: 'endTime must be after startTime.'
+	});
 
 /** GET /jobs — searchJobs */
 export const GET: RequestHandler = async (event) => {

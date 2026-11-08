@@ -22,6 +22,9 @@ export type JobSummaryRecord = {
 	id: string;
 	title: string;
 	location: string;
+	daysOfWeek: JobRecord['daysOfWeek'];
+	startTime: string;
+	endTime: string;
 	salaryAmount: number;
 	salaryType: JobRecord['salaryType'];
 	startDate: string;
@@ -81,6 +84,9 @@ export const jobSummarySelection = {
 	id: jobs.id,
 	title: jobs.title,
 	location: jobs.location,
+	daysOfWeek: jobs.daysOfWeek,
+	startTime: jobs.startTime,
+	endTime: jobs.endTime,
 	salaryAmount: jobs.salaryAmount,
 	salaryType: jobs.salaryType,
 	startDate: jobs.startDate,
@@ -117,7 +123,7 @@ export const myJobSelection = {
 export const jobDetailSelection = {
 	...jobSummarySelection,
 	description: jobs.description,
-	schedule: jobs.schedule,
+	scheduleNote: jobs.scheduleNote,
 	isHidden: jobs.isHidden
 };
 
@@ -129,7 +135,7 @@ export type MyJobRecord = JobSummaryRecord & {
 
 export type JobDetailRecord = JobSummaryRecord & {
 	description: string;
-	schedule: string;
+	scheduleNote: string | null;
 	isHidden: boolean;
 };
 

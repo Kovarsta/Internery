@@ -14,6 +14,7 @@
 	import { Textarea } from '#lib/components/ui/textarea/index.ts';
 	import type { Category } from '#lib/api/types.ts';
 	import type { JobFormValues } from '#lib/job-form.ts';
+	import { DAY_OF_WEEK_LABELS, DAY_OF_WEEK_VALUES } from '#lib/schedule.ts';
 
 	type Props = {
 		categories: Category[];
@@ -67,14 +68,42 @@
 		/>
 	</div>
 
+	<fieldset class="sm:col-span-2">
+		<legend class="mb-2 text-sm font-medium">Working days</legend>
+		<div class="flex flex-wrap gap-x-5 gap-y-2">
+			{#each DAY_OF_WEEK_VALUES as day (day)}
+				<label class="flex items-center gap-2 text-sm">
+					<input
+						class="size-4 accent-ink"
+						type="checkbox"
+						name="daysOfWeek"
+						value={day}
+						checked={values.daysOfWeek.includes(day)}
+					/>
+					{DAY_OF_WEEK_LABELS[day]}
+				</label>
+			{/each}
+		</div>
+	</fieldset>
+
+	<div>
+		<Label class="mb-1" for="job-start-time">Start time</Label>
+		<Input id="job-start-time" name="startTime" required type="time" value={values.startTime} />
+	</div>
+
+	<div>
+		<Label class="mb-1" for="job-end-time">End time</Label>
+		<Input id="job-end-time" name="endTime" required type="time" value={values.endTime} />
+	</div>
+
 	<div class="sm:col-span-2">
-		<Label class="mb-1" for="job-schedule">Schedule</Label>
+		<Label class="mb-1" for="job-schedule-note">Schedule note (optional)</Label>
 		<Input
-			id="job-schedule"
-			name="schedule"
-			placeholder="Saturday and Sunday, 08:00-12:00"
-			required
-			value={values.schedule}
+			id="job-schedule-note"
+			name="scheduleNote"
+			maxlength={300}
+			placeholder="Anything else about the hours, for example split shifts"
+			value={values.scheduleNote}
 		/>
 	</div>
 

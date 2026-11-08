@@ -131,14 +131,16 @@ describe.skipIf(!testDatabase)('applications', () => {
 			cvSizeBytes: 1024
 		});
 
-		const job = (id: string, title: string) => ({
+		const job = (id: string, title: string): typeof schema.jobs.$inferInsert => ({
 			id,
 			employerId,
 			categoryId,
 			title,
 			description: `${title} fixture.`,
 			location: 'Hanoi',
-			schedule: 'Mornings',
+			daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+			startTime: '06:00',
+			endTime: '10:00',
 			salaryAmount: 30_000,
 			salaryType: 'HOURLY' as const,
 			startDate: '2026-11-01',

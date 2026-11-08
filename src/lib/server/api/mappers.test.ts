@@ -106,6 +106,9 @@ describe('toJobSummary', () => {
 		id: '5f0f2f5e-3a0b-4b0e-9f5a-1c2d3e4f5a6b',
 		title: 'Part-time barista',
 		location: 'Hanoi',
+		daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+		startTime: '06:00:00',
+		endTime: '10:00:00',
 		salaryAmount: 30_000,
 		salaryType: 'HOURLY',
 		startDate: '2026-11-01',
@@ -131,6 +134,10 @@ describe('toJobSummary', () => {
 			title: 'Part-time barista',
 			category: { id: job.categoryId, name: 'Food & Beverage' },
 			location: 'Hanoi',
+			schedule: 'Weekdays, 06:00-10:00',
+			daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+			startTime: '06:00',
+			endTime: '10:00',
 			salaryAmount: 30_000,
 			salaryType: 'HOURLY',
 			startDate: '2026-11-01',
@@ -421,6 +428,9 @@ const job: JobSummarySource = {
 	id: '5f0f2f5e-3a0b-4b0e-9f5a-1c2d3e4f5a6b',
 	title: 'Part-time barista',
 	location: 'Hanoi',
+	daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+	startTime: '06:00:00',
+	endTime: '10:00:00',
 	salaryAmount: 30_000,
 	salaryType: 'HOURLY',
 	startDate: '2026-11-01',
@@ -470,7 +480,7 @@ describe('toJobDetail', () => {
 	const detail: JobDetailSource = {
 		...job,
 		description: 'Serve coffee on weekends.',
-		schedule: 'Saturday and Sunday, 8:00-12:00',
+		scheduleNote: null,
 		isHidden: false
 	};
 
@@ -478,7 +488,7 @@ describe('toJobDetail', () => {
 		expect(toJobDetail(detail, null)).toEqual({
 			...toJobSummary(job),
 			description: 'Serve coffee on weekends.',
-			schedule: 'Saturday and Sunday, 8:00-12:00',
+			scheduleNote: null,
 			acceptingApplications: true
 		});
 	});
@@ -686,6 +696,9 @@ describe('toModerationItem', () => {
 		id: '20000000-0000-4000-8000-000000000005',
 		title: 'Weekend cafe assistant',
 		location: 'Hanoi',
+		daysOfWeek: ['SATURDAY', 'SUNDAY'],
+		startTime: '08:00:00',
+		endTime: '16:00:00',
 		salaryAmount: 280_000,
 		salaryType: 'DAILY',
 		startDate: '2026-09-05',

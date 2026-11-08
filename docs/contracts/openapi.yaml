@@ -1732,6 +1732,8 @@ components:
     OrgType: { type: string, enum: [COMPANY, INDIVIDUAL] }
     EmployerVerification: { type: string, enum: [UNVERIFIED, PENDING, VERIFIED, REJECTED] }
     SalaryType: { type: string, enum: [HOURLY, DAILY, FIXED] }
+    DayOfWeek:
+      { type: string, enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY] }
     JobStatus: { type: string, enum: [HIRING, FILLED, COMPLETED, CANCELLED] }
     ApplicationStatus: { type: string, enum: [PENDING, ACCEPTED, REJECTED, WITHDRAWN] }
     VerificationRequestStatus: { type: string, enum: [PENDING, APPROVED, REJECTED] }
@@ -1899,7 +1901,24 @@ components:
         categoryId: { type: string, format: uuid }
         description: { type: string, minLength: 1 }
         location: { type: string, minLength: 1, maxLength: 300 }
-        schedule: { type: string, minLength: 1, description: 'Working time, free text.' }
+        daysOfWeek:
+          type: array
+          minItems: 1
+          maxItems: 7
+          items: { $ref: '#/components/schemas/DayOfWeek' }
+          description: The days the recurring shift runs.
+        startTime:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: Local start time, HH:MM.
+        endTime:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: Local end time, HH:MM. Must be after startTime; overnight shifts are not supported.
+        scheduleNote:
+          type: [string, 'null']
+          maxLength: 300
+          description: Optional free text for details the pattern cannot express. Never used for matching.
         salaryAmount: { type: integer, exclusiveMinimum: 0, description: 'VND, greater than 0' }
         salaryType: { $ref: '#/components/schemas/SalaryType' }
         startDate: { type: string, format: date }
@@ -1915,7 +1934,9 @@ components:
               categoryId,
               description,
               location,
-              schedule,
+              daysOfWeek,
+              startTime,
+              endTime,
               salaryAmount,
               salaryType,
               startDate,
@@ -1935,6 +1956,10 @@ components:
           title,
           category,
           location,
+          schedule,
+          daysOfWeek,
+          startTime,
+          endTime,
           salaryAmount,
           salaryType,
           startDate,
@@ -1951,6 +1976,14 @@ components:
         title: { type: string }
         category: { $ref: '#/components/schemas/CategoryRef' }
         location: { type: string }
+        schedule:
+          type: string
+          description: Read-only summary derived from daysOfWeek, startTime and endTime.
+        daysOfWeek:
+          type: array
+          items: { $ref: '#/components/schemas/DayOfWeek' }
+        startTime: { type: string, description: 'HH:MM.' }
+        endTime: { type: string, description: 'HH:MM.' }
         salaryAmount: { type: integer }
         salaryType: { $ref: '#/components/schemas/SalaryType' }
         startDate: { type: string, format: date }
@@ -1971,10 +2004,10 @@ components:
       allOf:
         - $ref: '#/components/schemas/JobSummary'
         - type: object
-          required: [description, schedule, acceptingApplications]
+          required: [description, scheduleNote, acceptingApplications]
           properties:
             description: { type: string }
-            schedule: { type: string }
+            scheduleNote: { type: [string, 'null'] }
             acceptingApplications:
               { type: boolean, description: False when the job is not HIRING (AC-11.2). }
             saved: { type: boolean, description: Present for signed-in students. }

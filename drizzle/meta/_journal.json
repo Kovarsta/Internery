@@ -15,6 +15,20 @@
       "when": 1792587895234,
       "tag": "0001_fair_lightspeed",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794146604113,
+      "tag": "0002_worthless_hawkeye",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794146611702,
+      "tag": "0003_exotic_ben_parker",
+      "breakpoints": true
     }
   ]
 }

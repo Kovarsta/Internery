@@ -2,7 +2,7 @@ import type { RequestHandler } from './$types';
 import { z } from 'zod';
 import { requireRole } from '#lib/server/api/auth.ts';
 import { ApiError, handleApiError } from '#lib/server/api/errors.ts';
-import { hasOrderedDates, jobFields } from '#lib/server/api/job-fields.ts';
+import { hasOrderedDates, hasOrderedTimes, jobFields } from '#lib/server/api/job-fields.ts';
 import { toApplication, toJobDetail } from '#lib/server/api/mappers.ts';
 import { noStoreJson } from '#lib/server/api/responses.ts';
 import { parseJson, parseParams } from '#lib/server/api/validation.ts';
@@ -26,7 +26,8 @@ const updateJobSchema = z
 	.refine((job) => Object.keys(job).length > 0, {
 		message: 'Provide at least one field to update.'
 	})
-	.refine(hasOrderedDates, { path: ['endDate'], message: 'endDate must be after startDate.' });
+	.refine(hasOrderedDates, { path: ['endDate'], message: 'endDate must be after startDate.' })
+	.refine(hasOrderedTimes, { path: ['endTime'], message: 'endTime must be after startTime.' });
 
 /** GET /jobs/{jobId} — getJob */
 export const GET: RequestHandler = async (event) => {

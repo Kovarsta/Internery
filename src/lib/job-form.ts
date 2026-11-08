@@ -1,4 +1,10 @@
 import type { SalaryType } from '#lib/api/types.ts';
+import {
+	CLOCK_TIME_PATTERN,
+	DAY_OF_WEEK_VALUES,
+	type DayOfWeek,
+	sortDaysOfWeek
+} from '#lib/schedule.ts';
 
 /** The job form as strings, shared by the create and edit pages. */
 export type JobFormValues = {
@@ -6,7 +12,10 @@ export type JobFormValues = {
 	categoryId: string;
 	description: string;
 	location: string;
-	schedule: string;
+	daysOfWeek: DayOfWeek[];
+	startTime: string;
+	endTime: string;
+	scheduleNote: string;
 	salaryAmount: string;
 	salaryType: SalaryType;
 	startDate: string;
@@ -20,7 +29,10 @@ export const emptyJobFormValues: JobFormValues = {
 	categoryId: '',
 	description: '',
 	location: '',
-	schedule: '',
+	daysOfWeek: [],
+	startTime: '',
+	endTime: '',
+	scheduleNote: '',
 	salaryAmount: '',
 	salaryType: 'HOURLY',
 	startDate: '',
@@ -35,7 +47,10 @@ export function readJobForm(form: FormData): JobFormValues {
 		categoryId: readText(form.get('categoryId')),
 		description: readText(form.get('description')),
 		location: readText(form.get('location')),
-		schedule: readText(form.get('schedule')),
+		daysOfWeek: readDaysOfWeek(form.getAll('daysOfWeek')),
+		startTime: readText(form.get('startTime')),
+		endTime: readText(form.get('endTime')),
+		scheduleNote: readText(form.get('scheduleNote')),
 		salaryAmount: readText(form.get('salaryAmount')),
 		salaryType: readSalaryType(form.get('salaryType')),
 		startDate: readText(form.get('startDate')),
@@ -51,13 +66,30 @@ export function findJobFormProblem(values: JobFormValues): string | null {
 		values.categoryId,
 		values.description,
 		values.location,
-		values.schedule,
+		values.startTime,
+		values.endTime,
 		values.startDate,
 		values.endDate
 	];
 
 	if (required.some((value) => value === '')) {
 		return 'Fill in every field.';
+	}
+
+	if (values.daysOfWeek.length === 0) {
+		return 'Pick at least one working day.';
+	}
+
+	if (!CLOCK_TIME_PATTERN.test(values.startTime) || !CLOCK_TIME_PATTERN.test(values.endTime)) {
+		return 'Enter the start and end time as HH:MM.';
+	}
+
+	if (values.endTime <= values.startTime) {
+		return 'The end time must be after the start time.';
+	}
+
+	if (values.scheduleNote.length > 300) {
+		return 'The schedule note must be 300 characters or fewer.';
 	}
 
 	if (!isPositiveInteger(values.salaryAmount)) {
@@ -79,6 +111,7 @@ export function findJobFormProblem(values: JobFormValues): string | null {
 export function toJobPayload(values: JobFormValues) {
 	return {
 		...values,
+		scheduleNote: values.scheduleNote === '' ? null : values.scheduleNote,
 		salaryAmount: Number(values.salaryAmount),
 		positionsNeeded: Number(values.positionsNeeded)
 	};
@@ -86,6 +119,17 @@ export function toJobPayload(values: JobFormValues) {
 
 function readText(value: FormDataEntryValue | null): string {
 	return typeof value === 'string' ? value.trim() : '';
+}
+
+/** Keeps only known day values and puts them in Monday-first order. */
+function readDaysOfWeek(values: FormDataEntryValue[]): DayOfWeek[] {
+	const selected = values.filter(isDayOfWeek);
+
+	return sortDaysOfWeek(selected);
+}
+
+function isDayOfWeek(value: FormDataEntryValue): value is DayOfWeek {
+	return typeof value === 'string' && DAY_OF_WEEK_VALUES.includes(value as DayOfWeek);
 }
 
 function readSalaryType(value: FormDataEntryValue | null): SalaryType {
