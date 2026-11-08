@@ -23,6 +23,15 @@
 	} as const;
 
 	const year = new Date().getFullYear();
+
+	let mobileMenu = $state<HTMLDetailsElement>();
+
+	/** Closes the mobile menu after a link or the sign-out form is used. */
+	function closeMobileMenu() {
+		if (mobileMenu) {
+			mobileMenu.open = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -31,24 +40,24 @@
 
 <div class="flex min-h-screen flex-col">
 	<header class="sticky top-0 z-40 border-b border-rule bg-paper">
-		<nav class="mx-auto flex min-h-14 max-w-5xl flex-wrap items-center gap-4 px-4">
+		<nav class="mx-auto flex min-h-14 max-w-5xl items-center gap-4 px-4">
 			<a class="text-lg font-extrabold tracking-tight text-ink" href={resolve('')}>Internery</a>
-			<a class="text-sm text-ink/70 hover:text-ink" href={resolve('jobs')}>Jobs</a>
+			<a class="hidden text-sm text-ink/70 hover:text-ink sm:inline" href={resolve('jobs')}>Jobs</a>
 			<a class="hidden text-sm text-ink/70 hover:text-ink sm:inline" href={resolve('work-records')}>
 				Work records
 			</a>
 
-			<div class="ml-auto flex items-center gap-4">
+			<div class="ml-auto hidden items-center gap-4 sm:flex">
 				{#if data.user}
 					<a
-						class="max-w-28 truncate text-sm text-ink/60 hover:text-ink sm:max-w-40"
+						class="max-w-40 truncate text-sm text-ink/60 hover:text-ink"
 						href={resolve('me')}
 						title="My account"
 					>
 						{data.user.name}
 					</a>
 					<a
-						class="hidden text-sm text-ink/70 hover:text-ink sm:inline"
+						class="text-sm text-ink/70 hover:text-ink"
 						href={resolve(dashboardByRole[data.user.role])}
 					>
 						Dashboard
@@ -61,6 +70,78 @@
 					<Button href={resolve('register')} size="sm">Create account</Button>
 				{/if}
 			</div>
+
+			<details bind:this={mobileMenu} class="relative ml-auto sm:hidden">
+				<summary
+					class="cursor-pointer list-none rounded-md border border-rule px-3 py-1.5 text-sm font-medium [&::-webkit-details-marker]:hidden"
+				>
+					Menu
+				</summary>
+
+				<div
+					class="absolute right-0 z-50 mt-2 w-56 rounded-md border border-rule bg-paper p-2 shadow-lg"
+				>
+					<div class="flex flex-col">
+						<a
+							class="rounded px-3 py-2 text-sm hover:bg-black/5"
+							href={resolve('jobs')}
+							onclick={closeMobileMenu}
+						>
+							Jobs
+						</a>
+						<a
+							class="rounded px-3 py-2 text-sm hover:bg-black/5"
+							href={resolve('work-records')}
+							onclick={closeMobileMenu}
+						>
+							Work records
+						</a>
+
+						{#if data.user}
+							<div class="my-1 border-t border-rule"></div>
+							<a
+								class="truncate rounded px-3 py-2 text-sm font-medium hover:bg-black/5"
+								href={resolve('me')}
+								onclick={closeMobileMenu}
+								title="My account"
+							>
+								{data.user.name}
+							</a>
+							<a
+								class="rounded px-3 py-2 text-sm hover:bg-black/5"
+								href={resolve(dashboardByRole[data.user.role])}
+								onclick={closeMobileMenu}
+							>
+								Dashboard
+							</a>
+							<form method="POST" action={resolve('logout')} onsubmit={closeMobileMenu}>
+								<button
+									class="w-full rounded px-3 py-2 text-left text-sm text-ink/70 hover:bg-black/5 hover:text-ink"
+									type="submit"
+								>
+									Sign out
+								</button>
+							</form>
+						{:else}
+							<div class="my-1 border-t border-rule"></div>
+							<a
+								class="rounded px-3 py-2 text-sm hover:bg-black/5"
+								href={resolve('login')}
+								onclick={closeMobileMenu}
+							>
+								Sign in
+							</a>
+							<a
+								class="rounded px-3 py-2 text-sm font-medium text-chalk hover:bg-black/5"
+								href={resolve('register')}
+								onclick={closeMobileMenu}
+							>
+								Create account
+							</a>
+						{/if}
+					</div>
+				</div>
+			</details>
 		</nav>
 	</header>
 
