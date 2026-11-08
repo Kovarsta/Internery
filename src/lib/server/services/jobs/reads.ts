@@ -1,7 +1,8 @@
 /**
  * Job reads: public search, job detail and the employer's own job list.
  */
-import { and, count, desc, eq, gte, lte, sql, type SQL } from 'drizzle-orm';
+import { and, arrayOverlaps, count, desc, eq, gte, lte, or, sql, type SQL } from 'drizzle-orm';
+import { TIME_OF_DAY_RANGES, type TimeOfDay } from '#lib/schedule.ts';
 import { toLikePattern } from '#lib/server/api/sql.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { categories, employerProfiles, jobs } from '#lib/server/db/product.schema.ts';
@@ -138,11 +139,32 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 		conditions.push(lte(jobs.endDate, filters.endTo));
 	}
 
+	// OR within the selected days: a job matches when it runs on any of them.
+	if (filters.daysOfWeek !== undefined && filters.daysOfWeek.length > 0) {
+		conditions.push(arrayOverlaps(jobs.daysOfWeek, filters.daysOfWeek));
+	}
+
+	// OR within the selected blocks: a shift that spans two blocks matches both.
+	if (filters.timeOfDay !== undefined && filters.timeOfDay.length > 0) {
+		const timeOfDay = or(...filters.timeOfDay.map(timeOfDayCondition));
+
+		if (timeOfDay !== undefined) {
+			conditions.push(timeOfDay);
+		}
+	}
+
 	if (filters.verifiedOnly) {
 		conditions.push(eq(employerProfiles.verificationStatus, 'VERIFIED'));
 	}
 
 	return conditions;
+}
+
+/** Matches a shift that overlaps one time-of-day block. */
+function timeOfDayCondition(slot: TimeOfDay): SQL {
+	const range = TIME_OF_DAY_RANGES[slot];
+
+	return sql`${jobs.startTime} < ${range.to}::time and ${jobs.endTime} > ${range.from}::time`;
 }
 
 function orderFor(sort: JobSortOrder): SQL[] {

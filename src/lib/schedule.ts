@@ -43,6 +43,40 @@ const SHORT_DAY_LABELS: Record<DayOfWeek, string> = {
 /** `HH:MM`, the form the API and the forms use. */
 export const CLOCK_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+/** Coarse blocks used by the time-of-day filter and the form labels. */
+export const TIME_OF_DAY_VALUES = ['MORNING', 'AFTERNOON', 'EVENING'] as const;
+
+export type TimeOfDay = (typeof TIME_OF_DAY_VALUES)[number];
+
+export const TIME_OF_DAY_LABELS: Record<TimeOfDay, string> = {
+	MORNING: 'Morning',
+	AFTERNOON: 'Afternoon',
+	EVENING: 'Evening'
+};
+
+/**
+ * Half-open local-time ranges: `from` is inclusive, `to` exclusive.
+ *
+ * A job matches a block when its shift overlaps it, so the check is
+ * `startTime < to && endTime > from`. A 17:00-20:00 shift therefore matches
+ * both Afternoon and Evening.
+ */
+export const TIME_OF_DAY_RANGES: Record<TimeOfDay, { from: string; to: string }> = {
+	MORNING: { from: '05:00', to: '12:00' },
+	AFTERNOON: { from: '12:00', to: '18:00' },
+	EVENING: { from: '18:00', to: '22:00' }
+};
+
+/** True when a query or form value is a known day. */
+export function isDayOfWeek(value: string): value is DayOfWeek {
+	return DAY_OF_WEEK_VALUES.some((day) => day === value);
+}
+
+/** True when a query or form value is a known time-of-day block. */
+export function isTimeOfDay(value: string): value is TimeOfDay {
+	return TIME_OF_DAY_VALUES.some((slot) => slot === value);
+}
+
 /** Monday to Friday, reused by the day filters. */
 export const WEEKDAYS: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
 

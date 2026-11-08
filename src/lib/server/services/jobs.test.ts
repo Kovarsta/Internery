@@ -445,6 +445,82 @@ describe.skipIf(!testDatabase)('jobs', () => {
 		expect(page.items[0]?.employerVerificationStatus).toBe('VERIFIED');
 	});
 
+	it('matches a job that runs on any selected day', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const saturday = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			daysOfWeek: ['SATURDAY']
+		});
+		const monday = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			daysOfWeek: ['MONDAY']
+		});
+		const either = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			daysOfWeek: ['SATURDAY', 'MONDAY']
+		});
+
+		expect(saturday.items.map((job) => job.id)).toEqual([baristaJobId]);
+		expect(monday.items.map((job) => job.id)).toEqual([tutorJobId]);
+		expect(either.items.map((job) => job.id)).toEqual([tutorJobId, baristaJobId]);
+	});
+
+	it('matches a shift that overlaps the time-of-day block', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const morning = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			timeOfDay: ['MORNING']
+		});
+		const afternoon = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			timeOfDay: ['AFTERNOON']
+		});
+		const evening = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			timeOfDay: ['EVENING']
+		});
+
+		// The barista shift ends at 18:00, so it does not reach the evening block.
+		expect(morning.items.map((job) => job.id)).toEqual([baristaJobId]);
+		expect(afternoon.items.map((job) => job.id)).toEqual([baristaJobId]);
+		// The tutor starts exactly at 18:00, so it does not reach the afternoon block.
+		expect(evening.items.map((job) => job.id)).toEqual([tutorJobId]);
+	});
+
+	it('combines a day and a time-of-day filter with AND', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const match = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			daysOfWeek: ['SATURDAY'],
+			timeOfDay: ['MORNING']
+		});
+		const noMatch = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			daysOfWeek: ['SATURDAY'],
+			timeOfDay: ['EVENING']
+		});
+
+		expect(match.items.map((job) => job.id)).toEqual([baristaJobId]);
+		expect(noMatch.items).toEqual([]);
+	});
+
 	it('finds a hidden job by id and reports its state', async () => {
 		if (!testDatabase) {
 			return;

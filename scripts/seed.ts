@@ -363,6 +363,15 @@ const seedReviews: SeedReview[] = [
 		revieweeEmail: 'linh@internery.local',
 		rating: 4,
 		comment: 'Friendly with customers and always on time.'
+	},
+	{
+		// The only student-to-employer review, so the job cards have a rating.
+		id: '50000000-0000-4000-8000-000000000003',
+		jobId: seedJobs[4].id,
+		reviewerEmail: 'student@internery.local',
+		revieweeEmail: 'employer@internery.local',
+		rating: 5,
+		comment: 'Clear instructions and paid on time.'
 	}
 ];
 
@@ -554,7 +563,10 @@ async function seedProfiles(userIdsByEmail: Map<string, string>) {
 		address: '12 Nguyen Trai, Hanoi',
 		contactPhone: '0900000003',
 		verificationStatus: 'VERIFIED' as const,
-		verifiedAt: new Date()
+		verifiedAt: new Date(),
+		// Matches the student-to-employer review below, so cards show a rating.
+		ratingAvg: 5,
+		ratingCount: 1
 	};
 
 	await db

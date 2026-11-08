@@ -412,6 +412,22 @@ paths:
             schema: { type: string, maxLength: 100 },
             description: Substring match
           }
+        - name: dayOfWeek
+          in: query
+          description: Comma-separated days; a job matches when it runs on at least one.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: '#/components/schemas/DayOfWeek' }
+        - name: timeOfDay
+          in: query
+          description: Comma-separated blocks; a job matches when its shift overlaps at least one.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: '#/components/schemas/TimeOfDay' }
         - { name: salaryMin, in: query, schema: { type: integer, minimum: 0 } }
         - { name: salaryMax, in: query, schema: { type: integer, minimum: 0 } }
         - {
@@ -1734,6 +1750,12 @@ components:
     SalaryType: { type: string, enum: [HOURLY, DAILY, FIXED] }
     DayOfWeek:
       { type: string, enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY] }
+    TimeOfDay:
+      type: string
+      enum: [MORNING, AFTERNOON, EVENING]
+      description: |
+        Morning is 05:00-12:00, afternoon 12:00-18:00 and evening 18:00-22:00,
+        local time. The end is exclusive.
     JobStatus: { type: string, enum: [HIRING, FILLED, COMPLETED, CANCELLED] }
     ApplicationStatus: { type: string, enum: [PENDING, ACCEPTED, REJECTED, WITHDRAWN] }
     VerificationRequestStatus: { type: string, enum: [PENDING, APPROVED, REJECTED] }

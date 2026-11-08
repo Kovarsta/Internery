@@ -8,12 +8,25 @@ import { paged, parsePagination } from '#lib/server/api/pagination.ts';
 import { parseJson, parseQuery } from '#lib/server/api/validation.ts';
 import { db } from '#lib/server/db/index.ts';
 import { createJob, searchOpenJobs } from '#lib/server/services/jobs.ts';
+import { DAY_OF_WEEK_VALUES, TIME_OF_DAY_VALUES } from '#lib/schedule.ts';
 
 /** Treats an empty query value as absent before coercing to an integer. */
 const optionalAmount = z.preprocess(
 	(value) => (value === '' ? undefined : value),
 	z.coerce.number().int().min(0).optional()
 );
+
+/** Splits one comma-separated query value; a blank value means absent. */
+function commaSeparated(value: unknown): string[] | undefined {
+	if (typeof value !== 'string' || value.trim() === '') {
+		return undefined;
+	}
+
+	return value
+		.split(',')
+		.map((entry) => entry.trim())
+		.filter((entry) => entry !== '');
+}
 
 const querySchema = z
 	.object({
@@ -30,6 +43,8 @@ const querySchema = z
 			.max(100)
 			.optional()
 			.transform((value) => (value ? value : undefined)),
+		dayOfWeek: z.preprocess(commaSeparated, z.array(z.enum(DAY_OF_WEEK_VALUES)).optional()),
+		timeOfDay: z.preprocess(commaSeparated, z.array(z.enum(TIME_OF_DAY_VALUES)).optional()),
 		salaryMin: optionalAmount,
 		salaryMax: optionalAmount,
 		startFrom: z.iso.date().optional(),
@@ -72,6 +87,8 @@ export const GET: RequestHandler = async (event) => {
 			query: query.q,
 			categoryId: query.categoryId,
 			location: query.location,
+			daysOfWeek: query.dayOfWeek,
+			timeOfDay: query.timeOfDay,
 			salaryMin: query.salaryMin,
 			salaryMax: query.salaryMax,
 			startFrom: query.startFrom,

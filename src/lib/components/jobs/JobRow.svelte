@@ -2,8 +2,8 @@
 	/**
 	 * One job row for `/jobs`.
 	 *
-	 * Time comes first: the date range and remaining positions sit in their own column, so a
-	 * student scans by when the work happens before reading the title.
+	 * Time comes first: the date range, the weekly schedule and remaining positions sit in their
+	 * own column, so a student scans by when the work happens before reading the title.
 	 */
 
 	import { resolve } from '$app/paths';
@@ -15,11 +15,22 @@
 	let { job, children }: { job: JobSummary; children?: Snippet } = $props();
 
 	const href = $derived(resolve(`jobs/${encodeURIComponent(job.id)}`));
+
+	const ratingLabel = $derived.by(() => {
+		if (job.employer.ratingCount === 0) {
+			return null;
+		}
+
+		const reviews = job.employer.ratingCount === 1 ? 'review' : 'reviews';
+
+		return `${job.employer.ratingAvg.toFixed(1)}/5 · ${job.employer.ratingCount} ${reviews}`;
+	});
 </script>
 
 <article class="grid gap-4 py-5 sm:grid-cols-[11rem_1fr_auto] sm:items-start">
 	<div class="text-sm">
 		<p class="font-medium">{formatDateRange(job.startDate, job.endDate)}</p>
+		<p class="mt-1 text-ink/70">{job.schedule}</p>
 		<p class="mt-1 text-ink/60">{formatPositionsRemaining(job.positionsRemaining)}</p>
 	</div>
 
@@ -29,6 +40,9 @@
 		</h3>
 		<p class="mt-1 text-sm text-ink/70">
 			{job.employer.orgName}
+			{#if ratingLabel}
+				<span class="ml-2 text-ink/60">{ratingLabel}</span>
+			{/if}
 			{#if job.employer.verified}
 				<Badge class="ml-2 bg-chalk/10 text-chalk" variant="ghost">Verified</Badge>
 			{/if}

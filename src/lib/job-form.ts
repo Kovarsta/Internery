@@ -1,10 +1,5 @@
 import type { SalaryType } from '#lib/api/types.ts';
-import {
-	CLOCK_TIME_PATTERN,
-	DAY_OF_WEEK_VALUES,
-	type DayOfWeek,
-	sortDaysOfWeek
-} from '#lib/schedule.ts';
+import { CLOCK_TIME_PATTERN, type DayOfWeek, isDayOfWeek, sortDaysOfWeek } from '#lib/schedule.ts';
 
 /** The job form as strings, shared by the create and edit pages. */
 export type JobFormValues = {
@@ -123,13 +118,15 @@ function readText(value: FormDataEntryValue | null): string {
 
 /** Keeps only known day values and puts them in Monday-first order. */
 function readDaysOfWeek(values: FormDataEntryValue[]): DayOfWeek[] {
-	const selected = values.filter(isDayOfWeek);
+	const selected: DayOfWeek[] = [];
+
+	for (const value of values) {
+		if (typeof value === 'string' && isDayOfWeek(value)) {
+			selected.push(value);
+		}
+	}
 
 	return sortDaysOfWeek(selected);
-}
-
-function isDayOfWeek(value: FormDataEntryValue): value is DayOfWeek {
-	return typeof value === 'string' && DAY_OF_WEEK_VALUES.includes(value as DayOfWeek);
 }
 
 function readSalaryType(value: FormDataEntryValue | null): SalaryType {

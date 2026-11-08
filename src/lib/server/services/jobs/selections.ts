@@ -5,6 +5,7 @@
  * them out of the public service API.
  */
 import { sql, type SQL } from 'drizzle-orm';
+import type { DayOfWeek, TimeOfDay } from '#lib/schedule.ts';
 import {
 	applications,
 	categories,
@@ -157,6 +158,8 @@ export type JobSearchFilters = {
 	query?: string;
 	categoryId?: string;
 	location?: string;
+	daysOfWeek?: DayOfWeek[];
+	timeOfDay?: TimeOfDay[];
 	salaryMin?: number;
 	salaryMax?: number;
 	startFrom?: string;
