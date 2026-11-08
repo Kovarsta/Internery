@@ -112,7 +112,7 @@ describe.skipIf(!testDatabase)('retention', () => {
 			categoryId,
 			title,
 			description: `${title} fixture.`,
-			location: 'Hanoi',
+			locationId: '80000000-0000-4000-8000-000000000001',
 			daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 			startTime: '06:00',
 			endTime: '10:00',

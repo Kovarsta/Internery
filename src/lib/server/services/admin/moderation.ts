@@ -14,6 +14,7 @@ import {
 	categories,
 	employerProfiles,
 	jobs,
+	locations,
 	notifications,
 	reports
 } from '#lib/server/db/product.schema.ts';
@@ -97,6 +98,7 @@ export async function listModerationQueue(
 			.select(moderationSelection)
 			.from(jobs)
 			.innerJoin(categories, eq(categories.id, jobs.categoryId))
+			.innerJoin(locations, eq(locations.id, jobs.locationId))
 			.leftJoin(employerProfiles, eq(employerProfiles.userId, jobs.employerId))
 			.where(filters)
 			.orderBy(asc(jobs.createdAt), asc(jobs.id))

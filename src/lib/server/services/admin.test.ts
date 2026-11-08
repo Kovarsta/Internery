@@ -135,7 +135,7 @@ describe.skipIf(!testDatabase)('admin users and categories', () => {
 			categoryId: created.id,
 			title: 'Category test job',
 			description: 'Created by the admin service test.',
-			location: 'Test',
+			locationId: '80000000-0000-4000-8000-000000000001',
 			daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 			startTime: '18:00',
 			endTime: '21:00',

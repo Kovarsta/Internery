@@ -16,7 +16,7 @@ describe('readJobBrowseFilters', () => {
 		expect(readJobBrowseFilters(params)).toEqual({
 			query: 'barista',
 			categoryId: undefined,
-			location: undefined,
+			locationId: undefined,
 			daysOfWeek: ['MONDAY', 'FRIDAY'],
 			timeOfDay: ['MORNING', 'EVENING'],
 			sort: 'newest',
@@ -39,14 +39,14 @@ describe('readJobBrowseFilters', () => {
 	it('treats blank values as absent', () => {
 		const params = new URLSearchParams([
 			['q', '  '],
-			['location', ''],
+			['locationId', ''],
 			['dayOfWeek', '']
 		]);
 
 		const filters = readJobBrowseFilters(params);
 
 		expect(filters.query).toBeUndefined();
-		expect(filters.location).toBeUndefined();
+		expect(filters.locationId).toBeUndefined();
 		expect(filters.daysOfWeek).toEqual([]);
 	});
 });
@@ -56,7 +56,7 @@ describe('toJobSearchQuery', () => {
 		const query = toJobSearchQuery({
 			query: 'tutor',
 			categoryId: '5f0f2f5e-3a0b-4b0e-9f5a-1c2d3e4f5a6b',
-			location: 'Hanoi',
+			locationId: '80000000-0000-4000-8000-000000000001',
 			daysOfWeek: ['MONDAY', 'WEDNESDAY'],
 			timeOfDay: ['EVENING'],
 			sort: 'salary_desc',
@@ -85,7 +85,7 @@ describe('toJobSearchQuery', () => {
 describe('toJobsHref', () => {
 	const jobsPath = '/jobs' as ResolvedPathname;
 	const filters: JobBrowseFilters = {
-		location: 'Hanoi',
+		locationId: '80000000-0000-4000-8000-000000000001',
 		daysOfWeek: ['SATURDAY'],
 		timeOfDay: ['MORNING'],
 		sort: 'newest',
@@ -94,14 +94,14 @@ describe('toJobsHref', () => {
 
 	it('keeps every filter except the changed one', () => {
 		expect(toJobsHref(jobsPath, filters, { timeOfDay: [] })).toBe(
-			'/jobs?location=Hanoi&dayOfWeek=SATURDAY'
+			'/jobs?locationId=80000000-0000-4000-8000-000000000001&dayOfWeek=SATURDAY'
 		);
 	});
 
 	it('returns the bare path when every filter is removed', () => {
 		expect(
 			toJobsHref(jobsPath, filters, {
-				location: undefined,
+				locationId: undefined,
 				daysOfWeek: [],
 				timeOfDay: []
 			})

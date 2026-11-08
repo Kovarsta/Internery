@@ -1081,7 +1081,7 @@ async function seedVerificationRows(userIdsByEmail: Map<string, string>) {
 		.onConflictDoUpdate({ target: schema.verificationRequests.id, set: values });
 }
 
-async function seedLocationRows() {
+async function seedLocationRows(): Promise<Map<string, string>> {
 	for (const location of seedLocations) {
 		const searchText = normalizeSearchText(
 			[location.name, location.displayName, location.countryName, ...location.aliases].join(' ')
@@ -1094,6 +1094,12 @@ async function seedLocationRows() {
 			.values(values)
 			.onConflictDoUpdate({ target: schema.locations.id, set: values });
 	}
+
+	const stored = await db
+		.select({ id: schema.locations.id, name: schema.locations.name })
+		.from(schema.locations);
+
+	return new Map(stored.map((location) => [location.name, location.id]));
 }
 
 async function seedCategoryRows(): Promise<Map<string, string>> {
@@ -1106,14 +1112,23 @@ async function seedCategoryRows(): Promise<Map<string, string>> {
 	return new Map(stored.map((category) => [category.name, category.id]));
 }
 
-async function seedJobRows(employerId: string, categoryIdsByName: Map<string, string>) {
+async function seedJobRows(
+	employerId: string,
+	categoryIdsByName: Map<string, string>,
+	locationIdsByName: Map<string, string>
+) {
 	const hour = 60 * 60 * 1000;
 
 	for (const [index, job] of seedJobs.entries()) {
 		const categoryId = categoryIdsByName.get(job.categoryName);
+		const locationId = locationIdsByName.get(job.location);
 
 		if (!categoryId) {
 			throw new Error(`Missing category ${job.categoryName}.`);
+		}
+
+		if (!locationId) {
+			throw new Error(`Missing location ${job.location}.`);
 		}
 
 		const isCompleted = job.status === 'COMPLETED';
@@ -1127,7 +1142,7 @@ async function seedJobRows(employerId: string, categoryIdsByName: Map<string, st
 			categoryId,
 			title: job.title,
 			description: job.description,
-			location: job.location,
+			locationId,
 			daysOfWeek: job.daysOfWeek,
 			startTime: job.startTime,
 			endTime: job.endTime,
@@ -1309,9 +1324,9 @@ async function main() {
 	await seedVerificationRows(userIdsByEmail);
 
 	const employerId = requireUserId(userIdsByEmail, 'employer@internery.local');
-	await seedLocationRows();
 	const categoryIdsByName = await seedCategoryRows();
-	await seedJobRows(employerId, categoryIdsByName);
+	const locationIdsByName = await seedLocationRows();
+	await seedJobRows(employerId, categoryIdsByName, locationIdsByName);
 	await seedApplicationRows(userIdsByEmail);
 	await seedReviewRows(userIdsByEmail);
 	await seedWorkRecordRows(userIdsByEmail);

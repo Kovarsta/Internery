@@ -52,6 +52,16 @@ Enum job_status {
   CANCELLED
 }
 
+Enum day_of_week {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 Enum application_status {
   PENDING
   ACCEPTED
@@ -249,7 +259,7 @@ Table locations {
     search_text [type: gin, note: 'pg_trgm']
   }
 
-  Note: 'Canonical city/province rows. Jobs will reference this table by location_id.'
+  Note: 'Canonical city/province rows. Jobs reference this table by location_id.'
 }
 
 Table jobs {
@@ -258,8 +268,11 @@ Table jobs {
   category_id uuid [not null]
   title varchar(200) [not null]
   description text [not null]
-  location varchar(300) [not null]
-  schedule text [not null]
+  location_id uuid [not null]
+  days_of_week day_of_week[] [not null]
+  start_time time [not null]
+  end_time time [not null]
+  schedule_note text
   salary_amount integer [not null, note: 'VND, greater than 0.']
   salary_type salary_type [not null]
   start_date date [not null]
@@ -475,6 +488,7 @@ Ref: employer_profiles.user_id - users.id [delete: cascade]
 
 Ref: jobs.employer_id > users.id [delete: restrict]
 Ref: jobs.category_id > categories.id [delete: restrict]
+Ref: jobs.location_id > locations.id [delete: restrict]
 Ref: jobs.hidden_by > users.id [delete: set null]
 
 // Applications and saved jobs

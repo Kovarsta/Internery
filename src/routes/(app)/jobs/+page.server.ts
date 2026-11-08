@@ -1,5 +1,5 @@
-import { apiGet } from '#lib/api/client.ts';
-import type { Category, JobSummary, Paged } from '#lib/api/types.ts';
+import { apiGet, apiGetOptional } from '#lib/api/client.ts';
+import type { Category, JobSummary, Location, Paged } from '#lib/api/types.ts';
 import { readJobBrowseFilters, toJobSearchQuery } from '#lib/job-search.ts';
 import type { PageServerLoad } from './$types';
 
@@ -19,9 +19,12 @@ export const load: PageServerLoad = async (event) => {
 	query.set('page', String(page));
 	query.set('pageSize', String(PAGE_SIZE));
 
-	const [jobs, categories] = await Promise.all([
+	const [jobs, categories, location] = await Promise.all([
 		apiGet<Paged<JobSummary>>(event, `/api/v1/jobs?${query}`),
-		apiGet<Category[]>(event, '/api/v1/categories')
+		apiGet<Category[]>(event, '/api/v1/categories'),
+		filters.locationId
+			? apiGetOptional<Location>(event, `/api/v1/locations/${filters.locationId}`)
+			: Promise.resolve(null)
 	]);
 
 	const paginationQuery = new URLSearchParams(query);
@@ -30,6 +33,7 @@ export const load: PageServerLoad = async (event) => {
 	return {
 		jobs,
 		categories,
+		locationLabel: location?.name,
 		filters,
 		page,
 		pageSize: PAGE_SIZE,

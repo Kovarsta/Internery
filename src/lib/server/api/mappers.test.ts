@@ -105,6 +105,7 @@ describe('toJobSummary', () => {
 	const job: JobSummarySource = {
 		id: '5f0f2f5e-3a0b-4b0e-9f5a-1c2d3e4f5a6b',
 		title: 'Part-time barista',
+		locationId: '80000000-0000-4000-8000-000000000001',
 		location: 'Hanoi',
 		daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 		startTime: '06:00:00',
@@ -133,6 +134,7 @@ describe('toJobSummary', () => {
 			id: job.id,
 			title: 'Part-time barista',
 			category: { id: job.categoryId, name: 'Food & Beverage' },
+			locationId: '80000000-0000-4000-8000-000000000001',
 			location: 'Hanoi',
 			schedule: 'Weekdays, 06:00-10:00',
 			daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
@@ -427,6 +429,7 @@ describe('toEmployerProfile', () => {
 const job: JobSummarySource = {
 	id: '5f0f2f5e-3a0b-4b0e-9f5a-1c2d3e4f5a6b',
 	title: 'Part-time barista',
+	locationId: '80000000-0000-4000-8000-000000000001',
 	location: 'Hanoi',
 	daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 	startTime: '06:00:00',
@@ -695,6 +698,7 @@ describe('toModerationItem', () => {
 	const job: JobSummarySource = {
 		id: '20000000-0000-4000-8000-000000000005',
 		title: 'Weekend cafe assistant',
+		locationId: '80000000-0000-4000-8000-000000000001',
 		location: 'Hanoi',
 		daysOfWeek: ['SATURDAY', 'SUNDAY'],
 		startTime: '08:00:00',

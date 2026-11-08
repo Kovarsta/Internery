@@ -2,13 +2,14 @@
 	/**
 	 * Searchable single-select combobox.
 	 *
-	 * Used for category and location pickers. The list filters with Fuse.js, so a
-	 * typo still finds the option, while the submitted value is always the exact
-	 * option value. The caller decides whether an empty option is allowed.
+	 * Local mode (categories) filters `items` with Fuse.js. Remote mode
+	 * (locations) calls `search(query)` and never ships the full list. In both
+	 * cases the form receives the exact option value, never the typed text.
 	 */
 
 	import { Combobox } from 'bits-ui';
 	import Fuse from 'fuse.js';
+	import { untrack } from 'svelte';
 	import { cn } from '#lib/utils.js';
 
 	type SearchOption = {
@@ -19,7 +20,11 @@
 	};
 
 	type Props = {
-		items: SearchOption[];
+		items?: SearchOption[];
+		/** Remote search. When set, `items` and Fuse are not used. */
+		search?: (query: string) => Promise<SearchOption[]>;
+		/** Label for the current value when the options are not loaded yet. */
+		selectedLabel?: string;
 		name: string;
 		value?: string;
 		placeholder?: string;
@@ -31,7 +36,9 @@
 	};
 
 	let {
-		items,
+		items = [],
+		search,
+		selectedLabel = '',
 		name,
 		value = '',
 		placeholder = 'Search…',
@@ -42,44 +49,93 @@
 		class: className
 	}: Props = $props();
 
-	const options = $derived<SearchOption[]>(
-		allowEmpty ? [{ value: '', label: emptyLabel }, ...items] : items
-	);
-
-	const fuse = $derived(
-		new Fuse(options, {
-			keys: ['label', 'keywords'],
-			threshold: 0.35,
-			ignoreLocation: true,
-			minMatchCharLength: 1
-		})
-	);
-
+	let remoteItems = $state<SearchOption[]>([]);
 	// The effect below re-syncs when the parent reloads or resets the form.
 	// svelte-ignore state_referenced_locally
 	let selected = $state(value);
 	let query = $state('');
 	let open = $state(false);
+	let requestId = 0;
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-	const selectedLabel = $derived(options.find((option) => option.value === selected)?.label ?? '');
+	const baseOptions = $derived(search ? remoteItems : items);
+
+	const options = $derived<SearchOption[]>(
+		allowEmpty ? [{ value: '', label: emptyLabel }, ...baseOptions] : baseOptions
+	);
+
+	const fuse = $derived(
+		search
+			? null
+			: new Fuse(options, {
+					keys: ['label', 'keywords'],
+					threshold: 0.35,
+					ignoreLocation: true,
+					minMatchCharLength: 1
+				})
+	);
 
 	const matches = $derived.by(() => {
+		if (search) {
+			return options;
+		}
+
 		const text = query.trim();
 
-		return text === '' ? options : fuse.search(text).map((result) => result.item);
+		return text === '' ? options : (fuse?.search(text).map((result) => result.item) ?? []);
 	});
 
-	// Re-sync when the parent reloads or resets the form.
+	// Re-sync when the parent reloads or resets the form. The option lookup is
+	// untracked: remote results change on every keystroke and must not clear the
+	// query the person is typing.
 	$effect(() => {
 		selected = value;
-		query = options.find((option) => option.value === value)?.label ?? '';
+		query =
+			selectedLabel ||
+			untrack(() => options.find((option) => option.value === value)?.label) ||
+			'';
 	});
+
+	function currentLabel(): string {
+		return options.find((option) => option.value === selected)?.label ?? selectedLabel;
+	}
 
 	function handleOpenChange(nextOpen: boolean) {
 		open = nextOpen;
-		// Opening starts with an empty query so the whole list is visible.
-		// Closing restores the selected label instead of leaving a half-typed query.
-		query = nextOpen ? '' : selectedLabel;
+
+		if (nextOpen) {
+			query = '';
+
+			if (search) {
+				void loadOptions('');
+			}
+
+			return;
+		}
+
+		query = currentLabel();
+	}
+
+	async function loadOptions(text: string) {
+		if (!search) {
+			return;
+		}
+
+		const currentRequest = ++requestId;
+		const results = await search(text);
+
+		if (currentRequest === requestId) {
+			remoteItems = results;
+		}
+	}
+
+	function scheduleSearch(text: string) {
+		if (!search) {
+			return;
+		}
+
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => void loadOptions(text), 200);
 	}
 </script>
 
@@ -101,7 +157,10 @@
 		{placeholder}
 		{required}
 		onclick={() => handleOpenChange(true)}
-		oninput={(event) => (query = event.currentTarget.value)}
+		oninput={(event) => {
+			query = event.currentTarget.value;
+			scheduleSearch(query);
+		}}
 	/>
 
 	<Combobox.Portal>

@@ -7,6 +7,7 @@
 	 */
 
 	import type { ResolvedPathname } from '$app/types';
+	import LocationSelect from '#lib/components/LocationSelect.svelte';
 	import SearchSelect from '#lib/components/SearchSelect.svelte';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
@@ -22,9 +23,10 @@
 		values: JobFormValues;
 		submitLabel: string;
 		cancelHref: ResolvedPathname;
+		locationLabel?: string;
 	};
 
-	let { categories, values, submitLabel, cancelHref }: Props = $props();
+	let { categories, values, submitLabel, cancelHref, locationLabel = '' }: Props = $props();
 
 	const categoryOptions = $derived(
 		categories.map((category) => ({ value: category.id, label: category.name }))
@@ -55,7 +57,13 @@
 
 	<div>
 		<Label class="mb-1" for="job-location">Location</Label>
-		<Input id="job-location" name="location" required value={values.location} />
+		<LocationSelect
+			id="job-location"
+			name="locationId"
+			required
+			selectedLabel={locationLabel}
+			value={values.locationId}
+		/>
 	</div>
 
 	<div class="sm:col-span-2">

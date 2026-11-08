@@ -25,14 +25,27 @@
 <div class="mt-8 grid gap-6 lg:grid-cols-[18rem_1fr] lg:items-start">
 	<aside id="filters" class="scroll-mt-20 lg:sticky lg:top-20 lg:self-start">
 		<h2 class="mb-3 text-sm font-semibold">Filters</h2>
-		<JobFilters categories={data.categories} filters={data.filters} />
+		<JobFilters
+			categories={data.categories}
+			filters={data.filters}
+			locationLabel={data.locationLabel}
+		/>
 		<div class="mt-3 hidden lg:block">
-			<ActiveFilters categories={data.categories} filters={data.filters} />
+			<ActiveFilters
+				categories={data.categories}
+				filters={data.filters}
+				locationLabel={data.locationLabel}
+			/>
 		</div>
 	</aside>
 
 	<section>
-		<ActiveFilters categories={data.categories} filters={data.filters} variant="bar" />
+		<ActiveFilters
+			categories={data.categories}
+			filters={data.filters}
+			locationLabel={data.locationLabel}
+			variant="bar"
+		/>
 
 		<div class="flex items-baseline justify-between border-b border-rule pb-2">
 			<h2 class="text-base font-semibold">

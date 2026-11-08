@@ -115,7 +115,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 				categoryId,
 				title: 'Part-time barista',
 				description: 'Serve coffee on weekends.',
-				location: 'Hanoi',
+				locationId: '80000000-0000-4000-8000-000000000001',
 				daysOfWeek: ['SATURDAY', 'SUNDAY'],
 				startTime: '09:00',
 				endTime: '18:00',
@@ -132,7 +132,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 				categoryId,
 				title: 'Math tutor',
 				description: 'Help a grade 9 student with algebra.',
-				location: 'Saigon',
+				locationId: '80000000-0000-4000-8000-000000000002',
 				daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 				startTime: '18:00',
 				endTime: '21:00',
@@ -149,7 +149,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 				categoryId,
 				title: 'Cash handling assistant',
 				description: 'Reported by students.',
-				location: 'Hanoi',
+				locationId: '80000000-0000-4000-8000-000000000001',
 				daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 				startTime: '18:00',
 				endTime: '21:00',
@@ -167,7 +167,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 				categoryId,
 				title: 'Filled barista role',
 				description: 'Already filled.',
-				location: 'Hanoi',
+				locationId: '80000000-0000-4000-8000-000000000001',
 				daysOfWeek: ['SATURDAY', 'SUNDAY'],
 				startTime: '09:00',
 				endTime: '18:00',
@@ -185,7 +185,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 				categoryId: lifecycleCategoryId,
 				title: 'Job to cancel',
 				description: 'Lifecycle fixture.',
-				location: 'Hanoi',
+				locationId: '80000000-0000-4000-8000-000000000001',
 				daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 				startTime: '06:00',
 				endTime: '10:00',
@@ -201,7 +201,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 				categoryId: lifecycleCategoryId,
 				title: 'Filled job to cancel',
 				description: 'Lifecycle fixture.',
-				location: 'Hanoi',
+				locationId: '80000000-0000-4000-8000-000000000001',
 				daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 				startTime: '06:00',
 				endTime: '10:00',
@@ -218,7 +218,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 				categoryId: lifecycleCategoryId,
 				title: 'Job to complete',
 				description: 'Lifecycle fixture.',
-				location: 'Hanoi',
+				locationId: '80000000-0000-4000-8000-000000000001',
 				daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 				startTime: '06:00',
 				endTime: '10:00',
@@ -235,7 +235,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 				categoryId: lifecycleCategoryId,
 				title: 'Completed job',
 				description: 'Lifecycle fixture.',
-				location: 'Hanoi',
+				locationId: '80000000-0000-4000-8000-000000000001',
 				daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 				startTime: '06:00',
 				endTime: '10:00',
@@ -390,7 +390,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 		expect(byDescription.items.map((job) => job.id)).toEqual([tutorJobId]);
 	});
 
-	it('matches the location as a literal substring', async () => {
+	it('filters by canonical location id', async () => {
 		if (!testDatabase) {
 			return;
 		}
@@ -398,16 +398,22 @@ describe.skipIf(!testDatabase)('jobs', () => {
 		const hanoi = await searchOpenJobs(testDatabase, {
 			...defaultFilters,
 			categoryId,
-			location: 'hanoi'
+			locationId: '80000000-0000-4000-8000-000000000001'
 		});
-		const wildcard = await searchOpenJobs(testDatabase, {
+		const hoChiMinh = await searchOpenJobs(testDatabase, {
 			...defaultFilters,
 			categoryId,
-			location: '%'
+			locationId: '80000000-0000-4000-8000-000000000002'
+		});
+		const unknown = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			locationId: '80000000-0000-4000-8000-000000000099'
 		});
 
 		expect(hanoi.items.map((job) => job.id)).toEqual([baristaJobId]);
-		expect(wildcard.total).toBe(0);
+		expect(hoChiMinh.items.map((job) => job.id)).toEqual([tutorJobId]);
+		expect(unknown.total).toBe(0);
 	});
 
 	it('filters by salary range and sorts by salary', async () => {
@@ -550,7 +556,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 			title: 'Weekend stock assistant',
 			categoryId: draftCategoryId,
 			description: 'Arrange shelves on Saturday mornings.',
-			location: 'Da Nang',
+			locationId: '80000000-0000-4000-8000-000000000003',
 			daysOfWeek: ['SATURDAY'],
 			startTime: '08:00',
 			endTime: '12:00',
@@ -587,7 +593,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 			title: 'Việc nhẹ lương cao tại nhà',
 			categoryId: draftCategoryId,
 			description: 'Chỉ cần đặt cọc 200.000đ để nhận việc.',
-			location: 'Hanoi',
+			locationId: '80000000-0000-4000-8000-000000000001',
 			daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 			startTime: '08:00',
 			endTime: '17:00',
@@ -625,7 +631,7 @@ describe.skipIf(!testDatabase)('jobs', () => {
 				title: 'Stock assistant',
 				categoryId: inactiveCategoryId,
 				description: 'Arrange shelves.',
-				location: 'Hanoi',
+				locationId: '80000000-0000-4000-8000-000000000001',
 				daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 				startTime: '06:00',
 				endTime: '10:00',
@@ -638,6 +644,22 @@ describe.skipIf(!testDatabase)('jobs', () => {
 		).rejects.toMatchObject({
 			code: 'VALIDATION_ERROR',
 			details: [{ field: 'categoryId' }]
+		});
+	});
+
+	it('rejects a location that is not in the server list', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		await expect(
+			createJob(testDatabase, unverifiedEmployerId, {
+				...draftJob(),
+				locationId: randomUUID()
+			})
+		).rejects.toMatchObject({
+			code: 'VALIDATION_ERROR',
+			details: [{ field: 'locationId' }]
 		});
 	});
 
@@ -896,7 +918,7 @@ function draftJob(): NewJobInput {
 		title: 'Stock assistant',
 		categoryId: draftCategoryId,
 		description: 'Arrange shelves on Saturday mornings.',
-		location: 'Da Nang',
+		locationId: '80000000-0000-4000-8000-000000000003',
 		daysOfWeek: ['SATURDAY'],
 		startTime: '08:00',
 		endTime: '12:00',

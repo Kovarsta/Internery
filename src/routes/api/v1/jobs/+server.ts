@@ -37,12 +37,7 @@ const querySchema = z
 			.optional()
 			.transform((value) => (value ? value : undefined)),
 		categoryId: z.uuid().optional(),
-		location: z
-			.string()
-			.trim()
-			.max(100)
-			.optional()
-			.transform((value) => (value ? value : undefined)),
+		locationId: z.uuid().optional(),
 		dayOfWeek: z.preprocess(commaSeparated, z.array(z.enum(DAY_OF_WEEK_VALUES)).optional()),
 		timeOfDay: z.preprocess(commaSeparated, z.array(z.enum(TIME_OF_DAY_VALUES)).optional()),
 		salaryMin: optionalAmount,
@@ -86,7 +81,7 @@ export const GET: RequestHandler = async (event) => {
 		const { items, total } = await searchOpenJobs(db, {
 			query: query.q,
 			categoryId: query.categoryId,
-			location: query.location,
+			locationId: query.locationId,
 			daysOfWeek: query.dayOfWeek,
 			timeOfDay: query.timeOfDay,
 			salaryMin: query.salaryMin,

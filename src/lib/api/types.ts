@@ -18,6 +18,15 @@ export type Category = {
 	isActive: boolean;
 };
 
+export type Location = {
+	id: string;
+	name: string;
+	displayName: string;
+	countryCode: string;
+	countryName: string;
+	isRemote: boolean;
+};
+
 export type SalaryType = 'HOURLY' | 'DAILY' | 'FIXED';
 
 export type JobStatus = 'HIRING' | 'FILLED' | 'COMPLETED' | 'CANCELLED';
@@ -43,6 +52,7 @@ export type JobSummary = {
 	id: string;
 	title: string;
 	category: { id: string; name: string };
+	locationId: string;
 	location: string;
 	/** Read-only summary derived from the structured schedule. */
 	schedule: string;

@@ -11,6 +11,7 @@ import {
 	categories,
 	employerProfiles,
 	jobs,
+	locations,
 	notifications
 } from '#lib/server/db/product.schema.ts';
 
@@ -22,6 +23,7 @@ export type NotificationInsert = typeof notifications.$inferInsert;
 export type JobSummaryRecord = {
 	id: string;
 	title: string;
+	locationId: string;
 	location: string;
 	daysOfWeek: JobRecord['daysOfWeek'];
 	startTime: string;
@@ -84,7 +86,8 @@ function applicantCountExpression(): SQL<number> {
 export const jobSummarySelection = {
 	id: jobs.id,
 	title: jobs.title,
-	location: jobs.location,
+	locationId: jobs.locationId,
+	location: locations.name,
 	daysOfWeek: jobs.daysOfWeek,
 	startTime: jobs.startTime,
 	endTime: jobs.endTime,
@@ -157,7 +160,7 @@ export type JobSortOrder = 'newest' | 'salary_desc';
 export type JobSearchFilters = {
 	query?: string;
 	categoryId?: string;
-	location?: string;
+	locationId?: string;
 	daysOfWeek?: DayOfWeek[];
 	timeOfDay?: TimeOfDay[];
 	salaryMin?: number;

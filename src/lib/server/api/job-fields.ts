@@ -12,7 +12,7 @@ export const jobFields = {
 	title: z.string().trim().min(1).max(200),
 	categoryId: z.uuid(),
 	description: z.string().trim().min(1),
-	location: z.string().trim().min(1).max(300),
+	locationId: z.uuid(),
 	daysOfWeek: z.array(z.enum(DAY_OF_WEEK_VALUES)).min(1).max(7),
 	startTime: z.string().regex(CLOCK_TIME_PATTERN, 'Use HH:MM, for example 08:00.'),
 	endTime: z.string().regex(CLOCK_TIME_PATTERN, 'Use HH:MM, for example 17:00.'),

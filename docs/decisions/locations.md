@@ -53,5 +53,5 @@ data import, not a schema rewrite.
 - **No runtime address package.** `vietnam-address-database` and `vn-address-kit` are useful for
   generating data, but city-level search does not justify their runtime weight. Revisit for
   ward-level addresses.
-- **Jobs still store text at the time of this record.** The next slice adds `locationId`, backfills
-  the existing canonical names and drops the text column.
+- **Jobs now reference `locationId`.** Migration 0006 backfilled the canonical names and dropped
+  the text column; the API returns both the id and the derived display name.

@@ -1,7 +1,13 @@
 import { and, count, desc, eq } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
 import type { Database } from '#lib/server/db/types.ts';
-import { categories, employerProfiles, jobs, savedJobs } from '#lib/server/db/product.schema.ts';
+import {
+	categories,
+	employerProfiles,
+	jobs,
+	locations,
+	savedJobs
+} from '#lib/server/db/product.schema.ts';
 import { jobSummarySelection, type JobSummaryRecord } from './jobs.ts';
 
 export type SavedJobListOptions = {
@@ -73,6 +79,7 @@ export async function listSavedJobs(
 			.from(savedJobs)
 			.innerJoin(jobs, eq(savedJobs.jobId, jobs.id))
 			.innerJoin(categories, eq(categories.id, jobs.categoryId))
+			.innerJoin(locations, eq(locations.id, jobs.locationId))
 			.leftJoin(employerProfiles, eq(employerProfiles.userId, jobs.employerId))
 			.where(filters)
 			.orderBy(desc(savedJobs.createdAt), desc(jobs.id))

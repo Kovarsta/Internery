@@ -265,7 +265,9 @@ export const jobs = pgTable(
 			.references(() => categories.id, { onDelete: 'restrict' }),
 		title: varchar({ length: 200 }).notNull(),
 		description: text().notNull(),
-		location: varchar({ length: 300 }).notNull(),
+		locationId: uuid()
+			.notNull()
+			.references(() => locations.id, { onDelete: 'restrict' }),
 		// One recurring weekly pattern. `schedule` text is derived from these
 		// values when a job is read, never stored, so display and filters match.
 		daysOfWeek: dayOfWeek().array().notNull(),
@@ -317,6 +319,7 @@ export const jobs = pgTable(
 			.on(t.salaryAmount)
 			.where(sql`${t.status} = 'HIRING' AND NOT ${t.isHidden}`),
 		index('jobs_category_idx').on(t.categoryId),
+		index('jobs_location_idx').on(t.locationId),
 		index('jobs_employer_status_idx').on(t.employerId, t.status),
 		index('jobs_needs_review_idx')
 			.on(t.createdAt)

@@ -9,6 +9,7 @@
 
 	import { resolve } from '$app/paths';
 	import type { ResolvedPathname } from '$app/types';
+	import LocationSelect from '#lib/components/LocationSelect.svelte';
 	import SearchSelect from '#lib/components/SearchSelect.svelte';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.ts';
@@ -27,7 +28,11 @@
 		type DayOfWeek
 	} from '#lib/schedule.ts';
 
-	let { categories, filters }: { categories: Category[]; filters: JobBrowseFilters } = $props();
+	let {
+		categories,
+		filters,
+		locationLabel = ''
+	}: { categories: Category[]; filters: JobBrowseFilters; locationLabel?: string } = $props();
 
 	const categoryOptions = $derived(
 		categories.map((category) => ({ value: category.id, label: category.name }))
@@ -77,12 +82,13 @@
 
 		<div class="min-w-0">
 			<Label class="mb-1" for="job-location">Location</Label>
-			<Input
-				class="bg-card"
+			<LocationSelect
+				allowEmpty
+				emptyLabel="Any location"
 				id="job-location"
-				name="location"
-				placeholder="Hanoi"
-				value={filters.location ?? ''}
+				name="locationId"
+				selectedLabel={locationLabel}
+				value={filters.locationId ?? ''}
 			/>
 		</div>
 

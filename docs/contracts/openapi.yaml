@@ -453,10 +453,10 @@ paths:
         - { name: q, in: query, schema: { type: string, maxLength: 100 }, description: Keyword }
         - { name: categoryId, in: query, schema: { type: string, format: uuid } }
         - {
-            name: location,
+            name: locationId,
             in: query,
-            schema: { type: string, maxLength: 100 },
-            description: Substring match
+            schema: { type: string, format: uuid },
+            description: Exact canonical location id
           }
         - name: dayOfWeek
           in: query
@@ -1978,7 +1978,8 @@ components:
         title: { type: string, minLength: 1, maxLength: 200 }
         categoryId: { type: string, format: uuid }
         description: { type: string, minLength: 1 }
-        location: { type: string, minLength: 1, maxLength: 300 }
+        locationId:
+          { type: string, format: uuid, description: Canonical location id from `GET /locations`. }
         daysOfWeek:
           type: array
           minItems: 1
@@ -2011,7 +2012,7 @@ components:
               title,
               categoryId,
               description,
-              location,
+              locationId,
               daysOfWeek,
               startTime,
               endTime,
@@ -2033,6 +2034,7 @@ components:
           id,
           title,
           category,
+          locationId,
           location,
           schedule,
           daysOfWeek,
@@ -2053,7 +2055,8 @@ components:
         id: { type: string, format: uuid }
         title: { type: string }
         category: { $ref: '#/components/schemas/CategoryRef' }
-        location: { type: string }
+        locationId: { type: string, format: uuid }
+        location: { type: string, description: Canonical city name, derived from the location. }
         schedule:
           type: string
           description: Read-only summary derived from daysOfWeek, startTime and endTime.

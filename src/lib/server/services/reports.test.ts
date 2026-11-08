@@ -53,7 +53,7 @@ describe.skipIf(!testDatabase)('submitReport', () => {
 			categoryId,
 			title: 'Reported job',
 			description: 'Created by the reports service test.',
-			location: 'Test',
+			locationId: '80000000-0000-4000-8000-000000000001',
 			daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
 			startTime: '18:00',
 			endTime: '21:00',

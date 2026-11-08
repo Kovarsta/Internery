@@ -110,6 +110,7 @@ export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN
 export type JobSummarySource = {
 	id: string;
 	title: string;
+	locationId: string;
 	location: string;
 	daysOfWeek: DayOfWeek[];
 	startTime: string;
@@ -137,6 +138,7 @@ export type JobSummary = {
 	id: string;
 	title: string;
 	category: { id: string; name: string };
+	locationId: string;
 	location: string;
 	schedule: string;
 	daysOfWeek: DayOfWeek[];
@@ -409,6 +411,7 @@ export function toJobSummary(job: JobSummarySource): JobSummary {
 			id: job.categoryId,
 			name: job.categoryName
 		},
+		locationId: job.locationId,
 		location: job.location,
 		schedule: formatSchedule(job.daysOfWeek, job.startTime, job.endTime),
 		daysOfWeek: job.daysOfWeek,

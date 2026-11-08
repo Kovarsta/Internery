@@ -220,15 +220,15 @@ The readability rules above apply to every change. These are the project-specifi
 
 ## Domain map
 
-| Group       | Tables                                                        |
-| ----------- | ------------------------------------------------------------- |
-| Identity    | Contract: `users`, `user_tokens`; app: Better Auth tables     |
-| Profiles    | `student_profiles`, `employer_profiles`                       |
-| Marketplace | `categories`, `jobs`, `applications`, `saved_jobs`            |
-| Trust       | `reviews`, `reports`, `verification_requests`, `work_records` |
-| Engagement  | `notifications`                                               |
-| AI          | `ai_consents`, `ai_explanations`, `ai_usage`                  |
-| Audit       | `audit_logs`                                                  |
+| Group       | Tables                                                          |
+| ----------- | --------------------------------------------------------------- |
+| Identity    | Contract: `users`, `user_tokens`; app: Better Auth tables       |
+| Profiles    | `student_profiles`, `employer_profiles`                         |
+| Marketplace | `categories`, `locations`, `jobs`, `applications`, `saved_jobs` |
+| Trust       | `reviews`, `reports`, `verification_requests`, `work_records`   |
+| Engagement  | `notifications`                                                 |
+| AI          | `ai_consents`, `ai_explanations`, `ai_usage`                    |
+| Audit       | `audit_logs`                                                    |
 
 Rules that must be enforced in transactions (`docs/contracts/invariants.ts`), never by ad-hoc writes:
 

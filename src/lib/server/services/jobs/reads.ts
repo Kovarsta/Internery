@@ -3,9 +3,8 @@
  */
 import { and, arrayOverlaps, count, desc, eq, gte, lte, or, sql, type SQL } from 'drizzle-orm';
 import { TIME_OF_DAY_RANGES, type TimeOfDay } from '#lib/schedule.ts';
-import { toLikePattern } from '#lib/server/api/sql.ts';
 import type { Database } from '#lib/server/db/types.ts';
-import { categories, employerProfiles, jobs } from '#lib/server/db/product.schema.ts';
+import { categories, employerProfiles, jobs, locations } from '#lib/server/db/product.schema.ts';
 import {
 	jobDetailSelection,
 	jobSummarySelection,
@@ -36,6 +35,7 @@ export async function listEmployerJobs(
 			.select(myJobSelection)
 			.from(jobs)
 			.innerJoin(categories, eq(categories.id, jobs.categoryId))
+			.innerJoin(locations, eq(locations.id, jobs.locationId))
 			.leftJoin(employerProfiles, eq(employerProfiles.userId, jobs.employerId))
 			.where(filters)
 			.orderBy(desc(jobs.createdAt), desc(jobs.id))
@@ -54,7 +54,7 @@ export async function listEmployerJobs(
  * Searches open, visible jobs.
  *
  * Every filter combines with AND. `query` uses the full-text index over title
- * and description; `location` is a literal substring match.
+ * and description.
  */
 export async function searchOpenJobs(
 	database: Database,
@@ -67,6 +67,7 @@ export async function searchOpenJobs(
 			.select(jobSummarySelection)
 			.from(jobs)
 			.innerJoin(categories, eq(categories.id, jobs.categoryId))
+			.innerJoin(locations, eq(locations.id, jobs.locationId))
 			.leftJoin(employerProfiles, eq(employerProfiles.userId, jobs.employerId))
 			.where(and(...conditions))
 			.orderBy(...orderFor(filters.sort))
@@ -96,6 +97,7 @@ export async function findJobDetail(
 		.select(jobDetailSelection)
 		.from(jobs)
 		.innerJoin(categories, eq(categories.id, jobs.categoryId))
+		.innerJoin(locations, eq(locations.id, jobs.locationId))
 		.leftJoin(employerProfiles, eq(employerProfiles.userId, jobs.employerId))
 		.where(eq(jobs.id, jobId))
 		.limit(1);
@@ -119,8 +121,8 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 		conditions.push(eq(jobs.categoryId, filters.categoryId));
 	}
 
-	if (filters.location !== undefined) {
-		conditions.push(sql`${jobs.location} ilike ${toLikePattern(filters.location)} escape '\\'`);
+	if (filters.locationId !== undefined) {
+		conditions.push(eq(jobs.locationId, filters.locationId));
 	}
 
 	if (filters.salaryMin !== undefined) {

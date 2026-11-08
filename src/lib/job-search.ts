@@ -22,8 +22,8 @@ export type JobBrowseFilters = {
 	/** Free-text keyword, absent when the search box is empty. */
 	query?: string;
 	categoryId?: string;
-	/** Location substring, absent when the location box is empty. */
-	location?: string;
+	/** Canonical location id, absent when no location is selected. */
+	locationId?: string;
 	/** Selected days, Monday-first; empty means no day filter. */
 	daysOfWeek: DayOfWeek[];
 	/** Selected time blocks; empty means no time filter. */
@@ -47,7 +47,7 @@ export function readJobBrowseFilters(params: URLSearchParams): JobBrowseFilters 
 	return {
 		query: readText(params.get('q')),
 		categoryId: readText(params.get('categoryId')),
-		location: readText(params.get('location')),
+		locationId: readText(params.get('locationId')),
 		daysOfWeek: readDaysOfWeek(params.getAll('dayOfWeek')),
 		timeOfDay: readTimeOfDay(params.getAll('timeOfDay')),
 		sort: params.get('sort') === 'salary_desc' ? 'salary_desc' : 'newest',
@@ -85,8 +85,8 @@ export function toJobSearchQuery(filters: JobBrowseFilters): URLSearchParams {
 		query.set('categoryId', filters.categoryId);
 	}
 
-	if (filters.location) {
-		query.set('location', filters.location);
+	if (filters.locationId) {
+		query.set('locationId', filters.locationId);
 	}
 
 	if (filters.daysOfWeek.length > 0) {

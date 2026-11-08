@@ -22,11 +22,13 @@
 	type Props = {
 		filters: JobBrowseFilters;
 		categories: Category[];
+		/** Display name for the selected location id. */
+		locationLabel?: string;
 		/** `bar` is the sticky small-screen variant; `sidebar` sits under the form. */
 		variant?: 'sidebar' | 'bar';
 	};
 
-	let { filters, categories, variant = 'sidebar' }: Props = $props();
+	let { filters, categories, locationLabel = '', variant = 'sidebar' }: Props = $props();
 
 	const jobsPath = resolve('jobs');
 	const editHref = `${jobsPath}#filters` as ResolvedPathname;
@@ -46,8 +48,8 @@
 			result.push(chip(category?.name ?? 'Category', { categoryId: undefined }));
 		}
 
-		if (filters.location) {
-			result.push(chip(filters.location, { location: undefined }));
+		if (filters.locationId) {
+			result.push(chip(locationLabel || 'Location', { locationId: undefined }));
 		}
 
 		for (const day of filters.daysOfWeek) {

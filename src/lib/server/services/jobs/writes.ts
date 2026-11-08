@@ -11,6 +11,7 @@ import type { Database } from '#lib/server/db/types.ts';
 import { applications, jobs } from '#lib/server/db/product.schema.ts';
 import { findActiveCategory } from '../categories.ts';
 import { findScamTerms } from '../job-moderation.ts';
+import { findLocationById } from '../locations.ts';
 import { findJobDetail } from './reads.ts';
 import type { JobDetailRecord, JobRecord } from './selections.ts';
 
@@ -18,7 +19,7 @@ export type NewJobInput = {
 	title: string;
 	categoryId: string;
 	description: string;
-	location: string;
+	locationId: string;
 	daysOfWeek: JobRecord['daysOfWeek'];
 	startTime: string;
 	endTime: string;
@@ -48,6 +49,12 @@ export async function createJob(
 		throw validationError('categoryId', 'The category does not exist or is no longer active.');
 	}
 
+	const location = await findLocationById(database, input.locationId);
+
+	if (!location) {
+		throw validationError('locationId', 'Choose a location from the list.');
+	}
+
 	const flaggedTerms = findScamTerms(`${input.title} ${input.description}`);
 
 	const [inserted] = await database
@@ -57,7 +64,7 @@ export async function createJob(
 			title: input.title,
 			categoryId: input.categoryId,
 			description: input.description,
-			location: input.location,
+			locationId: input.locationId,
 			daysOfWeek: input.daysOfWeek,
 			startTime: input.startTime,
 			endTime: input.endTime,
@@ -109,6 +116,14 @@ export async function updateJob(
 
 		if (!category) {
 			throw validationError('categoryId', 'The category does not exist or is no longer active.');
+		}
+	}
+
+	if (input.locationId !== undefined) {
+		const location = await findLocationById(database, input.locationId);
+
+		if (!location) {
+			throw validationError('locationId', 'Choose a location from the list.');
 		}
 	}
 

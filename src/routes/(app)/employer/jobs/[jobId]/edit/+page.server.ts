@@ -81,7 +81,7 @@ function toFormValues(job: JobDetail): JobFormValues {
 		title: job.title,
 		categoryId: job.category.id,
 		description: job.description,
-		location: job.location,
+		locationId: job.locationId,
 		daysOfWeek: job.daysOfWeek,
 		startTime: job.startTime,
 		endTime: job.endTime,

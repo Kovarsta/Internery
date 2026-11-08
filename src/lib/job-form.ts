@@ -6,7 +6,7 @@ export type JobFormValues = {
 	title: string;
 	categoryId: string;
 	description: string;
-	location: string;
+	locationId: string;
 	daysOfWeek: DayOfWeek[];
 	startTime: string;
 	endTime: string;
@@ -23,7 +23,7 @@ export const emptyJobFormValues: JobFormValues = {
 	title: '',
 	categoryId: '',
 	description: '',
-	location: '',
+	locationId: '',
 	daysOfWeek: [],
 	startTime: '',
 	endTime: '',
@@ -41,7 +41,7 @@ export function readJobForm(form: FormData): JobFormValues {
 		title: readText(form.get('title')),
 		categoryId: readText(form.get('categoryId')),
 		description: readText(form.get('description')),
-		location: readText(form.get('location')),
+		locationId: readText(form.get('locationId')),
 		daysOfWeek: readDaysOfWeek(form.getAll('daysOfWeek')),
 		startTime: readText(form.get('startTime')),
 		endTime: readText(form.get('endTime')),
@@ -60,7 +60,7 @@ export function findJobFormProblem(values: JobFormValues): string | null {
 		values.title,
 		values.categoryId,
 		values.description,
-		values.location,
+		values.locationId,
 		values.startTime,
 		values.endTime,
 		values.startDate,
