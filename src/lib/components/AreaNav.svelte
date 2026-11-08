@@ -18,11 +18,16 @@
 
 	const currentPath = $derived(page.url.pathname);
 
+	/** `resolve()` returns a base-relative href, so compare its absolute pathname. */
+	function isCurrent(href: string): boolean {
+		return new URL(href, page.url.href).pathname === currentPath;
+	}
+
 	/** Shared tab styling, with the current section highlighted. */
 	function linkClass(href: string): string {
 		const base = 'rounded-md px-3 py-1.5 text-sm';
 
-		return href === currentPath
+		return isCurrent(href)
 			? `${base} bg-slate-900 font-medium text-white`
 			: `${base} text-slate-600 hover:bg-slate-100 hover:text-slate-900`;
 	}
@@ -33,7 +38,7 @@
 		<a
 			class={linkClass(link.href)}
 			href={link.href}
-			aria-current={link.href === currentPath ? 'page' : undefined}
+			aria-current={isCurrent(link.href) ? 'page' : undefined}
 		>
 			{link.label}
 		</a>

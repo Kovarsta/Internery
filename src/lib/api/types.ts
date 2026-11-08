@@ -126,7 +126,7 @@ export type OrgType = 'COMPANY' | 'INDIVIDUAL';
 
 export type EmployerVerification = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 
-/** The employer profile the owner edits on `/employer/profile`. */
+/** The employer profile the owner edits on `/me/company-profile`. */
 export type EmployerProfile = {
 	userId: string;
 	orgName: string;

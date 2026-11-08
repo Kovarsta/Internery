@@ -121,7 +121,7 @@ function sendVerificationDecisionEmail(
 	notification: NotificationInsert
 ): Promise<void> {
 	if (notification.type === 'VERIFICATION_APPROVED') {
-		return sendFromNotification(to, notification, 'View your profile', '/employer/profile');
+		return sendFromNotification(to, notification, 'View your profile', '/me/company-profile');
 	}
 
 	return sendFromNotification(to, notification, 'View your request', '/me/verification');

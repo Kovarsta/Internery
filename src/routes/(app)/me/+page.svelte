@@ -29,35 +29,33 @@
 		STUDENT: [
 			{ href: resolve('me/profile'), label: 'Student profile', hint: 'University, skills, CV' },
 			{
-				href: resolve('me/applications'),
-				label: 'My applications',
-				hint: 'Status of every application'
-			},
-			{ href: resolve('me/saved-jobs'), label: 'Saved jobs', hint: 'Bookmarked postings' },
-			{
 				href: resolve('me/notifications'),
 				label: 'Notifications',
 				hint: 'Application and job updates'
 			},
 			{
-				href: resolve('me/work-records'),
-				label: 'Work records',
-				hint: 'Signed records you own'
+				href: resolve('me/applications'),
+				label: 'Your dashboard',
+				hint: 'Applications, saved jobs and work records'
 			}
 		],
 		EMPLOYER: [
 			{
-				href: resolve('employer/profile'),
+				href: resolve('me/company-profile'),
 				label: 'Company profile',
 				hint: 'Organisation and contact'
 			},
-			{ href: resolve('employer/jobs'), label: 'Your jobs', hint: 'Post and manage listings' },
 			{
 				href: resolve('me/notifications'),
 				label: 'Notifications',
 				hint: 'Application updates'
 			},
-			{ href: resolve('me/verification'), label: 'Verification', hint: 'Request the badge' }
+			{ href: resolve('me/verification'), label: 'Verification', hint: 'Request the badge' },
+			{
+				href: resolve('employer/jobs'),
+				label: 'Your dashboard',
+				hint: 'Jobs, applicants and postings'
+			}
 		],
 		ADMIN: [{ href: resolve('admin'), label: 'Admin area', hint: 'Moderation and reports' }]
 	};
