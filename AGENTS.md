@@ -57,13 +57,16 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - `src/lib/server/db/schema.ts` only re-exports the auth and product schemas; Drizzle and
   drizzle-kit consume that aggregate.
 - `scripts/seed.ts` (run with `pnpm db:seed`) inserts fixed-id development data: an admin, three
-  students (An, Linh and Minh) and an employer, five categories, five jobs, seven applications, two
-  reviews, two signed work records and five notifications. Four jobs are hiring; the fifth is
-  completed so the review and work-record pages have data. The three students have profiles and
-  pending applications to the barista job. The seed is idempotent, re-signs the demo work records
-  when `WORK_RECORD_SECRET` changes, uses `SEED_PASSWORD` (default `Password123!`), and refuses to
-  run when `NODE_ENV=production`.
-- Migrations through `drizzle/0004_volatile_inhumans.sql` have been generated and applied; all 22
+  students (An, Linh and Minh) and three employers (Acme Coffee, Hanoi Study Hub and Saigon Event
+  Crew), 22 categories, seven locations, 34 jobs, 12 applications, three reviews, two signed work
+  records, five notifications and five reports. Most jobs are hiring; one is completed so the
+  review and work-record pages have data, and the flagged and hidden jobs feed the moderation
+  queue. The three students have profiles and pending applications to the barista job. Some jobs
+  belong to the two extra employers and carry recent applications so the home page's featured
+  ranking has variety. The seed is idempotent, re-signs the demo work records when
+  `WORK_RECORD_SECRET` changes, uses `SEED_PASSWORD` (default `Password123!`), and refuses to run
+  when `NODE_ENV=production`.
+- Migrations through `drizzle/0007_majestic_the_fury.sql` have been generated and applied; all 22
   tables exist. Auth timestamps are `timestamptz`, and `users.role` / `users.status` are PostgreSQL
   enums.
 - The `/api/v1` route tree exists under `src/routes/api/v1` (54 paths, 69 operations). The account,
@@ -93,7 +96,9 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   applications, saved jobs, the employer job list and applicant review, notifications, sign-in,
   personal details in both profile editors, avatar and CV uploads, employer job editing, the review
   flow, employer verification and the public work-record directory and verify pages work against
-  the API. The
+  the API. The home page pitches the marketplace with a hero, computed featured shifts
+  (`sort=featured`), category shortcuts, a three-step explanation and an employer call to action.
+  The
   employer job workspace at `/employer/jobs/[jobId]` has Overview, Applicants and Edit tabs; closing
   applications moves the job from `HIRING` to `CLOSED` without changing the position counts. The admin
   area (overview, users, moderation, categories, verification) is implemented, and students can

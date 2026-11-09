@@ -3,8 +3,9 @@
 Date: 2026-11-08
 
 Status: in progress. Structured job schedules, the day and time-of-day filters, the richer job
-cards, early closing, the employer job workspace and account details are implemented. Student
-preferences and suggestions are next; the remaining phases are still proposals.
+cards, early closing, the employer job workspace, account details and the pitched home page with
+computed featured shifts are implemented. Student preferences and suggestions are next; the
+remaining phases are still proposals.
 
 Feedback from the professor demo, grouped so the visible UX fixes land first and the schema and
 contract changes stay together. This comes before the remaining AI endpoints and before more admin
@@ -24,6 +25,7 @@ Make the demo feel like a working student job marketplace:
 
 | Area                | Today                                                                                                                           | Missing                                                  |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Home page           | pitch hero with search, computed hot/featured shifts, categories, how-it-works and an employer CTA                              | a personalised “Fits your week” section                  |
 | Suggestions         | `/` shows newest jobs; `/jobs` is unpersonalised                                                                                | no location or structured time preference in the profile |
 | Filters             | keyword, category, location, day, time of day, verified, sort; API also supports `salaryMin`, `salaryMax`, `startFrom`, `endTo` | pay and date filters are not in the UI                   |
 | Job cards           | dates, schedule, positions left, title, employer and rating, category, location, pay                                            | no time-of-day badges                                    |
