@@ -97,8 +97,9 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Product services and API handlers cover phases 0 to 3. The frontend lives in the `(app)` route
   group under `src/routes/(app)`; `src/routes/api` stays outside it. The home page, job browsing,
   applications, saved jobs, the employer job list and applicant review, notifications, sign-in,
-  personal details in both profile editors, avatar and CV uploads, employer job editing, the review
-  flow, employer verification and the public work-record directory and verify pages work against
+  personal details in the student, company and admin profile pages, avatar and CV uploads, employer
+  job editing, the review flow, employer verification and the public work-record directory and
+  verify pages work against
   the API. The sign-in page supports email/password, GitHub OAuth and password reset; a new OAuth
   account chooses Student or Employer at `/onboarding` before it reaches the rest of the app. The
   home page pitches the marketplace with a hero, computed featured shifts

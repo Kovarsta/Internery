@@ -56,7 +56,10 @@
 				hint: 'Jobs, applicants and postings'
 			}
 		],
-		ADMIN: [{ href: resolve('admin'), label: 'Admin area', hint: 'Moderation and reports' }]
+		ADMIN: [
+			{ href: resolve('me/admin-profile'), label: 'Personal details', hint: 'Name and phone' },
+			{ href: resolve('admin'), label: 'Admin area', hint: 'Moderation and reports' }
+		]
 	};
 </script>
 

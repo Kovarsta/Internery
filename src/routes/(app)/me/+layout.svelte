@@ -32,6 +32,7 @@
 		],
 		ADMIN: [
 			{ href: resolve('me'), label: 'Overview' },
+			{ href: resolve('me/admin-profile'), label: 'Personal details' },
 			{ href: resolve('me/notifications'), label: 'Notifications' },
 			{ href: resolve('admin'), label: 'Admin area' }
 		]

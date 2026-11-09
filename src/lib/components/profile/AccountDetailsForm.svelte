@@ -19,11 +19,18 @@
 	type Props = {
 		values: Values;
 		action: string;
+		description?: string;
 		message?: string;
 		saved?: boolean;
 	};
 
-	let { values, action, message, saved = false }: Props = $props();
+	let {
+		values,
+		action,
+		description = 'This name appears on applications and reviews. Your phone number is optional and is not shown on your public profile.',
+		message,
+		saved = false
+	}: Props = $props();
 </script>
 
 {#if saved}
@@ -47,10 +54,7 @@
 >
 	<div class="sm:col-span-2">
 		<h2 class="text-lg font-semibold">Personal details</h2>
-		<p class="mt-1 max-w-xl text-sm text-ink/70">
-			This name appears on applications and reviews. Your phone number is optional and is not shown
-			on your public profile.
-		</p>
+		<p class="mt-1 max-w-xl text-sm text-ink/70">{description}</p>
 	</div>
 
 	<div>
