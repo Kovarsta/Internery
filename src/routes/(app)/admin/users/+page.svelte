@@ -3,8 +3,9 @@
 	 * Admin users (`/admin/users`).
 	 *
 	 * Searches `GET /admin/users` by name or email and filters by role and
-	 * status. The filter is a plain GET form, so it works without JavaScript and
-	 * the URL keeps the active search.
+	 * status. Only statuses the app can produce are offered; suspended and
+	 * deleted accounts have no transition yet. The filter is a plain GET form,
+	 * so it works without JavaScript and the URL keeps the active search.
 	 */
 
 	import { resolve } from '$app/paths';
@@ -56,8 +57,6 @@
 			<NativeSelectOption value="ACTIVE">Active</NativeSelectOption>
 			<NativeSelectOption value="PENDING_VERIFICATION">Unverified</NativeSelectOption>
 			<NativeSelectOption value="LOCKED">Locked</NativeSelectOption>
-			<NativeSelectOption value="SUSPENDED">Suspended</NativeSelectOption>
-			<NativeSelectOption value="DELETED">Deleted</NativeSelectOption>
 		</NativeSelect>
 	</div>
 

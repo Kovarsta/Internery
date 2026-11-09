@@ -5,13 +5,13 @@ import type { PageServerLoad } from './$types';
 const PAGE_SIZE = 20;
 
 const ROLES: UserRole[] = ['STUDENT', 'EMPLOYER', 'ADMIN'];
-const STATUSES: AccountStatus[] = [
-	'PENDING_VERIFICATION',
-	'ACTIVE',
-	'SUSPENDED',
-	'LOCKED',
-	'DELETED'
-];
+
+/**
+ * Statuses the app can actually produce: signup and verification create the
+ * first two, and an admin lock creates the third. SUSPENDED and DELETED exist
+ * in the shared enum but no operation sets them yet, so the filter omits them.
+ */
+const STATUSES: AccountStatus[] = ['PENDING_VERIFICATION', 'ACTIVE', 'LOCKED'];
 
 /**
  * Loads `/admin/users`.
