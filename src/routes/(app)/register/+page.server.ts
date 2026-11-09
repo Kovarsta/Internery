@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { auth } from '#lib/server/auth.ts';
 import { readAuthMessage } from '#lib/server/auth-errors.ts';
 import { db } from '#lib/server/db/index.ts';
-import { assignSignupRole } from '#lib/server/services/users.ts';
+import { completeOnboarding } from '#lib/server/services/users.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 type SignupRole = 'STUDENT' | 'EMPLOYER';
@@ -44,7 +44,7 @@ export const actions: Actions = {
 				headers: event.request.headers
 			});
 
-			await assignSignupRole(db, user.user.id, role);
+			await completeOnboarding(db, user.user.id, role);
 		} catch (error) {
 			return fail(400, { name, email, role, message: readAuthMessage(error) });
 		}

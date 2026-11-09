@@ -175,6 +175,7 @@ Table user_profiles {
   user_id uuid [pk]
   phone varchar(20)
   avatar_key text [note: 'Private storage key; null means no uploaded avatar.']
+  onboarded_at timestamptz [note: 'Null until an OAuth account chooses a role.']
   updated_at timestamptz [not null, default: `now()`]
 
   Note: 'Created with the Better Auth user, so reads can rely on the row.'

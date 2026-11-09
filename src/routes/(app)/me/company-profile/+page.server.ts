@@ -34,7 +34,8 @@ export const load: PageServerLoad = async (event) => {
 		profile,
 		me,
 		saved: event.url.searchParams.get('saved') === '1',
-		accountSaved: event.url.searchParams.get('accountSaved') === '1'
+		accountSaved: event.url.searchParams.get('accountSaved') === '1',
+		onboarded: event.url.searchParams.get('onboarded') === '1'
 	};
 };
 

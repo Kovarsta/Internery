@@ -1117,7 +1117,9 @@ async function ensureCredentialAccount(userId: string, passwordHash: string): Pr
 async function seedProfiles(userIdsByEmail: Map<string, string>) {
 	const userProfileRows = seedUsers.map((user) => ({
 		userId: requireUserId(userIdsByEmail, user.email),
-		phone: user.phone
+		phone: user.phone,
+		// Seeded accounts already have a role; new OAuth accounts leave this null.
+		onboardedAt: new Date()
 	}));
 
 	await db.insert(schema.userProfiles).values(userProfileRows).onConflictDoNothing();

@@ -76,6 +76,13 @@
 	</Alert>
 {/if}
 
+{#if data.onboarded}
+	<Alert class="mb-6 border-chalk/30 bg-chalk/5">
+		<AlertTitle>Welcome to Internery</AlertTitle>
+		<AlertDescription>Add your company details before you post your first shift.</AlertDescription>
+	</Alert>
+{/if}
+
 <form
 	class="grid max-w-3xl gap-4 border-t-4 border-chalk bg-card p-6 sm:grid-cols-2"
 	method="POST"

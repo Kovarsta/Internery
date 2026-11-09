@@ -101,8 +101,9 @@ export const notificationType = pgEnum('notification_type', [
  * Common profile fields that are not part of Better Auth's user model.
  *
  * A row is created eagerly with the Better Auth user, so reads can rely on it
- * existing. Role-specific data lives in `student_profiles` and
- * `employer_profiles`.
+ * existing. `onboardedAt` is null for a new OAuth account until the person
+ * chooses a role; email signup sets it in the same transaction as the role.
+ * Role-specific data lives in `student_profiles` and `employer_profiles`.
  */
 export const userProfiles = pgTable('user_profiles', {
 	userId: uuid()
@@ -110,6 +111,7 @@ export const userProfiles = pgTable('user_profiles', {
 		.references(() => users.id, { onDelete: 'cascade' }),
 	phone: varchar({ length: 20 }),
 	avatarKey: text(), // storage key, never the file itself
+	onboardedAt: ts(),
 	updatedAt: updatedAt()
 });
 

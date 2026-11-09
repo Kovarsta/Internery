@@ -96,18 +96,52 @@ export async function saveAvatar(
 }
 
 /**
- * Applies the role chosen on the registration form.
+ * Sets the account role and marks onboarding complete in one transaction.
  *
- * Better Auth owns the `role` column and marks it `input: false`, so signup
- * cannot carry the value. The route sets it after the account exists. `ADMIN`
- * is deliberately not accepted here; only the admin flow grants it.
+ * Email registration supplies the role from its form; a new OAuth account
+ * supplies it on `/onboarding`. Better Auth owns the `role` column and marks it
+ * `input: false`, so signup cannot carry the value. `ADMIN` is deliberately not
+ * accepted here; only the admin flow grants it.
  */
-export async function assignSignupRole(
+export async function completeOnboarding(
 	database: Database,
 	userId: string,
 	role: 'STUDENT' | 'EMPLOYER'
 ): Promise<void> {
-	await database.update(users).set({ role }).where(eq(users.id, userId));
+	const now = new Date();
+
+	await database.transaction(async (tx) => {
+		const [updated] = await tx
+			.update(users)
+			.set({ role })
+			.where(eq(users.id, userId))
+			.returning({ id: users.id });
+
+		if (!updated) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		// The profile row is created with the account, but the upsert keeps this
+		// correct for an account made before that hook existed.
+		await tx
+			.insert(userProfiles)
+			.values({ userId, onboardedAt: now })
+			.onConflictDoUpdate({
+				target: userProfiles.userId,
+				set: { onboardedAt: now }
+			});
+	});
+}
+
+/** Returns when the account finished onboarding, or null for a new OAuth account. */
+export async function getOnboardedAt(database: Database, userId: string): Promise<Date | null> {
+	const [profile] = await database
+		.select({ onboardedAt: userProfiles.onboardedAt })
+		.from(userProfiles)
+		.where(eq(userProfiles.userId, userId))
+		.limit(1);
+
+	return profile?.onboardedAt ?? null;
 }
 
 /**

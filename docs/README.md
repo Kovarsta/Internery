@@ -53,6 +53,7 @@ change; do not leave the mismatch undocumented.
 | `decisions/email-delivery.md`       | Resend sender, shared template and notification mail   |
 | `decisions/locations.md`            | Canonical locations and server-side city search        |
 | `decisions/minio-staging.md`        | MinIO configuration for local and staging              |
+| `decisions/oauth-onboarding.md`     | GitHub OAuth role selection and the onboarding flag    |
 
 ## Agent workspace
 

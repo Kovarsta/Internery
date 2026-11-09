@@ -29,6 +29,7 @@ Make the demo feel like a working student job marketplace:
 | Suggestions         | `/` shows newest jobs; `/jobs` is unpersonalised                                                                                | no location or structured time preference in the profile |
 | Filters             | keyword, category, location, day, time of day, verified, sort; API also supports `salaryMin`, `salaryMax`, `startFrom`, `endTo` | pay and date filters are not in the UI                   |
 | Job cards           | dates, schedule, positions left, title, employer and rating, category, location, pay                                            | no time-of-day badges                                    |
+| Sign in             | email/password, GitHub OAuth with role onboarding, password reset                                                               | —                                                        |
 | Sign out            | `POST /logout` from the header and footer                                                                                       | —                                                        |
 | Close submissions   | `close` (`HIRING → CLOSED`), `cancel` (`CANCELLED`) and `complete` (`CLOSED                                                     | FILLED → COMPLETED`)                                     | —   |
 | Name and phone      | editable on `/me` through `PATCH /me`                                                                                           | —                                                        |

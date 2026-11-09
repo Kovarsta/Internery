@@ -6,7 +6,14 @@ import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
 import type { Storage } from '#lib/server/storage/client.ts';
 import { BLANK_AVATAR_KEY } from '#lib/server/storage/keys.ts';
-import { getAvatarKey, resetAvatar, saveAvatar, updateUserAccount } from './users.ts';
+import {
+	completeOnboarding,
+	getAvatarKey,
+	getOnboardedAt,
+	resetAvatar,
+	saveAvatar,
+	updateUserAccount
+} from './users.ts';
 
 // Set TEST_DATABASE_URL to run the database-backed tests.
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -65,6 +72,29 @@ describe.skipIf(!testDatabase)('users', () => {
 		const cleared = await updateUserAccount(testDatabase, testUserId, { phone: null });
 
 		expect(cleared.profile?.phone).toBeNull();
+	});
+
+	it('sets the role and onboarding timestamp together', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		await expect(getOnboardedAt(testDatabase, testUserId)).resolves.toBeNull();
+
+		await completeOnboarding(testDatabase, testUserId, 'EMPLOYER');
+
+		const [user] = await testDatabase
+			.select({ role: schema.users.role })
+			.from(schema.users)
+			.where(eq(schema.users.id, testUserId));
+		const [profile] = await testDatabase
+			.select({ onboardedAt: schema.userProfiles.onboardedAt })
+			.from(schema.userProfiles)
+			.where(eq(schema.userProfiles.userId, testUserId));
+
+		expect(user?.role).toBe('EMPLOYER');
+		expect(profile?.onboardedAt).toBeInstanceOf(Date);
+		await expect(getOnboardedAt(testDatabase, testUserId)).resolves.toBeInstanceOf(Date);
 	});
 
 	it('rejects an unknown user', async () => {

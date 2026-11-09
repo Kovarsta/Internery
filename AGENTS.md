@@ -47,8 +47,10 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Authentication uses Argon2id and Resend, and requires email verification before sign-in. A real
   Resend key and a verified sender address are required for verification mail. Password reset uses
   Better Auth's one-time token and the same Resend sender; a completed reset revokes other sessions.
-  The Argon2id settings and hash/verify wrappers live in `src/lib/server/password.ts`, shared by
-  Better Auth and the seed script.
+  GitHub OAuth is available on the sign-in page. A new OAuth account has no role choice yet, so
+  `user_profiles.onboardedAt` stays null and the root layout sends it to `/onboarding`. The
+  Argon2id settings and hash/verify wrappers live in `src/lib/server/password.ts`, shared by Better
+  Auth and the seed script.
 - `src/lib/server/db/product.schema.ts` contains the product tables: common profile/moderation
   tables, student and employer profiles, marketplace, trust, notifications, AI and audit tables.
   All user foreign keys reference the generated `users.id` as `uuid`.
@@ -67,8 +69,8 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   ranking has variety. The seed is idempotent, re-signs the demo work records when
   `WORK_RECORD_SECRET` changes, uses `SEED_PASSWORD` (default `Password123!`), and refuses to run
   when `NODE_ENV=production`.
-- Migrations through `drizzle/0007_majestic_the_fury.sql` have been generated and applied; all 22
-  tables exist. Auth timestamps are `timestamptz`, and `users.role` / `users.status` are PostgreSQL
+- Migrations through `drizzle/0008_fuzzy_franklin_storm.sql` have been generated and applied; all 22
+  tables exist. Migration 0008 adds `user_profiles.onboardedAt` and backfills existing rows. Auth timestamps are `timestamptz`, and `users.role` / `users.status` are PostgreSQL
   enums.
 - The `/api/v1` route tree exists under `src/routes/api/v1` (54 paths, 69 operations). The account,
   notification, saved-job, application, own-profile, job read/write, review, admin and trust
@@ -97,7 +99,9 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   applications, saved jobs, the employer job list and applicant review, notifications, sign-in,
   personal details in both profile editors, avatar and CV uploads, employer job editing, the review
   flow, employer verification and the public work-record directory and verify pages work against
-  the API. The home page pitches the marketplace with a hero, computed featured shifts
+  the API. The sign-in page supports email/password, GitHub OAuth and password reset; a new OAuth
+  account chooses Student or Employer at `/onboarding` before it reaches the rest of the app. The
+  home page pitches the marketplace with a hero, computed featured shifts
   (`sort=featured`), category shortcuts, a three-step explanation and an employer call to action.
   The
   employer job workspace at `/employer/jobs/[jobId]` has Overview, Applicants and Edit tabs; closing

@@ -53,6 +53,15 @@
 	values={accountValues}
 />
 
+{#if data.onboarded}
+	<Alert class="mb-6 border-chalk/30 bg-chalk/5">
+		<AlertTitle>Welcome to Internery</AlertTitle>
+		<AlertDescription>
+			Add your study details and CV so employers can see your profile when you apply.
+		</AlertDescription>
+	</Alert>
+{/if}
+
 {#if data.saved}
 	<Alert class="mb-6 border-chalk/30 bg-chalk/5">
 		<AlertTitle>Profile saved</AlertTitle>
