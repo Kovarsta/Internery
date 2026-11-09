@@ -105,18 +105,33 @@ export async function findJobDetail(
 	return job ?? null;
 }
 
-/** Builds the search conditions; every filter combines with AND. */
+/**
+ * Builds the `WHERE` conditions for the public job search.
+ *
+ * This function does not execute a query. It returns SQL fragments, and
+ * `searchOpenJobs` combines them with `and(...)` for both the page and the
+ * total count, so the list and the total cannot drift.
+ *
+ * Every optional filter is added only when the caller provides it. A caller
+ * that uses `verifiedOnly` must join `employerProfiles`.
+ */
 function buildSearchConditions(filters: JobSearchFilters): SQL[] {
+	// The public listing only ever shows open, visible jobs (AC-09.1).
 	const conditions: SQL[] = [eq(jobs.status, 'HIRING'), eq(jobs.isHidden, false)];
 
-	// Matches `jobs_fts_idx`. The 'simple' configuration has no Vietnamese
-	// stemmer, and `websearch_to_tsquery` tolerates quoted phrases and OR.
+	// Word match over title + description, one document per job row. The
+	// expression matches `jobs_fts_idx`, the GIN full-text index. 'simple' only
+	// lowercases and splits: it has no Vietnamese stemmer and no diacritic
+	// folding. The query is a bound parameter, and `websearch_to_tsquery` adds
+	// AND, OR and phrase semantics without making the value part of the SQL.
 	if (filters.query !== undefined) {
 		conditions.push(
 			sql`to_tsvector('simple', ${jobs.title} || ' ' || ${jobs.description}) @@ websearch_to_tsquery('simple', ${filters.query})`
 		);
 	}
 
+	// Category and location are exact ids, resolved from the lists the API
+	// serves. A substring or a display name would reintroduce duplicates.
 	if (filters.categoryId !== undefined) {
 		conditions.push(eq(jobs.categoryId, filters.categoryId));
 	}
@@ -125,6 +140,7 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 		conditions.push(eq(jobs.locationId, filters.locationId));
 	}
 
+	// Inclusive VND bounds. The API rejects a minimum above the maximum.
 	if (filters.salaryMin !== undefined) {
 		conditions.push(gte(jobs.salaryAmount, filters.salaryMin));
 	}
@@ -133,6 +149,8 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 		conditions.push(lte(jobs.salaryAmount, filters.salaryMax));
 	}
 
+	// Inclusive ISO-date bounds: the job starts on or after `startFrom` and
+	// ends on or before `endTo`.
 	if (filters.startFrom !== undefined) {
 		conditions.push(gte(jobs.startDate, filters.startFrom));
 	}
@@ -141,12 +159,14 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 		conditions.push(lte(jobs.endDate, filters.endTo));
 	}
 
-	// OR within the selected days: a job matches when it runs on any of them.
+	// `&&` is array overlap: a job matches when it runs on any selected day.
+	// This is OR across the selection, not an all-days match.
 	if (filters.daysOfWeek !== undefined && filters.daysOfWeek.length > 0) {
 		conditions.push(arrayOverlaps(jobs.daysOfWeek, filters.daysOfWeek));
 	}
 
-	// OR within the selected blocks: a shift that spans two blocks matches both.
+	// OR across blocks; each block is an overlap test, so a 17:00-20:00 shift
+	// matches both Afternoon and Evening.
 	if (filters.timeOfDay !== undefined && filters.timeOfDay.length > 0) {
 		const timeOfDay = or(...filters.timeOfDay.map(timeOfDayCondition));
 
@@ -155,6 +175,8 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 		}
 	}
 
+	// Requires the employerProfiles join. Jobs without a profile stay out of
+	// this filter, which is the intended meaning of "verified only".
 	if (filters.verifiedOnly) {
 		conditions.push(eq(employerProfiles.verificationStatus, 'VERIFIED'));
 	}
@@ -162,7 +184,13 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 	return conditions;
 }
 
-/** Matches a shift that overlaps one time-of-day block. */
+/**
+ * Matches a shift that overlaps one half-open time-of-day block.
+ *
+ * The block is `[from, to)`: a shift starting before the block ends and ending
+ * after it starts counts as an overlap. A shift ending exactly at 18:00 does
+ * not match Evening, which starts at 18:00.
+ */
 function timeOfDayCondition(slot: TimeOfDay): SQL {
 	const range = TIME_OF_DAY_RANGES[slot];
 
