@@ -437,6 +437,46 @@ describe.skipIf(!testDatabase)('jobs', () => {
 		expect(sorted.items.map((job) => job.id)).toEqual([tutorJobId, baristaJobId]);
 	});
 
+	it('orders featured jobs by recent applications, then verified employer', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		// With no applications, the verified barista outranks the newer unverified tutor.
+		const byTrust = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			sort: 'featured'
+		});
+
+		expect(byTrust.items.map((job) => job.id).slice(0, 2)).toEqual([baristaJobId, tutorJobId]);
+
+		// One more application pushes the unverified job ahead. The employer
+		// rows are valid user ids; the ordering only reads the job id.
+		const applicationIds = [randomUUID()];
+
+		await testDatabase.insert(schema.applications).values({
+			id: applicationIds[0],
+			jobId: tutorJobId,
+			studentId: unverifiedEmployerId,
+			status: 'PENDING'
+		});
+
+		try {
+			const byApplications = await searchOpenJobs(testDatabase, {
+				...defaultFilters,
+				categoryId,
+				sort: 'featured'
+			});
+
+			expect(byApplications.items[0]?.id).toBe(tutorJobId);
+		} finally {
+			await testDatabase
+				.delete(schema.applications)
+				.where(inArray(schema.applications.id, applicationIds));
+		}
+	});
+
 	it('filters by verified employers only', async () => {
 		if (!testDatabase) {
 			return;

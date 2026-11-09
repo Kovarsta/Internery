@@ -4,7 +4,13 @@
 import { and, arrayOverlaps, count, desc, eq, gte, lte, or, sql, type SQL } from 'drizzle-orm';
 import { TIME_OF_DAY_RANGES, type TimeOfDay } from '#lib/schedule.ts';
 import type { Database } from '#lib/server/db/types.ts';
-import { categories, employerProfiles, jobs, locations } from '#lib/server/db/product.schema.ts';
+import {
+	applications,
+	categories,
+	employerProfiles,
+	jobs,
+	locations
+} from '#lib/server/db/product.schema.ts';
 import {
 	jobDetailSelection,
 	jobSummarySelection,
@@ -181,6 +187,12 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 		conditions.push(eq(employerProfiles.verificationStatus, 'VERIFIED'));
 	}
 
+	// Featured is a public shop window, so a listing the scam scan flagged is
+	// not promoted. The normal search still shows it with its warning badge.
+	if (filters.sort === 'featured') {
+		conditions.push(eq(jobs.needsReview, false));
+	}
+
 	return conditions;
 }
 
@@ -198,6 +210,26 @@ function timeOfDayCondition(slot: TimeOfDay): SQL {
 }
 
 function orderFor(sort: JobSortOrder): SQL[] {
+	// A featured row is "hot" when students applied recently. Verified employers
+	// break a tie before recency, so a trustworthy shop still surfaces when the
+	// application counts are equal.
+	if (sort === 'featured') {
+		const recentApplications = sql<number>`(
+			select count(*)::int
+			from ${applications}
+			where ${applications.jobId} = ${jobs.id}
+				and ${applications.createdAt} >= now() - interval '7 days'
+				and ${applications.status} <> 'WITHDRAWN'
+		)`;
+
+		return [
+			desc(recentApplications),
+			desc(sql`case when ${employerProfiles.verificationStatus} = 'VERIFIED' then 1 else 0 end`),
+			desc(jobs.createdAt),
+			desc(jobs.id)
+		];
+	}
+
 	// The id tie-breaker keeps paging stable when two jobs share a timestamp or
 	// salary; without it, a row can repeat or vanish between pages.
 	if (sort === 'salary_desc') {

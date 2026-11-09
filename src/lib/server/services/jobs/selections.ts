@@ -155,7 +155,7 @@ export type MyJobPage = {
 	total: number;
 };
 
-export type JobSortOrder = 'newest' | 'salary_desc';
+export type JobSortOrder = 'newest' | 'salary_desc' | 'featured';
 
 export type JobSearchFilters = {
 	query?: string;

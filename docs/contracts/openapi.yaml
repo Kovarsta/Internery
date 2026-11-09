@@ -445,7 +445,9 @@ paths:
         Only jobs with `status = HIRING` and not hidden are returned (AC-09.1).
         All filters combine with AND (AC-10.1). Keyword search is full text over title and description.
         `location` is a case-insensitive literal substring, not a pattern. `sort=newest` orders by
-        creation time and `sort=salary_desc` by salary; both break ties on job id so paging is stable.
+        creation time, `sort=salary_desc` by salary and `sort=featured` by recent applications,
+        verified employer and recency; all break ties on job id so paging is stable. Featured
+        results exclude jobs the scam scan flagged.
       security: [{}, { cookieAuth: [] }]
       x-us: [US-09, US-10, US-41]
       x-fr: [FR-12, FR-13, FR-47]
@@ -496,7 +498,7 @@ paths:
           }
         - name: sort
           in: query
-          schema: { type: string, enum: [newest, salary_desc], default: newest }
+          schema: { type: string, enum: [newest, salary_desc, featured], default: newest }
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/PageSize' }
       responses:

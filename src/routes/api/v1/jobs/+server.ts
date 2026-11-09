@@ -45,7 +45,7 @@ const querySchema = z
 		startFrom: z.iso.date().optional(),
 		endTo: z.iso.date().optional(),
 		verifiedOnly: z.enum(['true', 'false']).default('false'),
-		sort: z.enum(['newest', 'salary_desc']).default('newest')
+		sort: z.enum(['newest', 'salary_desc', 'featured']).default('newest')
 	})
 	.refine(
 		(query) =>

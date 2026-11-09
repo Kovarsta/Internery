@@ -143,8 +143,10 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - `GET /me/jobs` reports `applicantCount` without `WITHDRAWN` applications and `acceptedCount` with
   accepted ones. Hidden jobs stay in the list with `isHidden` and `hiddenReason`.
 - `GET /jobs` excludes hidden jobs, treats `location` as a literal case-insensitive substring, and
-  matches keywords with PostgreSQL `websearch_to_tsquery` over the `simple` configuration. Both sort
-  orders break ties on job id so pagination is stable.
+  matches keywords with PostgreSQL `websearch_to_tsquery` over the `simple` configuration.
+  `sort=featured` ranks by non-withdrawn applications in the last seven days, then verified
+  employer, then recency, and excludes jobs the scam scan flagged. Every sort breaks ties on job id
+  so pagination is stable.
 - `GET /jobs/{jobId}` omits `saved` and `myApplication` for anonymous and non-student viewers rather
   than sending defaults. Hidden jobs return `404` to everyone except the owner and admins.
 - `GET /users/{userId}/reviews` computes `ratingAvg` and `ratingCount` from the visible reviews
