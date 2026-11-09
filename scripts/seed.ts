@@ -69,6 +69,20 @@ const seedUsers = [
 		email: 'minh@internery.local',
 		role: 'STUDENT',
 		phone: '0900000005'
+	},
+	{
+		id: '00000000-0000-4000-8000-000000000006',
+		name: 'Le Thu Trang',
+		email: 'studyhub@internery.local',
+		role: 'EMPLOYER',
+		phone: '0900000006'
+	},
+	{
+		id: '00000000-0000-4000-8000-000000000007',
+		name: 'Vo Ha My',
+		email: 'eventcrew@internery.local',
+		role: 'EMPLOYER',
+		phone: '0900000007'
 	}
 ] as const;
 
@@ -105,6 +119,59 @@ const seedStudentProfiles: SeedStudentProfile[] = [
 		skills: ['Teamwork', 'Event support', 'Physical work'],
 		availability: 'Weekends and university holidays',
 		bio: 'First-year student looking for weekend event work.'
+	}
+];
+
+type SeedEmployerProfile = {
+	email: string;
+	orgName: string;
+	orgType: 'COMPANY' | 'INDIVIDUAL';
+	description: string;
+	address: string;
+	contactPhone: string;
+	verificationStatus: 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+	verifiedAt?: Date;
+	ratingAvg?: number;
+	ratingCount?: number;
+};
+
+/**
+ * Employer profiles for the demo.
+ *
+ * Acme Coffee keeps its real seeded review and Verified badge. The other two
+ * employers give the home page and job cards some variety.
+ */
+const seedEmployerProfiles: SeedEmployerProfile[] = [
+	{
+		email: 'employer@internery.local',
+		orgName: 'Acme Coffee',
+		orgType: 'COMPANY',
+		description: 'A small specialty coffee shop in central Hanoi.',
+		address: '12 Nguyen Trai, Hanoi',
+		contactPhone: '0900000003',
+		verificationStatus: 'VERIFIED',
+		verifiedAt: new Date(),
+		// Matches the student-to-employer review below, so cards show a rating.
+		ratingAvg: 5,
+		ratingCount: 1
+	},
+	{
+		email: 'studyhub@internery.local',
+		orgName: 'Hanoi Study Hub',
+		orgType: 'COMPANY',
+		description: 'A tutoring centre for secondary and high-school students.',
+		address: '45 Chua Boc, Hanoi',
+		contactPhone: '0900000006',
+		verificationStatus: 'UNVERIFIED'
+	},
+	{
+		email: 'eventcrew@internery.local',
+		orgName: 'Saigon Event Crew',
+		orgType: 'COMPANY',
+		description: 'Event staffing for launches, conferences and campus tours.',
+		address: '88 Le Loi, Ho Chi Minh City',
+		contactPhone: '0900000007',
+		verificationStatus: 'UNVERIFIED'
 	}
 ];
 
@@ -767,6 +834,40 @@ const seedApplications = [
 		message: 'I am free at weekends and would like to try cafe work.',
 		status: 'ACCEPTED',
 		rejectReason: null
+	},
+	{
+		// The extra employers need recent applications so the featured ranking
+		// has more than one company to show.
+		id: '30000000-0000-4000-8000-000000000009',
+		jobId: seedJobs[14].id,
+		studentEmail: 'linh@internery.local',
+		message: 'I have helped at two campus events and can manage a check-in desk.',
+		status: 'PENDING',
+		rejectReason: null
+	},
+	{
+		id: '30000000-0000-4000-8000-000000000010',
+		jobId: seedJobs[14].id,
+		studentEmail: 'minh@internery.local',
+		message: 'I am free that weekend and comfortable greeting large groups.',
+		status: 'PENDING',
+		rejectReason: null
+	},
+	{
+		id: '30000000-0000-4000-8000-000000000011',
+		jobId: seedJobs[9].id,
+		studentEmail: 'student@internery.local',
+		message: 'I can help with speaking practice and basic vocabulary drills.',
+		status: 'PENDING',
+		rejectReason: null
+	},
+	{
+		id: '30000000-0000-4000-8000-000000000012',
+		jobId: seedJobs[9].id,
+		studentEmail: 'linh@internery.local',
+		message: 'I study English and have tutored primary students before.',
+		status: 'PENDING',
+		rejectReason: null
 	}
 ] as const;
 
@@ -1033,27 +1134,23 @@ async function seedProfiles(userIdsByEmail: Map<string, string>) {
 			});
 	}
 
-	const employerId = requireUserId(userIdsByEmail, 'employer@internery.local');
-	const employerProfile = {
-		orgName: 'Acme Coffee',
-		orgType: 'COMPANY' as const,
-		description: 'A small specialty coffee shop in central Hanoi.',
-		address: '12 Nguyen Trai, Hanoi',
-		contactPhone: '0900000003',
-		verificationStatus: 'VERIFIED' as const,
-		verifiedAt: new Date(),
-		// Matches the student-to-employer review below, so cards show a rating.
-		ratingAvg: 5,
-		ratingCount: 1
-	};
+	for (const employerProfile of seedEmployerProfiles) {
+		const { email, ...profile } = employerProfile;
+		const values = {
+			...profile,
+			verifiedAt: profile.verifiedAt ?? null,
+			ratingAvg: profile.ratingAvg ?? 0,
+			ratingCount: profile.ratingCount ?? 0
+		};
 
-	await db
-		.insert(schema.employerProfiles)
-		.values({ userId: employerId, ...employerProfile })
-		.onConflictDoUpdate({
-			target: schema.employerProfiles.userId,
-			set: employerProfile
-		});
+		await db
+			.insert(schema.employerProfiles)
+			.values({ userId: requireUserId(userIdsByEmail, email), ...values })
+			.onConflictDoUpdate({
+				target: schema.employerProfiles.userId,
+				set: values
+			});
+	}
 }
 
 /**
@@ -1112,8 +1209,21 @@ async function seedCategoryRows(): Promise<Map<string, string>> {
 	return new Map(stored.map((category) => [category.name, category.id]));
 }
 
+/** Jobs split across the demo employers so home cards are not all one company. */
+const employerEmailByJobId: Record<string, string> = {
+	'20000000-0000-4000-8000-000000000003': 'studyhub@internery.local',
+	'20000000-0000-4000-8000-000000000010': 'studyhub@internery.local',
+	'20000000-0000-4000-8000-000000000011': 'studyhub@internery.local',
+	'20000000-0000-4000-8000-000000000023': 'studyhub@internery.local',
+	'20000000-0000-4000-8000-000000000004': 'eventcrew@internery.local',
+	'20000000-0000-4000-8000-000000000015': 'eventcrew@internery.local',
+	'20000000-0000-4000-8000-000000000020': 'eventcrew@internery.local',
+	'20000000-0000-4000-8000-000000000025': 'eventcrew@internery.local',
+	'20000000-0000-4000-8000-000000000032': 'eventcrew@internery.local'
+};
+
 async function seedJobRows(
-	employerId: string,
+	userIdsByEmail: Map<string, string>,
 	categoryIdsByName: Map<string, string>,
 	locationIdsByName: Map<string, string>
 ) {
@@ -1122,6 +1232,10 @@ async function seedJobRows(
 	for (const [index, job] of seedJobs.entries()) {
 		const categoryId = categoryIdsByName.get(job.categoryName);
 		const locationId = locationIdsByName.get(job.location);
+		const employerId = requireUserId(
+			userIdsByEmail,
+			employerEmailByJobId[job.id] ?? 'employer@internery.local'
+		);
 
 		if (!categoryId) {
 			throw new Error(`Missing category ${job.categoryName}.`);
@@ -1323,10 +1437,9 @@ async function main() {
 	await seedProfiles(userIdsByEmail);
 	await seedVerificationRows(userIdsByEmail);
 
-	const employerId = requireUserId(userIdsByEmail, 'employer@internery.local');
 	const categoryIdsByName = await seedCategoryRows();
 	const locationIdsByName = await seedLocationRows();
-	await seedJobRows(employerId, categoryIdsByName, locationIdsByName);
+	await seedJobRows(userIdsByEmail, categoryIdsByName, locationIdsByName);
 	await seedApplicationRows(userIdsByEmail);
 	await seedReviewRows(userIdsByEmail);
 	await seedWorkRecordRows(userIdsByEmail);
