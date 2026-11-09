@@ -1106,11 +1106,16 @@ paths:
       summary: Jobs needing attention
       description: |
         Jobs that are hidden, reported, auto-hidden, or flagged by the scam keyword scan.
-        Open reports are resolved when the job is restored or its flag cleared.
+        Open reports are resolved when the job is restored or its flag cleared. `q` is a
+        case-insensitive job-title search applied before pagination.
       x-us: [US-32, US-42, US-43]
       x-fr: [FR-37, FR-49, FR-50]
       x-roles: [ADMIN]
       parameters:
+        - name: q
+          in: query
+          description: Case-insensitive job title search.
+          schema: { type: string, maxLength: 100 }
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/PageSize' }
       responses:

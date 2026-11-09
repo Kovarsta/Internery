@@ -8,6 +8,7 @@
  */
 import { and, asc, count, eq, or, sql, type SQL } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
+import { toLikePattern } from '#lib/server/api/sql.ts';
 import { sendNotificationEmails } from '#lib/server/email-notifications.ts';
 import type { Database, Transaction } from '#lib/server/db/types.ts';
 import {
@@ -44,6 +45,8 @@ export type ModerationPage = {
 };
 
 export type ModerationListOptions = {
+	/** Case-insensitive substring of the job title. */
+	search?: string;
 	limit: number;
 	offset: number;
 };
@@ -91,7 +94,7 @@ export async function listModerationQueue(
 	database: Database,
 	options: ModerationListOptions
 ): Promise<ModerationPage> {
-	const filters = queueFilter();
+	const filters = queueFilter(options.search);
 
 	const [rows, totalRows] = await Promise.all([
 		database
@@ -245,15 +248,30 @@ export async function clearJobFlag(
 	return requireJobDetail(database, input.jobId);
 }
 
-/** The queue condition, shared by the page query and the total count. */
-function queueFilter(): SQL | undefined {
+/**
+ * The queue condition, shared by the page query and the total count.
+ *
+ * The search is a literal title substring, so `%` and `_` do not become
+ * wildcards. It is applied before pagination, so the page and the total agree.
+ */
+function queueFilter(search?: string): SQL | undefined {
+	const conditions: SQL[] = [];
 	const hasOpenReport = sql`exists (
 		select 1 from ${reports}
 		where ${reports.jobId} = ${jobs.id}
 			and ${reports.status} = 'OPEN'
 	)`;
+	const inQueue = or(eq(jobs.isHidden, true), eq(jobs.needsReview, true), hasOpenReport);
 
-	return or(eq(jobs.isHidden, true), eq(jobs.needsReview, true), hasOpenReport);
+	if (inQueue) {
+		conditions.push(inQueue);
+	}
+
+	if (search !== undefined) {
+		conditions.push(sql`${jobs.title} ilike ${toLikePattern(search)} escape '\\'`);
+	}
+
+	return and(...conditions);
 }
 
 /** Explains why a job is in the queue; one job can have several reasons. */

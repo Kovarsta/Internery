@@ -80,7 +80,7 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - [x] `GET /admin/users` — Search users
 - [x] `POST /admin/users/{userId}/lock` — Lock an account
 - [x] `POST /admin/users/{userId}/unlock` — Unlock an account
-- [x] `GET /admin/moderation-queue` — Jobs needing attention
+- [x] `GET /admin/moderation-queue` - Jobs needing attention, searchable by title
 - [x] `POST /admin/jobs/{jobId}/hide` — Hide a job with a reason
 - [x] `POST /admin/jobs/{jobId}/restore` — Restore a hidden job
 - [x] `POST /admin/jobs/{jobId}/clear-flag` — Remove the scam warning after checking

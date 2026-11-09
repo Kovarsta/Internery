@@ -4,7 +4,14 @@ import { eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
-import { createCategory, deleteCategory, listAdminUsers, lockUser, unlockUser } from './admin.ts';
+import {
+	createCategory,
+	deleteCategory,
+	listAdminUsers,
+	listModerationQueue,
+	lockUser,
+	unlockUser
+} from './admin.ts';
 
 // Set TEST_DATABASE_URL to run the database-backed tests.
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -151,5 +158,55 @@ describe.skipIf(!testDatabase)('admin users and categories', () => {
 
 		await testDatabase.delete(schema.jobs).where(eq(schema.jobs.id, jobId));
 		await expect(deleteCategory(testDatabase, created.id)).resolves.toBeUndefined();
+	});
+
+	it('searches the moderation queue by job title', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		const moderationCategory = await createCategory(testDatabase, {
+			name: `Moderation search ${randomUUID()}`
+		});
+		const moderationJobId = randomUUID();
+
+		await testDatabase.insert(schema.jobs).values({
+			id: moderationJobId,
+			employerId,
+			categoryId: moderationCategory.id,
+			title: 'Weekend barista search target',
+			description: 'Hidden job for the moderation search test.',
+			locationId: '80000000-0000-4000-8000-000000000001',
+			daysOfWeek: ['SATURDAY'],
+			startTime: '09:00',
+			endTime: '17:00',
+			salaryAmount: 30_000,
+			salaryType: 'HOURLY',
+			startDate: '2026-12-01',
+			endDate: '2026-12-02',
+			isHidden: true
+		});
+
+		try {
+			const match = await listModerationQueue(testDatabase, {
+				search: 'barista',
+				limit: 20,
+				offset: 0
+			});
+			const miss = await listModerationQueue(testDatabase, {
+				search: 'not-a-real-title',
+				limit: 20,
+				offset: 0
+			});
+
+			expect(match.items.map((item) => item.job.id)).toContain(moderationJobId);
+			expect(match.total).toBeGreaterThanOrEqual(1);
+			expect(miss.items.map((item) => item.job.id)).not.toContain(moderationJobId);
+		} finally {
+			await testDatabase.delete(schema.jobs).where(eq(schema.jobs.id, moderationJobId));
+			await testDatabase
+				.delete(schema.categories)
+				.where(eq(schema.categories.id, moderationCategory.id));
+		}
 	});
 });
