@@ -45,9 +45,10 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   generated timestamps to `timestamptz` and the role/status text columns to PostgreSQL enums. The
   root `auth-schema.ts` is stale and unimported; do not use it.
 - Authentication uses Argon2id and Resend, and requires email verification before sign-in. A real
-  Resend key and a verified sender address are required for verification mail. The Argon2id settings
-  and hash/verify wrappers live in `src/lib/server/password.ts`, shared by Better Auth and the seed
-  script.
+  Resend key and a verified sender address are required for verification mail. Password reset uses
+  Better Auth's one-time token and the same Resend sender; a completed reset revokes other sessions.
+  The Argon2id settings and hash/verify wrappers live in `src/lib/server/password.ts`, shared by
+  Better Auth and the seed script.
 - `src/lib/server/db/product.schema.ts` contains the product tables: common profile/moderation
   tables, student and employer profiles, marketplace, trust, notifications, AI and audit tables.
   All user foreign keys reference the generated `users.id` as `uuid`.

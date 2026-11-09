@@ -12,7 +12,7 @@ import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { db } from '#lib/server/db/index.ts';
 import * as schema from '#lib/server/db/schema.ts';
-import { sendVerificationEmail } from '#lib/server/email.ts';
+import { sendPasswordResetEmail, sendVerificationEmail } from '#lib/server/email.ts';
 import { hashPassword, verifyPassword } from '#lib/server/password.ts';
 
 export const auth = betterAuth({
@@ -75,6 +75,17 @@ export const auth = betterAuth({
 		password: {
 			hash: hashPassword,
 			verify: verifyPassword
+		},
+		// Better Auth creates the one-time token; the app owns the page that
+		// consumes it. Do not await the provider: response timing must not
+		// reveal whether the address exists.
+		revokeSessionsOnPasswordReset: true,
+		sendResetPassword: async ({ user, token }) => {
+			const resetUrl = `${ORIGIN}/reset-password?token=${encodeURIComponent(token)}`;
+
+			void sendPasswordResetEmail(user.email, resetUrl).catch((error: unknown) => {
+				console.error('Failed to send password reset email', error);
+			});
 		}
 	},
 	emailVerification: {

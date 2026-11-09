@@ -18,7 +18,10 @@ export const load: PageServerLoad = ({ locals, url }) => {
 		redirect(303, '/me');
 	}
 
-	return { registered: url.searchParams.get('registered') === '1' };
+	return {
+		registered: url.searchParams.get('registered') === '1',
+		reset: url.searchParams.get('reset') === '1'
+	};
 };
 
 export const actions: Actions = {

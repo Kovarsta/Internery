@@ -63,6 +63,23 @@ export async function sendVerificationEmail(to: string, verificationUrl: string)
 	});
 }
 
+/**
+ * Sends the Better Auth password-reset link.
+ *
+ * The token is one-time and expires after one hour. The message deliberately
+ * says nothing about whether the account exists; the request form shows the
+ * same result either way.
+ */
+export async function sendPasswordResetEmail(to: string, resetUrl: string) {
+	await sendEmail(to, {
+		subject: 'Reset your Internery password',
+		heading: 'Choose a new password',
+		body: 'Use the button below to set a new password for your Internery account. The link expires in one hour. If you did not ask for this, you can ignore this email.',
+		actionLabel: 'Reset password',
+		actionUrl: resetUrl
+	});
+}
+
 /** Accepts `email@example.com` and `Name <email@example.com>`. */
 function isSenderAddress(value: string): boolean {
 	return /^[^<>]+<[^<>@\s]+@[^<>@\s]+>$/.test(value) || /^[^<>@\s]+@[^<>@\s]+$/.test(value);

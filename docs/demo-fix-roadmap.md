@@ -32,7 +32,7 @@ Make the demo feel like a working student job marketplace:
 | Sign out            | `POST /logout` from the header and footer                                                                                       | —                                                        |
 | Close submissions   | `close` (`HIRING → CLOSED`), `cancel` (`CANCELLED`) and `complete` (`CLOSED                                                     | FILLED → COMPLETED`)                                     | —   |
 | Name and phone      | editable on `/me` through `PATCH /me`                                                                                           | —                                                        |
-| Email notifications | verification and every notification event sent through Resend                                                                   | no opt-out or retry; the demo needs a verified sender    |
+| Email notifications | verification, password reset and every notification event sent through Resend                                                   | no opt-out or retry; the demo needs a verified sender    |
 
 ## Decisions
 
@@ -139,6 +139,7 @@ Effort: **S–M**.
 Implemented:
 
 - one Resend sender in `email.ts` and one pure template in `email-template.ts`;
+- verification and password-reset mail use the same sender;
 - every in-app notification also sends an email after the transaction commits;
 - delivery failures are logged and never fail the request;
 - the sender format in `.env` was fixed and `pnpm email:test` previews the real template.

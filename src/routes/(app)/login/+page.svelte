@@ -43,6 +43,13 @@
 		</Alert>
 	{/if}
 
+	{#if data.reset}
+		<Alert class="mt-5 border-chalk/30 bg-chalk/5">
+			<AlertTitle>Password updated</AlertTitle>
+			<AlertDescription>Sign in with your new password.</AlertDescription>
+		</Alert>
+	{/if}
+
 	{#if form?.message}
 		<Alert class="mt-5" variant="destructive">
 			<AlertTitle>Cannot sign in</AlertTitle>
@@ -68,7 +75,12 @@
 		</div>
 
 		<div>
-			<Label class="mb-1" for="signin-password">Password</Label>
+			<div class="flex items-baseline justify-between gap-3">
+				<Label class="mb-1" for="signin-password">Password</Label>
+				<a class="text-sm font-medium text-chalk hover:underline" href={resolve('forgot-password')}>
+					Forgot password?
+				</a>
+			</div>
 			<Input
 				autocomplete="current-password"
 				id="signin-password"

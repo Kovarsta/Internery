@@ -19,7 +19,7 @@ and without an email queue or worker.
   Resend.
 - `src/lib/server/email-template.ts` renders the HTML and text parts. It is pure, so the preview
   script and unit tests use the same template as production.
-- `sendVerificationEmail` uses the same base and template.
+- `sendVerificationEmail` and `sendPasswordResetEmail` use the same base and template.
 
 The design is a card on the app's paper background: brand line, heading, body, one green action
 button, and a footer. Styles are inline and laid out with presentation tables because email clients
@@ -56,7 +56,14 @@ the provider entirely.
 
 `RESEND_API_KEY` and `EMAIL_FROM_ADDRESS` are required. The sender must use the
 `Name <email@example.com>` form when a display name is present; Resend rejects
-`Name email@example.com`. `EMAIL_FROM_ADDRESS` also feeds verification mail.
+`Name email@example.com`. `EMAIL_FROM_ADDRESS` also feeds verification and password-reset mail.
+
+### Password reset
+
+Better Auth owns the one-time token and calls `sendResetPassword` when a reset is requested. The
+callback builds the app URL and sends it with `sendPasswordResetEmail`; it does not await the
+provider, so response timing does not reveal whether an address exists. A completed reset revokes
+the account's other sessions.
 
 ## Trade-offs
 
