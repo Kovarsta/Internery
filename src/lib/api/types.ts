@@ -29,7 +29,7 @@ export type Location = {
 
 export type SalaryType = 'HOURLY' | 'DAILY' | 'FIXED';
 
-export type JobStatus = 'HIRING' | 'FILLED' | 'COMPLETED' | 'CANCELLED';
+export type JobStatus = 'HIRING' | 'CLOSED' | 'FILLED' | 'COMPLETED' | 'CANCELLED';
 
 export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
 
@@ -253,6 +253,7 @@ export type PlatformStats = {
 	};
 	jobs: {
 		hiring: number;
+		closed: number;
 		filled: number;
 		completed: number;
 		cancelled: number;

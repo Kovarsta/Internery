@@ -598,11 +598,34 @@ paths:
       operationId: cancelJob
       summary: Cancel a job
       description: |
-        `HIRING` or `FILLED` to `CANCELLED`. `COMPLETED` jobs cannot be cancelled (AC-19.2).
+        `HIRING`, `CLOSED` or `FILLED` to `CANCELLED`. `COMPLETED` jobs cannot be cancelled (AC-19.2).
         The job leaves search on its own, because search only returns `HIRING`. Pending and accepted
         students are notified. The UI must confirm first (AC-19.3).
       x-us: [US-19]
       x-fr: [FR-22]
+      x-roles: [EMPLOYER]
+      parameters:
+        - { $ref: '#/components/parameters/JobId' }
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '200':
+          description: Job after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobDetail' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /jobs/{jobId}/close:
+    post:
+      tags: [Jobs]
+      operationId: closeJob
+      summary: Stop accepting applications
+      description: |
+        `HIRING` to `CLOSED`, without waiting for every position to fill. The job leaves search and
+        keeps its accepted students. Pending applicants are notified with `JOB_CLOSED`. A closed job
+        can later be completed or cancelled. The UI must confirm first.
       x-roles: [EMPLOYER]
       parameters:
         - { $ref: '#/components/parameters/JobId' }
@@ -623,7 +646,8 @@ paths:
       operationId: completeJob
       summary: Mark a job completed
       description: |
-        Only from `FILLED` (AC-25.2). Unlocks reviews for both sides. Accepted students are notified.
+        Only from `FILLED` or `CLOSED` (AC-25.2). Unlocks reviews for both sides. Accepted students
+        are notified.
       x-us: [US-25]
       x-fr: [FR-29]
       x-roles: [EMPLOYER]
@@ -652,7 +676,7 @@ paths:
       description: |
         Creates a `PENDING` application. With `attachCv: true` (default) the student's current
         CV is copied onto the application; a student without a CV can still apply.
-        Side effects: in-app notification to the employer. Email delivery is not wired yet.
+        Side effects: in-app notification and email to the employer.
         A hidden job returns `404`, like the job detail read. Applying again after a withdrawal
         revives the withdrawn application with the new message and CV snapshot.
       x-us: [US-12]
@@ -1802,7 +1826,7 @@ components:
       description: |
         Morning is 05:00-12:00, afternoon 12:00-18:00 and evening 18:00-22:00,
         local time. The end is exclusive.
-    JobStatus: { type: string, enum: [HIRING, FILLED, COMPLETED, CANCELLED] }
+    JobStatus: { type: string, enum: [HIRING, CLOSED, FILLED, COMPLETED, CANCELLED] }
     ApplicationStatus: { type: string, enum: [PENDING, ACCEPTED, REJECTED, WITHDRAWN] }
     VerificationRequestStatus: { type: string, enum: [PENDING, APPROVED, REJECTED] }
     NotificationType:
@@ -1813,6 +1837,7 @@ components:
         - APPLICATION_ACCEPTED
         - APPLICATION_REJECTED
         - JOB_FILLED
+        - JOB_CLOSED
         - JOB_COMPLETED
         - JOB_CANCELLED
         - JOB_HIDDEN
@@ -2312,9 +2337,10 @@ components:
             admins: { type: integer }
         jobs:
           type: object
-          required: [hiring, filled, completed, cancelled]
+          required: [hiring, closed, filled, completed, cancelled]
           properties:
             hiring: { type: integer }
+            closed: { type: integer }
             filled: { type: integer }
             completed: { type: integer }
             cancelled: { type: integer }

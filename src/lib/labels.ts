@@ -27,6 +27,7 @@ export const applicationStatusClass: Record<ApplicationStatus, string> = {
 /** Display labels for job states. */
 export const jobStatusLabel: Record<JobStatus, string> = {
 	HIRING: 'Hiring',
+	CLOSED: 'Closed',
 	FILLED: 'Filled',
 	COMPLETED: 'Completed',
 	CANCELLED: 'Cancelled'
@@ -35,6 +36,7 @@ export const jobStatusLabel: Record<JobStatus, string> = {
 /** Badge classes for job states, using the app palette. */
 export const jobStatusClass: Record<JobStatus, string> = {
 	HIRING: 'bg-chalk/10 text-chalk',
+	CLOSED: 'bg-highlight/20 text-ink',
 	FILLED: 'bg-highlight/20 text-ink',
 	COMPLETED: 'bg-muted text-muted-foreground',
 	CANCELLED: 'bg-warning/10 text-warning'

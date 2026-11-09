@@ -12,6 +12,7 @@
 
 	const statusLabel: Record<JobDetail['status'], string> = {
 		HIRING: 'Hiring',
+		CLOSED: 'Closed',
 		FILLED: 'Filled',
 		COMPLETED: 'Completed',
 		CANCELLED: 'Cancelled'

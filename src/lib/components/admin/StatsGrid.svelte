@@ -19,6 +19,7 @@
 
 	const jobs = $derived([
 		{ label: 'Hiring', value: stats.jobs.hiring },
+		{ label: 'Closed', value: stats.jobs.closed },
 		{ label: 'Filled', value: stats.jobs.filled },
 		{ label: 'Completed', value: stats.jobs.completed },
 		{ label: 'Cancelled', value: stats.jobs.cancelled }

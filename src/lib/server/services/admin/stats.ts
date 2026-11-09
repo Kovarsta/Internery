@@ -22,6 +22,7 @@ export type PlatformStatsRecord = {
 	employers: number;
 	admins: number;
 	hiring: number;
+	closed: number;
 	filled: number;
 	completed: number;
 	cancelled: number;
@@ -46,6 +47,7 @@ export async function getPlatformStats(
 		database
 			.select({
 				hiring: sql<number>`(count(*) filter (where ${jobs.status} = 'HIRING'))::int`,
+				closed: sql<number>`(count(*) filter (where ${jobs.status} = 'CLOSED'))::int`,
 				filled: sql<number>`(count(*) filter (where ${jobs.status} = 'FILLED'))::int`,
 				completed: sql<number>`(count(*) filter (where ${jobs.status} = 'COMPLETED'))::int`,
 				cancelled: sql<number>`(count(*) filter (where ${jobs.status} = 'CANCELLED'))::int`
@@ -65,6 +67,7 @@ export async function getPlatformStats(
 		employers: userCounts[0]?.employers ?? 0,
 		admins: userCounts[0]?.admins ?? 0,
 		hiring: jobCounts[0]?.hiring ?? 0,
+		closed: jobCounts[0]?.closed ?? 0,
 		filled: jobCounts[0]?.filled ?? 0,
 		completed: jobCounts[0]?.completed ?? 0,
 		cancelled: jobCounts[0]?.cancelled ?? 0,

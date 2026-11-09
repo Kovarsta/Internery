@@ -104,7 +104,7 @@ export type Category = {
 };
 
 export type SalaryType = 'HOURLY' | 'DAILY' | 'FIXED';
-export type JobStatus = 'HIRING' | 'FILLED' | 'COMPLETED' | 'CANCELLED';
+export type JobStatus = 'HIRING' | 'CLOSED' | 'FILLED' | 'COMPLETED' | 'CANCELLED';
 export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
 
 export type JobSummarySource = {
@@ -331,6 +331,7 @@ export type NotificationType =
 	| 'APPLICATION_ACCEPTED'
 	| 'APPLICATION_REJECTED'
 	| 'JOB_FILLED'
+	| 'JOB_CLOSED'
 	| 'JOB_COMPLETED'
 	| 'JOB_CANCELLED'
 	| 'JOB_HIDDEN'
@@ -702,6 +703,7 @@ export type PlatformStatsSource = {
 	employers: number;
 	admins: number;
 	hiring: number;
+	closed: number;
 	filled: number;
 	completed: number;
 	cancelled: number;
@@ -719,6 +721,7 @@ export type PlatformStats = {
 	};
 	jobs: {
 		hiring: number;
+		closed: number;
 		filled: number;
 		completed: number;
 		cancelled: number;
@@ -739,6 +742,7 @@ export function toPlatformStats(stats: PlatformStatsSource): PlatformStats {
 		},
 		jobs: {
 			hiring: stats.hiring,
+			closed: stats.closed,
 			filled: stats.filled,
 			completed: stats.completed,
 			cancelled: stats.cancelled

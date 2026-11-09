@@ -56,7 +56,13 @@ export const dayOfWeek = pgEnum('day_of_week', [
 	'SATURDAY',
 	'SUNDAY'
 ]);
-export const jobStatus = pgEnum('job_status', ['HIRING', 'FILLED', 'COMPLETED', 'CANCELLED']);
+export const jobStatus = pgEnum('job_status', [
+	'HIRING',
+	'CLOSED',
+	'FILLED',
+	'COMPLETED',
+	'CANCELLED'
+]);
 export const applicationStatus = pgEnum('application_status', [
 	'PENDING',
 	'ACCEPTED',
@@ -76,6 +82,7 @@ export const notificationType = pgEnum('notification_type', [
 	'APPLICATION_ACCEPTED', // to student (US-24)
 	'APPLICATION_REJECTED', // to student (US-24)
 	'JOB_FILLED', // to student (US-30: tin doi trang thai)
+	'JOB_CLOSED', // employer stopped accepting applications early
 	'JOB_COMPLETED',
 	'JOB_CANCELLED',
 	'JOB_HIDDEN', // admin hide, with reason (US-32)

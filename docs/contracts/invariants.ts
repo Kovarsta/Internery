@@ -10,6 +10,7 @@
  *   acceptApplication  FR-27, FR-28   capacity check + auto FILLED
  *   rejectApplication  FR-27
  *   changeJobStatus    FR-22, FR-29   job state machine + notifies students
+ *   closeJob           FR-22          HIRING -> CLOSED + notifies pending students
  *   submitReport       FR-48, FR-49   3 distinct reporters => auto-hide
  *   createReview       FR-30, FR-31, FR-51   review rules + rating recalculation
  *                                            + signed work record
@@ -59,6 +60,11 @@ export const JOB_TRANSITIONS: Record<
 > = {
 	HIRING: [
 		{ to: 'FILLED', by: 'SYSTEM' }, // when accepted = positions_needed
+		{ to: 'CLOSED', by: 'EMPLOYER' }, // stop accepting applications early
+		{ to: 'CANCELLED', by: 'EMPLOYER' }
+	],
+	CLOSED: [
+		{ to: 'COMPLETED', by: 'EMPLOYER' },
 		{ to: 'CANCELLED', by: 'EMPLOYER' }
 	],
 	FILLED: [
@@ -111,6 +117,39 @@ export async function changeJobStatus(
 				}))
 			);
 		return { status: to };
+	});
+}
+
+/** Stops accepting applications without filling the remaining positions. */
+export async function closeJob(db: Db, jobId: string, employerId: string) {
+	return db.transaction(async (tx) => {
+		const [job] = await tx.select().from(s.jobs).where(eq(s.jobs.id, jobId)).for('update');
+		if (!job) throw new DomainError('NOT_FOUND');
+		if (job.employerId !== employerId) throw new DomainError('FORBIDDEN');
+
+		const ok = JOB_TRANSITIONS[job.status].some((t) => t.to === 'CLOSED' && t.by === 'EMPLOYER');
+		if (!ok) throw new DomainError('INVALID_STATE_TRANSITION');
+
+		await tx.update(s.jobs).set({ status: 'CLOSED' }).where(eq(s.jobs.id, jobId));
+
+		// Accepted students are unaffected; only applicants waiting for an answer are told.
+		const pending = await tx
+			.select({ id: s.applications.studentId })
+			.from(s.applications)
+			.where(and(eq(s.applications.jobId, jobId), eq(s.applications.status, 'PENDING')));
+
+		if (pending.length)
+			await tx.insert(s.notifications).values(
+				pending.map((a) => ({
+					userId: a.id,
+					type: 'JOB_CLOSED' as const,
+					title: `"${job.title}" is no longer accepting applications`,
+					body: 'The employer closed applications before filling every position.',
+					jobId
+				}))
+			);
+
+		return { status: 'CLOSED' as const };
 	});
 }
 

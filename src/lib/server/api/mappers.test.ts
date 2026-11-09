@@ -750,6 +750,7 @@ describe('toPlatformStats', () => {
 				employers: 1,
 				admins: 1,
 				hiring: 4,
+				closed: 0,
 				filled: 0,
 				completed: 1,
 				cancelled: 0,
@@ -760,7 +761,7 @@ describe('toPlatformStats', () => {
 			from: '2026-01-01',
 			to: null,
 			users: { students: 3, employers: 1, admins: 1 },
-			jobs: { hiring: 4, filled: 0, completed: 1, cancelled: 0 },
+			jobs: { hiring: 4, closed: 0, filled: 0, completed: 1, cancelled: 0 },
 			applicationsTotal: 8,
 			completedJobs: 1
 		});

@@ -7,7 +7,7 @@ implementation and review.
 
 | File                                 | Purpose                                                  |
 | ------------------------------------ | -------------------------------------------------------- |
-| `contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 68 operations under `/api/v1` |
+| `contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 69 operations under `/api/v1` |
 | `contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501` |
 | `contracts/invariants.ts`            | Transactional service rules and work-record signing      |
 

@@ -17,7 +17,7 @@ import type {
 } from './selections.ts';
 
 /** Statuses an employer may cancel from; a completed job is final (AC-19.2). */
-const CANCELLABLE_STATUSES: JobRecord['status'][] = ['HIRING', 'FILLED'];
+const CANCELLABLE_STATUSES: JobRecord['status'][] = ['HIRING', 'CLOSED', 'FILLED'];
 
 /**
  * Cancels an employer's job.
@@ -40,6 +40,76 @@ export async function completeJob(
 	jobId: string
 ): Promise<JobDetailRecord> {
 	return changeJobStatus(database, employerId, jobId, 'COMPLETED');
+}
+
+/**
+ * Stops accepting applications without filling the remaining positions.
+ *
+ * The job becomes `CLOSED`, leaves search and keeps its accepted students.
+ * Pending applicants are told that it is no longer accepting applications. A
+ * closed job can later be completed or cancelled.
+ */
+export async function closeJob(
+	database: Database,
+	employerId: string,
+	jobId: string
+): Promise<JobDetailRecord> {
+	const pendingEmails: NotificationInsert[] = [];
+
+	await database.transaction(async (tx) => {
+		const [job] = await tx
+			.select({
+				id: jobs.id,
+				title: jobs.title,
+				employerId: jobs.employerId,
+				status: jobs.status
+			})
+			.from(jobs)
+			.where(eq(jobs.id, jobId))
+			.for('update');
+
+		if (!job) {
+			throw new DomainError('NOT_FOUND');
+		}
+
+		if (job.employerId !== employerId) {
+			throw new DomainError('FORBIDDEN');
+		}
+
+		if (job.status !== 'HIRING') {
+			throw new DomainError('INVALID_STATE_TRANSITION');
+		}
+
+		await tx.update(jobs).set({ status: 'CLOSED' }).where(eq(jobs.id, job.id));
+
+		const stillPending = await tx
+			.select({ userId: applications.studentId })
+			.from(applications)
+			.where(and(eq(applications.jobId, job.id), eq(applications.status, 'PENDING')));
+
+		if (stillPending.length > 0) {
+			const notificationsForPending: NotificationInsert[] = stillPending.map(({ userId }) => ({
+				userId,
+				type: 'JOB_CLOSED',
+				title: `"${job.title}" is no longer accepting applications`,
+				body: 'The employer closed applications before filling every position.',
+				jobId: job.id
+			}));
+
+			await tx.insert(notifications).values(notificationsForPending);
+			pendingEmails.push(...notificationsForPending);
+		}
+	});
+
+	const job = await findJobDetail(database, jobId);
+
+	if (!job) {
+		throw new Error('The closed job could not be read back.');
+	}
+
+	await sendNotificationEmails(database, pendingEmails);
+
+	return job;
 }
 
 /**
@@ -77,9 +147,11 @@ async function changeJobStatus(
 			throw new DomainError('FORBIDDEN');
 		}
 
-		// Completing needs `FILLED`; cancelling also accepts `HIRING`.
+		// Completing needs `FILLED` or `CLOSED`; cancelling also accepts `HIRING`.
 		const isAllowed =
-			to === 'COMPLETED' ? job.status === 'FILLED' : CANCELLABLE_STATUSES.includes(job.status);
+			to === 'COMPLETED'
+				? job.status === 'FILLED' || job.status === 'CLOSED'
+				: CANCELLABLE_STATUSES.includes(job.status);
 
 		if (!isAllowed) {
 			throw new DomainError('INVALID_STATE_TRANSITION');

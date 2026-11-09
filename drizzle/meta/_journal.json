@@ -50,6 +50,13 @@
       "when": 1794167907343,
       "tag": "0006_swift_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794222942336,
+      "tag": "0007_majestic_the_fury",
+      "breakpoints": true
     }
   ]
 }

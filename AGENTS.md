@@ -20,7 +20,7 @@ code; copy what is needed into `src/` when adopting it.
 
 | File                                      | Role                                                           |
 | ----------------------------------------- | -------------------------------------------------------------- |
-| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 68 operations under `/api/v1`       |
+| `docs/contracts/openapi.yaml`             | API contract: OpenAPI 3.1, 69 operations under `/api/v1`       |
 | `docs/contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501`       |
 | `docs/contracts/invariants.ts`            | Transactional service rules + work-record signing              |
 | `docs/roadmap.md`                         | Phase plan from the API foundation through deployment          |
@@ -66,7 +66,7 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Migrations through `drizzle/0004_volatile_inhumans.sql` have been generated and applied; all 22
   tables exist. Auth timestamps are `timestamptz`, and `users.role` / `users.status` are PostgreSQL
   enums.
-- The `/api/v1` route tree exists under `src/routes/api/v1` (53 paths, 68 operations). The account,
+- The `/api/v1` route tree exists under `src/routes/api/v1` (54 paths, 69 operations). The account,
   notification, saved-job, application, own-profile, job read/write, review, admin and trust
   operations are implemented; the AI reads and the shareable work-record card still return `501`.
   Shared API helpers live in `src/lib/server/api/`; services live in `src/lib/server/services/`.
@@ -92,7 +92,9 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   group under `src/routes/(app)`; `src/routes/api` stays outside it. The home page, job browsing,
   applications, saved jobs, the employer job list and applicant review, notifications, sign-in,
   both profile editors, avatar and CV uploads, employer job editing, the review flow, employer
-  verification and the public work-record directory and verify pages work against the API. The admin
+  verification and the public work-record directory and verify pages work against the API. The
+  employer job workspace at `/employer/jobs/[jobId]` has Overview, Applicants and Edit tabs; closing
+  applications moves the job from `HIRING` to `CLOSED` without changing the position counts. The admin
   area (overview, users, moderation, categories, verification) is implemented, and students can
   report a job from the job page and publish or hide their work records from `/me/work-records`.
 - Seed data for the moderation demo: the retail job is flagged by the scam scan and has two open
@@ -233,7 +235,9 @@ The readability rules above apply to every change. These are the project-specifi
 Rules that must be enforced in transactions (`docs/contracts/invariants.ts`), never by ad-hoc writes:
 
 - `acceptApplication` / `rejectApplication` — capacity, row lock on the job, auto-`FILLED`.
-- `changeJobStatus` — `HIRING → FILLED → COMPLETED`, `HIRING|FILLED → CANCELLED`; terminal states final.
+- `changeJobStatus` — `HIRING → FILLED → COMPLETED`, `HIRING → CLOSED`, `CLOSED|FILLED → COMPLETED`,
+  `HIRING|CLOSED|FILLED → CANCELLED`; terminal states final. `closeJob` stops applications early
+  without filling the remaining positions and notifies pending applicants only.
 - `submitReport` — 3 distinct reporters auto-hide the job.
 - `createReview` — only on `COMPLETED`; reviewer/reviewee must be employer and accepted student;
   recalculate ratings; employer→student also issues the HMAC-signed work record.
@@ -261,7 +265,7 @@ See `.agents/schema-review.md` for evidence and proposed patches.
 `docs/contracts/openapi.yaml` is the published contract,
 `docs/contracts/implementation-status.md` is the per-operation checklist, and
 `docs/contracts/invariants.ts` is the transaction specification. The original design schema has been
-retired. The current contract is 68 operations on 53 paths.
+retired. The current contract is 69 operations on 54 paths.
 
 The identity conflict is resolved in favour of Better Auth: the app uses the generated `users`,
 `sessions`, `accounts` and `verifications` tables. The contract's `users` and `user_tokens` tables

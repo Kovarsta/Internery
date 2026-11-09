@@ -84,6 +84,7 @@ const notificationSenders: Record<NotificationInsert['type'], NotificationEmailS
 	APPLICATION_ACCEPTED: sendApplicationDecisionEmail,
 	APPLICATION_REJECTED: sendApplicationDecisionEmail,
 	JOB_FILLED: sendJobStatusEmail,
+	JOB_CLOSED: sendJobStatusEmail,
 	JOB_COMPLETED: sendJobStatusEmail,
 	JOB_CANCELLED: sendJobStatusEmail,
 	JOB_HIDDEN: sendJobModerationEmail,

@@ -1,6 +1,6 @@
 # Implementation status
 
-Base path: `/api/v1`. The contract lists 68 operations on 53 paths.
+Base path: `/api/v1`. The contract lists 69 operations on 54 paths.
 
 `[x]` means the handler is implemented, tested, and no longer returns `501`. `[ ]` means the skeleton
 still returns `501 Not Implemented` from the shared helper. That `501` uses the internal
@@ -9,7 +9,7 @@ endpoint is implemented.
 
 Authentication is provided by Better Auth under `/api/auth/*` and is outside this contract.
 
-**63 of 68 operations implemented.**
+**64 of 69 operations implemented.**
 
 ## Checklist
 
@@ -49,8 +49,9 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - [x] `GET /jobs/{jobId}` — Job details
 - [x] `PATCH /jobs/{jobId}` — Edit own job
 - [x] `DELETE /jobs/{jobId}` — Delete own job
-- [x] `POST /jobs/{jobId}/cancel` — Cancel a job
-- [x] `POST /jobs/{jobId}/complete` — Mark a job completed
+- [x] `POST /jobs/{jobId}/cancel` - Cancel a job
+- [x] `POST /jobs/{jobId}/close` - Stop accepting applications early
+- [x] `POST /jobs/{jobId}/complete` - Mark a job completed
 
 ### Applications
 
@@ -174,7 +175,8 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 - Applying again after a withdrawal revives the withdrawn row instead of failing: the status returns
   to `PENDING` with the new message and CV snapshot, `decidedAt` is cleared, and the application sorts
   as a fresh submission. Pending, accepted and rejected applications still answer `ALREADY_APPLIED`.
-- Application and job writes create in-app notifications only. Email delivery is not wired yet.
+- Application and job writes create in-app notifications; the matching email is sent after the
+  transaction commits.
 - `GET /jobs/{jobId}/applications` and `GET /applications/{applicationId}/student-profile` are
   owner-scoped: an employer who does not own the job gets `403`, not an empty list.
 - `POST /applications/{applicationId}/reject` locks the application row, checks ownership before
@@ -184,9 +186,11 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
   accepts for the last position cannot both succeed. It refuses a non-`PENDING` application, a job
   that is not `HIRING`, and a full job (`POSITIONS_FULL`). The last acceptance moves the job to
   `FILLED` and notifies the remaining pending applicants.
-- `POST /jobs/{jobId}/cancel` allows `HIRING` and `FILLED`, sets `cancelledAt`, and notifies pending
-  and accepted students. `POST /jobs/{jobId}/complete` allows `FILLED` only, sets `completedAt`, and
-  notifies accepted students. Both lock the job row and reject other transitions with `409`.
+- `POST /jobs/{jobId}/cancel` allows `HIRING`, `CLOSED` and `FILLED`, sets `cancelledAt`, and
+  notifies pending and accepted students. `POST /jobs/{jobId}/close` allows `HIRING` only, sets
+  `CLOSED`, and notifies pending applicants. `POST /jobs/{jobId}/complete` allows `FILLED` or
+  `CLOSED`, sets `completedAt`, and notifies accepted students. All three lock the job row and
+  reject other transitions with `409`.
 - `POST /jobs/{jobId}/reviews` locks the job, then the reviewee's user row. The user row is what
   serialises rating recalculation: two reviews of the same student on different jobs would otherwise
   each store an average that misses the other. The duplicate check runs under the same lock, so a

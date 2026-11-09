@@ -242,7 +242,7 @@ the repository and must be committed.
 
 ## API
 
-The API lives under `src/routes/api/v1`. The route tree covers 53 paths and 68 operations. The
+The API lives under `src/routes/api/v1`. The route tree covers 54 paths and 69 operations. The
 request foundation and the first reads and writes are implemented; the rest still return `501`. The
 contract is [`docs/contracts/openapi.yaml`](docs/contracts/openapi.yaml), and
 [`docs/contracts/implementation-status.md`](docs/contracts/implementation-status.md) lists what

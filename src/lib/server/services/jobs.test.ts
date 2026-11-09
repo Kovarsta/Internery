@@ -6,6 +6,7 @@ import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
 import {
 	cancelJob,
+	closeJob,
 	completeJob,
 	createJob,
 	deleteJob,
@@ -858,6 +859,77 @@ describe.skipIf(!testDatabase)('jobs', () => {
 			await expect(
 				cancelJob(testDatabase, unverifiedEmployerId, randomUUID())
 			).rejects.toMatchObject({ code: 'NOT_FOUND' });
+		});
+	});
+
+	describe('closeJob', () => {
+		it('closes a hiring job and notifies pending applicants only', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			const job = await createJob(testDatabase, unverifiedEmployerId, draftJob());
+
+			await testDatabase.insert(schema.applications).values([
+				{
+					jobId: job.id,
+					studentId: verifiedEmployerId,
+					status: 'PENDING'
+				},
+				{
+					jobId: job.id,
+					studentId: unverifiedEmployerId,
+					status: 'ACCEPTED'
+				}
+			]);
+
+			const closed = await closeJob(testDatabase, unverifiedEmployerId, job.id);
+
+			expect(closed.status).toBe('CLOSED');
+
+			const notifications = await testDatabase
+				.select({ userId: schema.notifications.userId, type: schema.notifications.type })
+				.from(schema.notifications)
+				.where(eq(schema.notifications.jobId, job.id));
+
+			expect(notifications).toEqual([{ userId: verifiedEmployerId, type: 'JOB_CLOSED' }]);
+
+			const page = await searchOpenJobs(testDatabase, {
+				...defaultFilters,
+				categoryId: draftCategoryId
+			});
+
+			expect(page.items.map((item) => item.id)).not.toContain(job.id);
+
+			await expect(closeJob(testDatabase, unverifiedEmployerId, job.id)).rejects.toMatchObject({
+				code: 'INVALID_STATE_TRANSITION'
+			});
+		});
+
+		it('can be completed after closing early', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			const job = await createJob(testDatabase, unverifiedEmployerId, draftJob());
+			await closeJob(testDatabase, unverifiedEmployerId, job.id);
+
+			const completed = await completeJob(testDatabase, unverifiedEmployerId, job.id);
+
+			expect(completed.status).toBe('COMPLETED');
+		});
+
+		it('can be cancelled after closing early', async () => {
+			if (!testDatabase) {
+				return;
+			}
+
+			const job = await createJob(testDatabase, unverifiedEmployerId, draftJob());
+			await closeJob(testDatabase, unverifiedEmployerId, job.id);
+
+			const cancelled = await cancelJob(testDatabase, unverifiedEmployerId, job.id);
+
+			expect(cancelled.status).toBe('CANCELLED');
 		});
 	});
 

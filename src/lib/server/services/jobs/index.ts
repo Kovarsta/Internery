@@ -20,4 +20,4 @@ export {
 	type JobUpdateInput,
 	type NewJobInput
 } from './writes.ts';
-export { cancelJob, completeJob } from './lifecycle.ts';
+export { cancelJob, closeJob, completeJob } from './lifecycle.ts';

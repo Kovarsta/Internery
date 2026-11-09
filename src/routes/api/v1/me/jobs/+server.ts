@@ -10,7 +10,7 @@ import { db } from '#lib/server/db/index.ts';
 import { listEmployerJobs } from '#lib/server/services/jobs.ts';
 
 const querySchema = z.object({
-	status: z.enum(['HIRING', 'FILLED', 'COMPLETED', 'CANCELLED']).optional()
+	status: z.enum(['HIRING', 'CLOSED', 'FILLED', 'COMPLETED', 'CANCELLED']).optional()
 });
 
 /** GET /me/jobs — listMyJobs */
