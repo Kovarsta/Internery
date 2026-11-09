@@ -10,7 +10,6 @@
 	import EmployerJobActions from '#lib/components/employer/EmployerJobActions.svelte';
 	import EmployerJobTabs from '#lib/components/employer/EmployerJobTabs.svelte';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
-	import { Button } from '#lib/components/ui/button/index.ts';
 	import { formatDateRange, formatPositionsRemaining, formatSalary } from '#lib/format.ts';
 	import { jobStatusClass, jobStatusLabel } from '#lib/labels.ts';
 	import type { PageProps } from './$types';
@@ -22,36 +21,27 @@
 	const publicHref = $derived(resolve(`jobs/${encodeURIComponent(job.id)}`));
 </script>
 
-<div class="flex flex-wrap items-start justify-between gap-4">
-	<div>
-		<p class="text-sm tracking-wide text-ink/60 uppercase">Job</p>
-		<div class="mt-1 flex flex-wrap items-center gap-2">
-			<h1 class="text-3xl font-extrabold tracking-tight">{job.title}</h1>
-			<Badge class={jobStatusClass[job.status]} variant="ghost">{jobStatusLabel[job.status]}</Badge>
-		</div>
-		<p class="mt-2 text-ink/70">{job.category.name} · {job.location}</p>
-		<p class="text-sm text-ink/60">
-			{formatDateRange(job.startDate, job.endDate)} · {formatSalary(
-				job.salaryAmount,
-				job.salaryType
-			)}
-		</p>
-		<p class="mt-2 text-sm text-ink/70">
-			{data.applicantCount}
-			{data.applicantCount === 1 ? 'applicant' : 'applicants'}
-			· {acceptedCount} accepted · {formatPositionsRemaining(job.positionsRemaining)}
-		</p>
-	</div>
-
-	<Button href={publicHref} variant="outline">View public listing</Button>
+<p class="text-sm tracking-wide text-ink/60 uppercase">Job</p>
+<div class="mt-1 flex flex-wrap items-center gap-2">
+	<h1 class="text-3xl font-extrabold tracking-tight">{job.title}</h1>
+	<Badge class={jobStatusClass[job.status]} variant="ghost">{jobStatusLabel[job.status]}</Badge>
 </div>
+<p class="mt-2 text-ink/70">{job.category.name} · {job.location}</p>
+<p class="text-sm text-ink/60">
+	{formatDateRange(job.startDate, job.endDate)} · {formatSalary(job.salaryAmount, job.salaryType)}
+</p>
+<p class="mt-2 text-sm text-ink/70">
+	{data.applicantCount}
+	{data.applicantCount === 1 ? 'applicant' : 'applicants'}
+	· {acceptedCount} accepted · {formatPositionsRemaining(job.positionsRemaining)}
+</p>
 
 <div class="mt-6">
 	<EmployerJobTabs canEdit={job.status === 'HIRING'} jobId={job.id} />
 </div>
 
-<div class="mb-8 border-y border-rule py-5">
-	<EmployerJobActions job={{ id: job.id, status: job.status, acceptedCount }} />
+<div class="mb-8">
+	<EmployerJobActions job={{ id: job.id, status: job.status, acceptedCount }} {publicHref} />
 </div>
 
 <section class="max-w-3xl space-y-6">

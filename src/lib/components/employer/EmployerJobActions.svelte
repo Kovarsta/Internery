@@ -1,10 +1,11 @@
 <script lang="ts">
 	/**
-	 * Status actions for one employer job on `/employer/jobs/[jobId]`.
+	 * Lifecycle actions for one employer job on `/employer/jobs/[jobId]`.
 	 *
-	 * Closing, completing, cancelling and deleting are browser writes that report through a toast.
-	 * Each one opens the shared confirmation dialog first because it notifies students, ends the
-	 * job, or removes applications.
+	 * One toolbar keeps the safe actions on the left and the destructive actions on the right.
+	 * Every button uses the neutral outline shape; dangerous labels are red. Each write opens the
+	 * shared confirmation dialog first because it notifies students, ends the job, or removes
+	 * applications.
 	 */
 
 	import { refreshAll } from '$app/navigation';
@@ -22,7 +23,7 @@
 		acceptedCount: number;
 	};
 
-	let { job }: { job: JobForActions } = $props();
+	let { job, publicHref }: { job: JobForActions; publicHref: string } = $props();
 
 	let pendingAction = $state<JobAction | null>(null);
 	let confirmAction = $state<JobAction | null>(null);
@@ -121,13 +122,13 @@
 	}
 </script>
 
-<div class="flex flex-wrap justify-end gap-2">
+<div class="flex flex-wrap items-center gap-2">
 	{#if canClose}
 		<Button
 			disabled={pendingAction !== null}
 			onclick={() => ask('close')}
 			size="sm"
-			variant="default"
+			variant="outline"
 		>
 			Close applications
 		</Button>
@@ -144,28 +145,34 @@
 		</Button>
 	{/if}
 
-	{#if canCancel}
-		<Button
-			class="text-warning"
-			disabled={pendingAction !== null}
-			onclick={() => ask('cancel')}
-			size="sm"
-			variant="ghost"
-		>
-			Cancel job
-		</Button>
-	{/if}
+	<Button href={publicHref} size="sm" variant="outline">View public listing</Button>
 
-	{#if canDelete}
-		<Button
-			class="text-warning"
-			disabled={pendingAction !== null}
-			onclick={() => ask('delete')}
-			size="sm"
-			variant="ghost"
-		>
-			Delete
-		</Button>
+	{#if canCancel || canDelete}
+		<div class="ml-auto flex flex-wrap items-center gap-2">
+			{#if canCancel}
+				<Button
+					class="text-warning hover:text-warning"
+					disabled={pendingAction !== null}
+					onclick={() => ask('cancel')}
+					size="sm"
+					variant="outline"
+				>
+					Cancel job
+				</Button>
+			{/if}
+
+			{#if canDelete}
+				<Button
+					class="text-warning hover:text-warning"
+					disabled={pendingAction !== null}
+					onclick={() => ask('delete')}
+					size="sm"
+					variant="outline"
+				>
+					Delete
+				</Button>
+			{/if}
+		</div>
 	{/if}
 </div>
 
