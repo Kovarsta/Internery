@@ -1,10 +1,32 @@
 /**
+ * `EXISTS` for a review by one participant of a job about the other.
+ *
+ * Why this is raw SQL: joining `reviews` could duplicate an application when
+ * more than one review matches. `exists` keeps exactly one row per application.
+ *
+ * @param reviewerId - The review author, as a column or a bound user id.
+ * @param revieweeId - The person being reviewed, as a column or a bound user id.
+ * @returns A boolean SQL expression for the current application/job row.
+ */
+export function hasReviewedExpression(
+	reviewerId: SQLWrapper | string,
+	revieweeId: SQLWrapper | string
+): SQL<boolean> {
+	return sql<boolean>`exists (
+		select 1 from ${reviews}
+		where ${reviews.jobId} = ${applications.jobId}
+			and ${reviews.reviewerId} = ${reviewerId}
+			and ${reviews.revieweeId} = ${revieweeId}
+	)`;
+}
+
+/**
  * Column selections and record types shared by the application reads and writes.
  *
  * The row types are exported for the sibling modules only; `index.ts` keeps
  * them out of the public service API.
  */
-import { sql } from 'drizzle-orm';
+import { sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import { users } from '#lib/server/db/auth.schema.ts';
 import {
 	applications,
@@ -101,12 +123,7 @@ export const applicationSelection = {
 	message: applications.message,
 	rejectReason: applications.rejectReason,
 	cvKey: applications.cvKey,
-	hasReviewed: sql<boolean>`exists (
-		select 1 from ${reviews}
-		where ${reviews.jobId} = ${applications.jobId}
-			and ${reviews.reviewerId} = ${applications.studentId}
-			and ${reviews.revieweeId} = ${jobs.employerId}
-	)`,
+	hasReviewed: hasReviewedExpression(applications.studentId, jobs.employerId),
 	createdAt: applications.createdAt,
 	decidedAt: applications.decidedAt
 };

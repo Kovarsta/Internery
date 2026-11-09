@@ -1,6 +1,20 @@
-import { and, count, eq, sql } from 'drizzle-orm';
+import { and, count, eq, sql, type SQL } from 'drizzle-orm';
 import type { Transaction } from '#lib/server/db/types.ts';
 import { employerProfiles, reviews, studentProfiles } from '#lib/server/db/product.schema.ts';
+
+/**
+ * Average visible review score, rounded to two decimals.
+ *
+ * Why this is raw SQL: `avg` returns `numeric`, which the driver exposes as a
+ * string to preserve precision. The `float8` cast keeps the API value a number;
+ * `round` matches the profile columns; `coalesce` covers a person with no
+ * visible reviews, where `avg` is null.
+ *
+ * @returns A scalar SQL expression over the reviews in the current query.
+ */
+export function ratingAverageExpression(): SQL<number> {
+	return sql<number>`coalesce(round(avg(${reviews.rating})::numeric, 2), 0)::float8`;
+}
 
 /**
  * Recalculates a user's rating summary from their visible reviews.
@@ -18,11 +32,9 @@ export async function recalculateUserRating(
 	transaction: Transaction,
 	userId: string
 ): Promise<void> {
-	// The `float8` cast keeps the average a JSON number, and the rounding
-	// matches the two decimals of the profile rating columns.
 	const [rating] = await transaction
 		.select({
-			ratingAvg: sql<number>`coalesce(round(avg(${reviews.rating})::numeric, 2), 0)::float8`,
+			ratingAvg: ratingAverageExpression(),
 			ratingCount: count()
 		})
 		.from(reviews)

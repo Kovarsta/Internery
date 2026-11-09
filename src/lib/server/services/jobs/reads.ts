@@ -61,6 +61,9 @@ export async function listEmployerJobs(
  *
  * Every filter combines with AND. `query` uses the full-text index over title
  * and description.
+ *
+ * @param filters - The parsed public search filters and pagination.
+ * @returns The requested page and the total number of matching jobs.
  */
 export async function searchOpenJobs(
 	database: Database,
@@ -76,7 +79,7 @@ export async function searchOpenJobs(
 			.innerJoin(locations, eq(locations.id, jobs.locationId))
 			.leftJoin(employerProfiles, eq(employerProfiles.userId, jobs.employerId))
 			.where(and(...conditions))
-			.orderBy(...orderFor(filters.sort))
+			.orderBy(...orderByForSearch(filters.sort))
 			.limit(filters.limit)
 			.offset(filters.offset),
 		// The join is only needed for `verifiedOnly`, but keeping it here lets both
@@ -120,6 +123,9 @@ export async function findJobDetail(
  *
  * Every optional filter is added only when the caller provides it. A caller
  * that uses `verifiedOnly` must join `employerProfiles`.
+ *
+ * @param filters - The parsed public search filters.
+ * @returns The AND-combined `WHERE` conditions for the page and total query.
  */
 function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 	// The public listing only ever shows open, visible jobs (AC-09.1).
@@ -131,9 +137,7 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 	// folding. The query is a bound parameter, and `websearch_to_tsquery` adds
 	// AND, OR and phrase semantics without making the value part of the SQL.
 	if (filters.query !== undefined) {
-		conditions.push(
-			sql`to_tsvector('simple', ${jobs.title} || ' ' || ${jobs.description}) @@ websearch_to_tsquery('simple', ${filters.query})`
-		);
+		conditions.push(keywordSearchCondition(filters.query));
 	}
 
 	// Category and location are exact ids, resolved from the lists the API
@@ -197,11 +201,31 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 }
 
 /**
+ * Full-text match over a job's title and description.
+ *
+ * Why this is raw SQL: PostgreSQL's `websearch_to_tsquery` provides AND/OR and
+ * phrase semantics, and the `simple` configuration is the one the GIN index
+ * uses. Drizzle has no typed equivalent for this expression.
+ *
+ * @param query - Raw user text from the search box.
+ * @returns A boolean SQL expression for matching `jobs` rows.
+ */
+function keywordSearchCondition(query: string): SQL {
+	return sql`
+		to_tsvector('simple', ${jobs.title} || ' ' || ${jobs.description})
+		@@ websearch_to_tsquery('simple', ${query})
+	`;
+}
+
+/**
  * Matches a shift that overlaps one half-open time-of-day block.
  *
  * The block is `[from, to)`: a shift starting before the block ends and ending
  * after it starts counts as an overlap. A shift ending exactly at 18:00 does
  * not match Evening, which starts at 18:00.
+ *
+ * @param slot - The time-of-day block to compare against.
+ * @returns A boolean SQL expression for an overlapping shift.
  */
 function timeOfDayCondition(slot: TimeOfDay): SQL {
 	const range = TIME_OF_DAY_RANGES[slot];
@@ -209,29 +233,57 @@ function timeOfDayCondition(slot: TimeOfDay): SQL {
 	return sql`${jobs.startTime} < ${range.to}::time and ${jobs.endTime} > ${range.from}::time`;
 }
 
-function orderFor(sort: JobSortOrder): SQL[] {
-	// A featured row is "hot" when students applied recently. Verified employers
-	// break a tie before recency, so a trustworthy shop still surfaces when the
-	// application counts are equal.
-	if (sort === 'featured') {
-		const recentApplications = sql<number>`(
-			select count(*)::int
-			from ${applications}
-			where ${applications.jobId} = ${jobs.id}
-				and ${applications.createdAt} >= now() - interval '7 days'
-				and ${applications.status} <> 'WITHDRAWN'
-		)`;
+/**
+ * Counts a job's non-withdrawn applications from the last seven days.
+ *
+ * Why this is a correlated subquery: it keeps the job projection flat and uses
+ * the applications index for one short lookup per row. A join and GROUP BY
+ * would need every job column in the grouping.
+ *
+ * @returns A scalar count expression for the current `jobs` row.
+ */
+function recentApplicationCountExpression(): SQL<number> {
+	return sql<number>`(
+		select count(*)::int
+		from ${applications}
+		where ${applications.jobId} = ${jobs.id}
+			and ${applications.createdAt} >= now() - interval '7 days'
+			and ${applications.status} <> 'WITHDRAWN'
+	)`;
+}
 
+/**
+ * Sort key that puts verified employers first in the featured list.
+ *
+ * Why this is a CASE: the enum's natural order is not “verified first”, and a
+ * boolean sort key is explicit and stable.
+ *
+ * @returns A sortable SQL expression: 1 for verified, 0 otherwise.
+ */
+function verifiedEmployerFirstExpression(): SQL {
+	return sql`case when ${employerProfiles.verificationStatus} = 'VERIFIED' then 1 else 0 end`;
+}
+
+/**
+ * Returns the `ORDER BY` terms for the public job search.
+ *
+ * Featured is computed at query time: recent student interest first, then
+ * verified employers, then recency. Every order ends with the job id so paging
+ * stays stable when two rows share a timestamp or salary.
+ *
+ * @param sort - The requested public sort order.
+ * @returns The Drizzle order terms passed to `.orderBy(...)`.
+ */
+function orderByForSearch(sort: JobSortOrder): SQL[] {
+	if (sort === 'featured') {
 		return [
-			desc(recentApplications),
-			desc(sql`case when ${employerProfiles.verificationStatus} = 'VERIFIED' then 1 else 0 end`),
+			desc(recentApplicationCountExpression()),
+			desc(verifiedEmployerFirstExpression()),
 			desc(jobs.createdAt),
 			desc(jobs.id)
 		];
 	}
 
-	// The id tie-breaker keeps paging stable when two jobs share a timestamp or
-	// salary; without it, a row can repeat or vanish between pages.
 	if (sort === 'salary_desc') {
 		return [desc(jobs.salaryAmount), desc(jobs.id)];
 	}

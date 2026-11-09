@@ -7,6 +7,7 @@
  * backed by a larger dataset or a search service.
  */
 import { and, asc, eq, or, sql, type SQL } from 'drizzle-orm';
+import { containsText } from '#lib/server/api/sql.ts';
 import { normalizeSearchText } from '#lib/search.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { locations } from '#lib/server/db/product.schema.ts';
@@ -42,6 +43,9 @@ export type LocationSearchOptions = {
  *
  * An empty query returns the first `limit` places, remote last, so a combobox
  * can show useful options before the person types.
+ *
+ * @param options - Raw query, optional country code, and a result limit.
+ * @returns Matching active locations, best match first.
  */
 export async function searchLocations(
 	database: Database,
@@ -55,9 +59,11 @@ export async function searchLocations(
 	}
 
 	if (normalizedQuery !== '') {
+		// `%` is the pg_trgm similarity operator; the ILIKE branch catches short
+		// queries that fall below the trigram threshold.
 		const matches = or(
 			sql`${locations.searchText} % ${normalizedQuery}`,
-			sql`${locations.searchText} ilike ${`%${normalizedQuery}%`}`
+			containsText(locations.searchText, normalizedQuery)
 		);
 
 		if (matches !== undefined) {

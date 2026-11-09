@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { users } from '#lib/server/db/auth.schema.ts';
@@ -12,7 +12,7 @@ import {
 	workRecords,
 	type WorkRecordPayload
 } from '#lib/server/db/product.schema.ts';
-import { recalculateUserRating } from './ratings.ts';
+import { ratingAverageExpression, recalculateUserRating } from './ratings.ts';
 import { sendNotificationEmails } from '#lib/server/email-notifications.ts';
 import type { NotificationInsert } from './notifications.ts';
 import { CURRENT_SIGNATURE_VERSION, signWorkRecord } from '#lib/server/work-record-signature.ts';
@@ -72,13 +72,9 @@ export async function listReviewsForUser(
 			.limit(options.limit)
 			.offset(options.offset),
 		database.select({ total: count() }).from(reviews).where(visibleReviews),
-		// `avg` returns `numeric`, which the driver hands back as a string to avoid
-		// precision loss. The `float8` cast is what keeps `ratingAvg` a JSON number.
-		// Rounding to two decimals matches the `numeric(3, 2)` profile columns, and
-		// `coalesce` covers a user with no visible reviews, where `avg` is NULL.
 		database
 			.select({
-				ratingAvg: sql<number>`coalesce(round(avg(${reviews.rating})::numeric, 2), 0)::float8`,
+				ratingAvg: ratingAverageExpression(),
 				ratingCount: count()
 			})
 			.from(reviews)

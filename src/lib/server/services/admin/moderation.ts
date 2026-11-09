@@ -8,7 +8,7 @@
  */
 import { and, asc, count, eq, or, sql, type SQL } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
-import { toLikePattern } from '#lib/server/api/sql.ts';
+import { containsText } from '#lib/server/api/sql.ts';
 import { sendNotificationEmails } from '#lib/server/email-notifications.ts';
 import type { Database, Transaction } from '#lib/server/db/types.ts';
 import {
@@ -88,7 +88,12 @@ const moderationSelection = {
  * Returns one page of jobs needing attention, oldest first.
  *
  * Oldest first keeps the longest-waiting problem at the top of the admin list,
- * which matches how the verification queue is ordered.
+ * which matches how the verification queue is ordered. The search is applied
+ * before pagination, and one `filters` value drives both the page and the total
+ * count so they cannot disagree.
+ *
+ * @param options - Optional title search and pagination.
+ * @returns The requested page and the total number of matching jobs.
  */
 export async function listModerationQueue(
 	database: Database,
@@ -249,26 +254,47 @@ export async function clearJobFlag(
 }
 
 /**
- * The queue condition, shared by the page query and the total count.
+ * `EXISTS` for a job with at least one open student report.
  *
- * The search is a literal title substring, so `%` and `_` do not become
- * wildcards. It is applied before pagination, so the page and the total agree.
+ * Why this is raw SQL: a join to `reports` would duplicate a job with several
+ * reports. `exists` keeps exactly one row per job, which is what the queue
+ * needs.
+ *
+ * @returns A boolean SQL expression for the current `jobs` row.
  */
-function queueFilter(search?: string): SQL | undefined {
-	const conditions: SQL[] = [];
-	const hasOpenReport = sql`exists (
+function hasOpenReportExpression(): SQL {
+	return sql`exists (
 		select 1 from ${reports}
 		where ${reports.jobId} = ${jobs.id}
 			and ${reports.status} = 'OPEN'
 	)`;
-	const inQueue = or(eq(jobs.isHidden, true), eq(jobs.needsReview, true), hasOpenReport);
+}
+
+/**
+ * Builds the `WHERE` clause for the moderation queue.
+ *
+ * Why this shape: the same returned expression is passed to the row query and
+ * the count query, so a title search cannot show one set of rows while counting
+ * another. The queue membership and the optional title search are AND-ed; the
+ * search runs before ordering and pagination.
+ *
+ * @param search - Optional raw title text; undefined means no title filter.
+ * @returns A Drizzle `WHERE` expression, or undefined when nothing filters.
+ */
+function queueFilter(search?: string): SQL | undefined {
+	const conditions: SQL[] = [];
+	const inQueue = or(
+		eq(jobs.isHidden, true),
+		eq(jobs.needsReview, true),
+		hasOpenReportExpression()
+	);
 
 	if (inQueue) {
 		conditions.push(inQueue);
 	}
 
 	if (search !== undefined) {
-		conditions.push(sql`${jobs.title} ilike ${toLikePattern(search)} escape '\\'`);
+		conditions.push(containsText(jobs.title, search));
 	}
 
 	return and(...conditions);

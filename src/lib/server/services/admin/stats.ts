@@ -30,7 +30,12 @@ export type PlatformStatsRecord = {
 	completedJobs: number;
 };
 
-/** Counts users, jobs and applications, optionally limited to a date range. */
+/**
+ * Counts users, jobs and applications, optionally limited to a date range.
+ *
+ * @param range - Optional inclusive ISO date bounds.
+ * @returns Counts grouped by people, jobs and applications.
+ */
 export async function getPlatformStats(
 	database: Database,
 	range: StatsRange
@@ -82,6 +87,10 @@ export async function getPlatformStats(
  * `to` is a date, so the comparison runs against the start of the next day;
  * without that, everything created on the last day would fall outside the
  * range.
+ *
+ * @param column - The timestamp column to compare.
+ * @param range - Optional inclusive ISO date bounds.
+ * @returns The combined range condition, or undefined when no bounds are set.
  */
 function createdInRange(column: AnyColumn, range: StatsRange): SQL | undefined {
 	const conditions: SQL[] = [];

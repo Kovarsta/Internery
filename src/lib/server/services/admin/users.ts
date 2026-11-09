@@ -6,9 +6,9 @@
  * moderation row is created on the first lock; a missing row means the account
  * was never locked.
  */
-import { and, count, desc, eq, sql, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, or, type SQL } from 'drizzle-orm';
 import { DomainError } from '#lib/server/api/errors.ts';
-import { toLikePattern } from '#lib/server/api/sql.ts';
+import { containsText } from '#lib/server/api/sql.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { users } from '#lib/server/db/auth.schema.ts';
 import { userModeration } from '#lib/server/db/product.schema.ts';
@@ -60,7 +60,16 @@ const adminUserSelection = {
 	createdAt: users.createdAt
 };
 
-/** Returns one page of accounts, newest first, optionally filtered. */
+/**
+ * Returns one page of accounts, newest first, optionally filtered.
+ *
+ * The search is a literal, case-insensitive substring of the name or email.
+ * One `filters` value drives both the page query and the total count, so the
+ * list and the count cannot drift.
+ *
+ * @param options - Search text, role/status filters, and pagination.
+ * @returns The requested page and the total number of matching accounts.
+ */
 export async function listAdminUsers(
 	database: Database,
 	options: AdminUserListOptions
@@ -68,10 +77,14 @@ export async function listAdminUsers(
 	const conditions: SQL[] = [];
 
 	if (options.query !== undefined) {
-		const pattern = toLikePattern(options.query);
-		conditions.push(
-			sql`(${users.name} ilike ${pattern} escape '\\' or ${users.email} ilike ${pattern} escape '\\')`
+		const search = or(
+			containsText(users.name, options.query),
+			containsText(users.email, options.query)
 		);
+
+		if (search) {
+			conditions.push(search);
+		}
 	}
 
 	if (options.role !== undefined) {
