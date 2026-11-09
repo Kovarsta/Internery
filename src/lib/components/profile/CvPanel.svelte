@@ -9,6 +9,7 @@
 
 	import { refreshAll } from '$app/navigation';
 	import { apiSend, apiUpload } from '#lib/api/browser.ts';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
 	import { Label } from '#lib/components/ui/label/index.ts';
@@ -24,6 +25,7 @@
 	let files = $state<FileList>();
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let isSaving = $state(false);
+	let isConfirmingRemove = $state(false);
 
 	const selectedFile = $derived(files?.[0] ?? null);
 	const isPdf = $derived(cv?.mimeType === 'application/pdf');
@@ -111,7 +113,13 @@
 			</div>
 
 			<Button href="/api/v1/me/cv" size="sm" variant="outline">Download</Button>
-			<Button disabled={isSaving} onclick={remove} size="sm" type="button" variant="ghost">
+			<Button
+				disabled={isSaving}
+				onclick={() => (isConfirmingRemove = true)}
+				size="sm"
+				type="button"
+				variant="ghost"
+			>
 				Remove
 			</Button>
 		</div>
@@ -134,4 +142,13 @@
 			{isSaving ? 'Uploading…' : cv ? 'Replace CV' : 'Upload CV'}
 		</Button>
 	</div>
+
+	<ConfirmDialog
+		bind:open={isConfirmingRemove}
+		confirmLabel="Remove CV"
+		description="The file is deleted from your profile. Applications you already sent keep their CV snapshot. This cannot be undone."
+		destructive
+		onconfirm={remove}
+		title="Remove your CV?"
+	/>
 </section>

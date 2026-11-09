@@ -11,6 +11,7 @@
 	import { refreshAll } from '$app/navigation';
 	import { apiSend, apiUpload } from '#lib/api/browser.ts';
 	import AvatarCropper from '#lib/components/profile/AvatarCropper.svelte';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
 	import { Label } from '#lib/components/ui/label/index.ts';
@@ -31,6 +32,7 @@
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let previewUrl = $state<string | null>(null);
 	let isSaving = $state(false);
+	let isConfirmingReset = $state(false);
 
 	// Two letters for the placeholder circle: the first letter of the last two
 	// words of the name, for example "Nguyen Van An" -> "VA".
@@ -193,7 +195,7 @@
 				<Button
 					class="mt-2"
 					disabled={isSaving}
-					onclick={reset}
+					onclick={() => (isConfirmingReset = true)}
 					size="sm"
 					type="button"
 					variant="ghost"
@@ -204,3 +206,12 @@
 		</div>
 	</section>
 {/if}
+
+<ConfirmDialog
+	bind:open={isConfirmingReset}
+	confirmLabel="Remove picture"
+	description="This removes the current profile picture. You can upload a new one later, but the current image cannot be recovered."
+	destructive
+	onconfirm={reset}
+	title="Remove your profile picture?"
+/>

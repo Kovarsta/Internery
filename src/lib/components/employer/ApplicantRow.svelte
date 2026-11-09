@@ -13,6 +13,7 @@
 	import { showError, showSuccess } from '#lib/toast.ts';
 	import { formatTimestamp } from '#lib/format.ts';
 	import { applicationStatusClass, applicationStatusLabel } from '#lib/labels.ts';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import type { Applicant, Application } from '#lib/api/types.ts';
@@ -22,6 +23,7 @@
 	let { applicant, jobId }: { applicant: Applicant; jobId: string } = $props();
 
 	let pendingDecision = $state<Decision | null>(null);
+	let isConfirmingReject = $state(false);
 
 	const isBusy = $derived(pendingDecision !== null);
 	const studies = $derived(
@@ -102,7 +104,7 @@
 			</Button>
 			<Button
 				disabled={isBusy}
-				onclick={() => decide('reject')}
+				onclick={() => (isConfirmingReject = true)}
 				size="sm"
 				type="button"
 				variant="outline"
@@ -115,4 +117,13 @@
 			<Button href={cvHref} size="sm" variant="ghost">Download CV</Button>
 		{/if}
 	</div>
+
+	<ConfirmDialog
+		bind:open={isConfirmingReject}
+		confirmLabel="Reject applicant"
+		description={`Reject ${applicant.student.fullName}? The student is notified and this decision cannot be undone.`}
+		destructive
+		onconfirm={() => decide('reject')}
+		title="Reject this applicant?"
+	/>
 </article>
