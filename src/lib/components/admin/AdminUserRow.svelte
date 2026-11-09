@@ -3,13 +3,15 @@
 	 * One account row on `/admin/users`.
 	 *
 	 * Locking asks for a reason first, because the reason is stored on the
-	 * account and shown to the next admin. Unlocking has no input and runs
-	 * directly. Both writes tell the row's outcome through a toast and reload
-	 * the list, so the status always comes from the server.
+	 * account and shown to the next admin, then confirms because it blocks
+	 * sign-in. Unlocking is reversible and runs directly. Both writes tell the
+	 * row's outcome through a toast and reload the list, so the status always
+	 * comes from the server.
 	 */
 
 	import { refreshAll } from '$app/navigation';
 	import { apiSend } from '#lib/api/browser.ts';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
@@ -22,6 +24,7 @@
 	let { user }: { user: AdminUser } = $props();
 
 	let isLockFormOpen = $state(false);
+	let isConfirmingLock = $state(false);
 	let isSaving = $state(false);
 	let reason = $state('');
 
@@ -122,7 +125,13 @@
 		<p class="mt-1 text-xs text-ink/60">The reason is stored on the account and shown to admins.</p>
 
 		<div class="mt-3 flex gap-2">
-			<Button disabled={isSaving} onclick={lock} size="sm" type="button" variant="destructive">
+			<Button
+				disabled={isSaving}
+				onclick={() => (isConfirmingLock = true)}
+				size="sm"
+				type="button"
+				variant="destructive"
+			>
 				{isSaving ? 'Locking…' : 'Lock account'}
 			</Button>
 			<Button
@@ -137,3 +146,12 @@
 		</div>
 	</div>
 {/if}
+
+<ConfirmDialog
+	bind:open={isConfirmingLock}
+	confirmLabel="Lock account"
+	description={`This stops ${user.fullName} from signing in until an admin unlocks the account. The reason is stored and shown to admins.`}
+	destructive
+	onconfirm={lock}
+	title={`Lock ${user.fullName}'s account?`}
+/>

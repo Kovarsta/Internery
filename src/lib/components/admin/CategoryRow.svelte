@@ -4,11 +4,12 @@
 	 *
 	 * A category used by a job cannot be deleted; the API answers `409
 	 * CATEGORY_IN_USE`, so the row offers deactivation as the safe alternative.
-	 * Deleting asks for a second click because it cannot be undone.
+	 * Deleting opens the shared confirmation dialog because it cannot be undone.
 	 */
 
 	import { refreshAll } from '$app/navigation';
 	import { apiSend } from '#lib/api/browser.ts';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
@@ -71,11 +72,7 @@
 	}
 
 	async function remove() {
-		const deleted = await run('DELETE', undefined, 'Category deleted.');
-
-		if (!deleted) {
-			isConfirmingDelete = false;
-		}
+		await run('DELETE', undefined, 'Category deleted.');
 	}
 </script>
 
@@ -103,29 +100,23 @@
 			{category.isActive ? 'Deactivate' : 'Activate'}
 		</Button>
 
-		{#if isConfirmingDelete}
-			<Button disabled={isSaving} onclick={remove} size="sm" type="button" variant="destructive">
-				{isSaving ? 'Deleting…' : 'Delete for good'}
-			</Button>
-			<Button
-				disabled={isSaving}
-				onclick={() => (isConfirmingDelete = false)}
-				size="sm"
-				type="button"
-				variant="ghost"
-			>
-				Cancel
-			</Button>
-		{:else}
-			<Button
-				disabled={isSaving}
-				onclick={() => (isConfirmingDelete = true)}
-				size="sm"
-				type="button"
-				variant="ghost"
-			>
-				Delete
-			</Button>
-		{/if}
+		<Button
+			disabled={isSaving}
+			onclick={() => (isConfirmingDelete = true)}
+			size="sm"
+			type="button"
+			variant="ghost"
+		>
+			Delete
+		</Button>
 	</div>
 </article>
+
+<ConfirmDialog
+	bind:open={isConfirmingDelete}
+	confirmLabel="Delete category"
+	description={`"${category.name}" is removed permanently. Categories used by a job cannot be deleted; deactivate them instead.`}
+	destructive
+	onconfirm={remove}
+	title="Delete this category?"
+/>

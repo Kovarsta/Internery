@@ -2,13 +2,15 @@
 	/**
 	 * One request in the admin verification queue on `/admin/verification`.
 	 *
-	 * Approving marks the employer verified and is a single click. Rejecting asks
-	 * for a reason, because the employer receives it and may submit again. Both
-	 * writes report through a toast and reload the queue.
+	 * Approving marks the employer verified and confirms because the decision is
+	 * final. Rejecting asks for a reason, because the employer receives it and
+	 * may submit again, then confirms. Both writes report through a toast and
+	 * reload the queue.
 	 */
 
 	import { refreshAll } from '$app/navigation';
 	import { apiSend } from '#lib/api/browser.ts';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
@@ -21,6 +23,8 @@
 	let { request }: { request: VerificationRequest } = $props();
 
 	let isRejectFormOpen = $state(false);
+	let isConfirmingApprove = $state(false);
+	let isConfirmingReject = $state(false);
 	let isSaving = $state(false);
 	let reason = $state('');
 
@@ -45,12 +49,17 @@
 		await refreshAll();
 	}
 
-	async function reject() {
+	/** Checks the required reason before the confirmation dialog opens. */
+	function askReject() {
 		if (reason.trim() === '') {
 			showError('Give the employer a reason for the rejection.');
 			return;
 		}
 
+		isConfirmingReject = true;
+	}
+
+	async function reject() {
 		isSaving = true;
 
 		const result = await apiSend<VerificationRequest>(
@@ -106,7 +115,12 @@
 
 	{#if isPending}
 		<div class="flex flex-wrap gap-2 sm:justify-end">
-			<Button disabled={isSaving} onclick={approve} size="sm" type="button">
+			<Button
+				disabled={isSaving}
+				onclick={() => (isConfirmingApprove = true)}
+				size="sm"
+				type="button"
+			>
 				{isSaving ? 'Saving…' : 'Approve'}
 			</Button>
 			<Button
@@ -133,9 +147,26 @@
 		/>
 
 		<div class="mt-3">
-			<Button disabled={isSaving} onclick={reject} size="sm" type="button" variant="destructive">
+			<Button disabled={isSaving} onclick={askReject} size="sm" type="button" variant="destructive">
 				{isSaving ? 'Rejecting…' : 'Reject request'}
 			</Button>
 		</div>
 	</div>
 {/if}
+
+<ConfirmDialog
+	bind:open={isConfirmingApprove}
+	confirmLabel="Approve"
+	description={`${request.orgName} becomes verified on the marketplace and gains the verified badge. This decision is final for this request.`}
+	onconfirm={approve}
+	title="Approve this employer?"
+/>
+
+<ConfirmDialog
+	bind:open={isConfirmingReject}
+	confirmLabel="Reject request"
+	description="The employer is told why and may submit a new request. This decision is final for the current request."
+	destructive
+	onconfirm={reject}
+	title="Reject this request?"
+/>

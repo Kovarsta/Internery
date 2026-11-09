@@ -2,13 +2,16 @@
 	/**
 	 * One job in the admin moderation queue on `/admin/moderation`.
 	 *
-	 * Hiding asks for a reason, because the employer receives it. Restoring and
-	 * clearing the scam flag are direct actions. Every write reports through a
-	 * toast and reloads the queue, so the row state comes from the server.
+	 * Hiding asks for a reason, because the employer receives it, then confirms
+	 * because the listing leaves search. Clearing the scam flag confirms because
+	 * it resolves the open reports. Restoring is reversible and runs directly.
+	 * Every write reports through a toast and reloads the queue, so the row
+	 * state comes from the server.
 	 */
 
 	import { refreshAll } from '$app/navigation';
 	import { apiSend } from '#lib/api/browser.ts';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
@@ -26,18 +29,25 @@
 	let { item }: { item: ModerationItem } = $props();
 
 	let isHideFormOpen = $state(false);
+	let isConfirmingHide = $state(false);
+	let isConfirmingClearFlag = $state(false);
 	let isSaving = $state(false);
 	let reason = $state('');
 
 	const job = $derived(item.job);
 	const hasScamFlag = $derived(item.causes.includes('SCAM_FLAG'));
 
-	async function hide() {
+	/** Checks the required reason before the confirmation dialog opens. */
+	function askHide() {
 		if (reason.trim() === '') {
 			showError('Give the employer a reason for hiding the job.');
 			return;
 		}
 
+		isConfirmingHide = true;
+	}
+
+	async function hide() {
 		isSaving = true;
 
 		const result = await apiSend(`/api/v1/admin/jobs/${job.id}/hide`, 'POST', {
@@ -145,7 +155,7 @@
 		{#if hasScamFlag}
 			<Button
 				disabled={isSaving}
-				onclick={() => runAction('clear-flag')}
+				onclick={() => (isConfirmingClearFlag = true)}
 				size="sm"
 				type="button"
 				variant="outline"
@@ -167,9 +177,27 @@
 		/>
 
 		<div class="mt-3">
-			<Button disabled={isSaving} onclick={hide} size="sm" type="button" variant="destructive">
+			<Button disabled={isSaving} onclick={askHide} size="sm" type="button" variant="destructive">
 				{isSaving ? 'Hiding…' : 'Hide job'}
 			</Button>
 		</div>
 	</div>
 {/if}
+
+<ConfirmDialog
+	bind:open={isConfirmingHide}
+	confirmLabel="Hide job"
+	description={`The job leaves search and ${job.employer.orgName} is notified with the reason you entered. You can restore it later.`}
+	destructive
+	onconfirm={hide}
+	title="Hide this job?"
+/>
+
+<ConfirmDialog
+	bind:open={isConfirmingClearFlag}
+	confirmLabel="Clear warning"
+	description="This removes the scam warning and resolves the open reports for this job. Reports stay in the audit log and cannot be reopened."
+	destructive
+	onconfirm={() => runAction('clear-flag')}
+	title="Clear the scam warning?"
+/>
