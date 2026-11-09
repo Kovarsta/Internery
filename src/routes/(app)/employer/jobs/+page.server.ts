@@ -4,9 +4,15 @@ import type { PageServerLoad } from './$types';
 
 const PAGE_SIZE = 20;
 
-/** Accepts only the four job states; anything else means "all". */
+/** Accepts only the five job states; anything else means "all". */
 function isJobStatus(value: string | null): value is JobStatus {
-	return value === 'HIRING' || value === 'FILLED' || value === 'COMPLETED' || value === 'CANCELLED';
+	return (
+		value === 'HIRING' ||
+		value === 'CLOSED' ||
+		value === 'FILLED' ||
+		value === 'COMPLETED' ||
+		value === 'CANCELLED'
+	);
 }
 
 /**

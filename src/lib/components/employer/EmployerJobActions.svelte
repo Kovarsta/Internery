@@ -1,10 +1,10 @@
 <script lang="ts">
 	/**
-	 * Status actions for one row on `/employer/jobs`.
+	 * Status actions for one employer job on `/employer/jobs/[jobId]`.
 	 *
-	 * Completing, cancelling and deleting are irreversible browser writes that report through a
-	 * toast. Each one opens the shared confirmation dialog first because it notifies students, ends
-	 * the job, or removes applications.
+	 * Closing, completing, cancelling and deleting are browser writes that report through a toast.
+	 * Each one opens the shared confirmation dialog first because it notifies students, ends the
+	 * job, or removes applications.
 	 */
 
 	import { refreshAll } from '$app/navigation';
@@ -12,21 +12,40 @@
 	import { showError, showSuccess } from '#lib/toast.ts';
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import { Button } from '#lib/components/ui/button/index.ts';
-	import type { MyJob } from '#lib/api/types.ts';
+	import type { JobStatus } from '#lib/api/types.ts';
 
-	type JobAction = 'complete' | 'cancel' | 'delete';
+	type JobAction = 'close' | 'complete' | 'cancel' | 'delete';
 
-	let { job }: { job: MyJob } = $props();
+	type JobForActions = {
+		id: string;
+		status: JobStatus;
+		acceptedCount: number;
+	};
+
+	let { job }: { job: JobForActions } = $props();
 
 	let pendingAction = $state<JobAction | null>(null);
 	let confirmAction = $state<JobAction | null>(null);
 	let isConfirming = $state(false);
 
-	const canCancel = $derived(job.status === 'HIRING' || job.status === 'FILLED');
-	const canComplete = $derived(job.status === 'FILLED');
+	const canClose = $derived(job.status === 'HIRING');
+	const canCancel = $derived(
+		job.status === 'HIRING' || job.status === 'CLOSED' || job.status === 'FILLED'
+	);
+	const canComplete = $derived(job.status === 'FILLED' || job.status === 'CLOSED');
 	const canDelete = $derived(job.status !== 'COMPLETED' && job.acceptedCount === 0);
 
 	const confirmContent = $derived.by(() => {
+		if (confirmAction === 'close') {
+			return {
+				title: 'Close applications?',
+				description:
+					'The job leaves search and pending applicants are told it is no longer accepting applications. Accepted applicants are not affected. You can mark it completed later.',
+				confirmLabel: 'Close applications',
+				destructive: false
+			};
+		}
+
 		if (confirmAction === 'complete') {
 			return {
 				title: 'Mark this job completed?',
@@ -62,6 +81,10 @@
 	}
 
 	async function confirmDestructive() {
+		if (confirmAction === 'close') {
+			await run('close', 'Applications closed. The job left search.');
+		}
+
 		if (confirmAction === 'complete') {
 			await run('complete', 'Job marked completed. Students can now leave reviews.');
 		}
@@ -99,6 +122,17 @@
 </script>
 
 <div class="flex flex-wrap justify-end gap-2">
+	{#if canClose}
+		<Button
+			disabled={pendingAction !== null}
+			onclick={() => ask('close')}
+			size="sm"
+			variant="default"
+		>
+			Close applications
+		</Button>
+	{/if}
+
 	{#if canComplete}
 		<Button
 			disabled={pendingAction !== null}

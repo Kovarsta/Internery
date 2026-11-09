@@ -7,6 +7,7 @@
 	 */
 
 	import { resolve } from '$app/paths';
+	import EmployerJobTabs from '#lib/components/employer/EmployerJobTabs.svelte';
 	import JobForm from '#lib/components/employer/JobForm.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
 	import type { PageProps } from './$types';
@@ -28,8 +29,12 @@
 	</Alert>
 {/if}
 
+<div class="mt-6">
+	<EmployerJobTabs canEdit jobId={data.job.id} />
+</div>
+
 <JobForm
-	cancelHref={resolve('employer/jobs')}
+	cancelHref={resolve(`employer/jobs/${encodeURIComponent(data.job.id)}`)}
 	categories={data.categories}
 	submitLabel="Save job"
 	{values}

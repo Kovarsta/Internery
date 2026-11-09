@@ -2,9 +2,9 @@
 
 Date: 2026-11-08
 
-Status: in progress. Structured job schedules, the day and time-of-day filters, and the richer job
-cards are implemented. Student preferences and suggestions are next; the remaining phases are still
-proposals.
+Status: in progress. Structured job schedules, the day and time-of-day filters, the richer job
+cards, early closing and the employer job workspace are implemented. Student preferences and
+suggestions are next; the remaining phases are still proposals.
 
 Feedback from the professor demo, grouped so the visible UX fixes land first and the schema and
 contract changes stay together. This comes before the remaining AI endpoints and before more admin
@@ -28,21 +28,21 @@ Make the demo feel like a working student job marketplace:
 | Filters             | keyword, category, location, day, time of day, verified, sort; API also supports `salaryMin`, `salaryMax`, `startFrom`, `endTo` | pay and date filters are not in the UI                   |
 | Job cards           | dates, schedule, positions left, title, employer and rating, category, location, pay                                            | no time-of-day badges                                    |
 | Sign out            | `POST /logout` from the header and footer                                                                                       | —                                                        |
-| Close submissions   | `cancel` (`CANCELLED`) and `complete` (`FILLED → COMPLETED`)                                                                    | no way to stop accepting applications early              |
+| Close submissions   | `close` (`HIRING → CLOSED`), `cancel` (`CANCELLED`) and `complete` (`CLOSED                                                     | FILLED → COMPLETED`)                                     | —   |
 | Name and phone      | `PATCH /me` supports `fullName` and `phone`                                                                                     | `/me` is read-only                                       |
 | Email notifications | verification and every notification event sent through Resend                                                                   | no opt-out or retry; the demo needs a verified sender    |
 
 ## Decisions
 
-Decisions 1-3 are settled and reflected in the code. Decisions 4-6 still need an answer before
-their phases.
+All six decisions are settled and reflected in the code. The open items are the delivery polish
+listed under phase 5, not the choices themselves.
 
 | #   | Decision                    | Recommended                                                                                     | Alternative                                                  |
 | --- | --------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | 1   | Job schedule model          | `daysOfWeek` plus `startTime`/`endTime`; the display string is derived                          | a stored slot enum beside free text                          |
 | 2   | Student preferences         | `location` and a preference shape that mirrors a job (days plus a time range)                   | derive suggestions from free-text `availability`             |
 | 3   | Suggestion behaviour        | home section + “Use my preferences” on `/jobs` (opt-in)                                         | automatically filter `/jobs` when the profile is complete    |
-| 4   | Close submissions semantics | `HIRING → FILLED`; notify pending applicants with a new `JOB_CLOSED` type                       | new `CLOSED` status, or an `acceptingApplications` flag      |
+| 4   | Close submissions semantics | new `CLOSED` status; notify pending applicants with a new `JOB_CLOSED` type                     | `HIRING → FILLED`, or an `acceptingApplications` flag        |
 | 5   | Email delivery              | Resend with a verified sender                                                                   | Mailpit in Compose with SMTP for a self-contained local demo |
 | 6   | Email event coverage        | application received/decided, job closed/cancelled/completed, verification, review, work record | only application events, to keep the first pass small        |
 
@@ -114,15 +114,19 @@ Effort: **M**.
 
 ## Phase 4 — Close submissions early
 
-- New operation `POST /jobs/{jobId}/close` (`HIRING → FILLED`), owner-only and row-locked.
-- Pending applicants get a `JOB_CLOSED` in-app notification; the notification type is added to the
-  enum in the phase 2 migration.
-- `acceptingApplications` already becomes false for `FILLED`, and `complete` still works after the
-  work is done.
-- Employer jobs list: a “Close applications” button with confirmation.
+Implemented:
+
+- new `CLOSED` job status and `JOB_CLOSED` notification type;
+- `POST /jobs/{jobId}/close` (`HIRING → CLOSED`), owner-only and row-locked;
+- pending applicants get a `JOB_CLOSED` in-app notification and email; accepted students are not
+  affected;
+- `acceptingApplications` is false for `CLOSED`, which also leaves the public search;
+- a closed job can still be completed or cancelled;
+- the employer job workspace at `/employer/jobs/[jobId]` keeps the “Close applications” action on
+  the Overview tab, behind a confirmation dialog, instead of editing position counts.
 
 Acceptance: an employer can close a hiring job; it leaves search; pending applicants see the
-notification; a second close answers `409`.
+notification; a second close answers `409`. Verified against the demo build.
 
 Effort: **S–M**.
 
@@ -150,7 +154,7 @@ Effort: **M**.
 ## Phase 6 — Docs and demo data
 
 - Update the contract, implementation-status checklist, `docs/frontend.md` and `AGENTS.md`.
-- Extend the seed with locations, student preferences, and a closed job example.
+- Extend the seed with student preferences and a closed job example. Locations are already seeded.
 - Add a short demo script: sign in as a student, show suggestions, filter by day and time of day,
   close a job as the employer, sign out.
 
@@ -166,7 +170,8 @@ Effort: **S**.
 | `GET /jobs?dayOfWeek=&timeOfDay=`        | additive      | 2     |
 | student `location` and preference fields | additive      | 2     |
 | `POST /jobs/{jobId}/close`               | new operation | 4     |
-| `JOB_CLOSED` notification type           | additive enum | 2/4   |
+| `CLOSED` job status                      | new enum      | 4     |
+| `JOB_CLOSED` notification type           | additive enum | 4     |
 | email helper and templates               | no contract   | 5     |
 
 ## Out of scope
@@ -174,12 +179,11 @@ Effort: **S**.
 - AI suggestions or an AI ranking model; this roadmap is rule-based.
 - More admin features.
 - Per-user email preferences and unsubscribe links (revisit before production).
-- Structured scheduling (recurring shifts, per-day hours); `schedule` stays free text.
+- Recurring shifts or per-day hours; the schedule is one time range over a set of days.
 
 ## Open questions
 
-1. Time slots: array as proposed, or one primary slot?
-2. Suggestions: opt-in button plus home section, or automatic filtering?
-3. Close submissions: reuse `FILLED`, or introduce `CLOSED` / an `acceptingApplications` flag?
-4. Email: Resend, or Mailpit in Compose for the demo?
-5. Should phase 1 ship alone first, so the professor sees improvements before the migration?
+1. Should the home suggestions be opt-in, or automatic when the student profile is complete?
+2. Do we add per-user email preferences before the demo, or after it?
+3. Should a closed job appear in a separate employer filter, or only under “All”? It currently has
+   its own `Closed` filter.

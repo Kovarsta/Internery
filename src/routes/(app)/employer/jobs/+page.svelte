@@ -19,6 +19,7 @@
 	const statusFilters: { label: string; value: JobStatus | null }[] = [
 		{ label: 'All', value: null },
 		{ label: 'Hiring', value: 'HIRING' },
+		{ label: 'Closed', value: 'CLOSED' },
 		{ label: 'Filled', value: 'FILLED' },
 		{ label: 'Completed', value: 'COMPLETED' },
 		{ label: 'Cancelled', value: 'CANCELLED' }

@@ -2,30 +2,28 @@
 	/**
 	 * One job row for `/employer/jobs`.
 	 *
-	 * Shows the counts the employer cares about and links to the public listing and
-	 * the applicant list. A hidden job keeps its reason visible.
+	 * The row is a summary and one link to the job workspace; status actions live
+	 * on the overview so the list stays scannable.
 	 */
 
 	import { resolve } from '$app/paths';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
-	import { Button } from '#lib/components/ui/button/index.ts';
-	import EmployerJobActions from '#lib/components/employer/EmployerJobActions.svelte';
 	import { formatDateRange, formatPositionsRemaining, formatSalary } from '#lib/format.ts';
 	import { jobStatusClass, jobStatusLabel } from '#lib/labels.ts';
 	import type { MyJob } from '#lib/api/types.ts';
 
 	let { job }: { job: MyJob } = $props();
+
+	const href = $derived(resolve(`employer/jobs/${encodeURIComponent(job.id)}`));
 </script>
 
-<article class="grid gap-3 py-5 sm:grid-cols-[1fr_auto] sm:items-start">
+<a
+	class="grid gap-3 py-5 transition-colors hover:bg-black/[0.02] sm:grid-cols-[1fr_auto] sm:items-center"
+	{href}
+>
 	<div>
 		<div class="flex flex-wrap items-center gap-2">
-			<a
-				class="text-lg font-semibold hover:text-chalk"
-				href={resolve(`jobs/${encodeURIComponent(job.id)}`)}
-			>
-				{job.title}
-			</a>
+			<h3 class="text-lg font-semibold">{job.title}</h3>
 			<Badge class={jobStatusClass[job.status]} variant="ghost">{jobStatusLabel[job.status]}</Badge>
 			{#if job.isHidden}
 				<Badge class="bg-warning/10 text-warning" variant="ghost">Hidden</Badge>
@@ -48,29 +46,5 @@
 		{/if}
 	</div>
 
-	<div class="flex flex-col items-start gap-2 sm:items-end">
-		<div class="flex flex-wrap gap-2 sm:justify-end">
-			{#if job.status === 'HIRING'}
-				<Button
-					href={resolve(`employer/jobs/${encodeURIComponent(job.id)}/edit`)}
-					size="sm"
-					variant="ghost"
-				>
-					Edit
-				</Button>
-			{/if}
-			<Button
-				href={resolve(`employer/jobs/${encodeURIComponent(job.id)}/applicants`)}
-				size="sm"
-				variant="outline"
-			>
-				Applicants
-			</Button>
-			<Button href={resolve(`jobs/${encodeURIComponent(job.id)}`)} size="sm" variant="ghost">
-				View
-			</Button>
-		</div>
-
-		<EmployerJobActions {job} />
-	</div>
-</article>
+	<span class="text-sm font-medium text-chalk">Manage</span>
+</a>

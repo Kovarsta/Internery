@@ -9,6 +9,7 @@
 
 	import { resolve } from '$app/paths';
 	import ApplicantRow from '#lib/components/employer/ApplicantRow.svelte';
+	import EmployerJobTabs from '#lib/components/employer/EmployerJobTabs.svelte';
 	import EmptyState from '#lib/components/jobs/EmptyState.svelte';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import type { ApplicationStatus } from '#lib/api/types.ts';
@@ -38,8 +39,10 @@
 			{data.status ? 'with this status' : 'in total'}.
 		</p>
 	</div>
+</div>
 
-	<Button href={resolve('employer/jobs')} size="sm" variant="outline">Back to my jobs</Button>
+<div class="mt-6">
+	<EmployerJobTabs canEdit={data.job.status === 'HIRING'} jobId={data.job.id} />
 </div>
 
 <nav class="mt-6 flex flex-wrap gap-2" aria-label="Filter by status">
