@@ -91,8 +91,9 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Product services and API handlers cover phases 0 to 3. The frontend lives in the `(app)` route
   group under `src/routes/(app)`; `src/routes/api` stays outside it. The home page, job browsing,
   applications, saved jobs, the employer job list and applicant review, notifications, sign-in,
-  both profile editors, avatar and CV uploads, employer job editing, the review flow, employer
-  verification and the public work-record directory and verify pages work against the API. The
+  the account details form on `/me`, both profile editors, avatar and CV uploads, employer job
+  editing, the review flow, employer verification and the public work-record directory and verify
+  pages work against the API. The
   employer job workspace at `/employer/jobs/[jobId]` has Overview, Applicants and Edit tabs; closing
   applications moves the job from `HIRING` to `CLOSED` without changing the position counts. The admin
   area (overview, users, moderation, categories, verification) is implemented, and students can

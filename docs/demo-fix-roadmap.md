@@ -3,8 +3,8 @@
 Date: 2026-11-08
 
 Status: in progress. Structured job schedules, the day and time-of-day filters, the richer job
-cards, early closing and the employer job workspace are implemented. Student preferences and
-suggestions are next; the remaining phases are still proposals.
+cards, early closing, the employer job workspace and account details are implemented. Student
+preferences and suggestions are next; the remaining phases are still proposals.
 
 Feedback from the professor demo, grouped so the visible UX fixes land first and the schema and
 contract changes stay together. This comes before the remaining AI endpoints and before more admin
@@ -29,7 +29,7 @@ Make the demo feel like a working student job marketplace:
 | Job cards           | dates, schedule, positions left, title, employer and rating, category, location, pay                                            | no time-of-day badges                                    |
 | Sign out            | `POST /logout` from the header and footer                                                                                       | —                                                        |
 | Close submissions   | `close` (`HIRING → CLOSED`), `cancel` (`CANCELLED`) and `complete` (`CLOSED                                                     | FILLED → COMPLETED`)                                     | —   |
-| Name and phone      | `PATCH /me` supports `fullName` and `phone`                                                                                     | `/me` is read-only                                       |
+| Name and phone      | editable on `/me` through `PATCH /me`                                                                                           | —                                                        |
 | Email notifications | verification and every notification event sent through Resend                                                                   | no opt-out or retry; the demo needs a verified sender    |
 
 ## Decisions
@@ -52,8 +52,9 @@ Goal: fix the obvious demo gaps without touching the database.
 
 - **Sign out** (implemented): `POST /logout` calls `auth.api.signOut`, then redirects to `/`. The
   header and footer show a sign-out control for signed-in users.
-- **Account details**: a form on `/me` for name and phone, using the existing `PATCH /me`. Show the
-  API message inline. Leave email out of the first pass.
+- **Account details** (implemented): a form on `/me` for name and phone, using the existing
+  `PATCH /me`, with the API message inline. Email and password stay out of this pass; they need the
+  verification and current-password rules that belong on a separate security page.
 - **Job cards**: add the schedule line and the employer rating/review count. `JobSummary` gains
   `schedule` (additive contract change).
 - **Filters**: add minimum pay and a start-date field. The API already supports both.
