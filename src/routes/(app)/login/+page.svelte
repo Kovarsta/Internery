@@ -8,7 +8,9 @@
 
 	import { resolve } from '$app/paths';
 	import { enhance, type SubmitFunction } from '$app/forms';
+	import { RiGithubFill } from 'remixicon-svelte';
 	import { showSuccess } from '#lib/toast.ts';
+	import PasswordInput from '#lib/components/PasswordInput.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
@@ -32,7 +34,7 @@
 	};
 </script>
 
-<section class="max-w-md">
+<section class="mx-auto max-w-md">
 	<h1 class="text-3xl font-extrabold tracking-tight">Sign in</h1>
 	<p class="mt-2 text-ink/70">Use the email address you registered with.</p>
 
@@ -50,6 +52,13 @@
 		</Alert>
 	{/if}
 
+	{#if data.githubError}
+		<Alert class="mt-5" variant="destructive">
+			<AlertTitle>GitHub sign-in did not complete</AlertTitle>
+			<AlertDescription>Try again, or use your email and password.</AlertDescription>
+		</Alert>
+	{/if}
+
 	{#if form?.message}
 		<Alert class="mt-5" variant="destructive">
 			<AlertTitle>Cannot sign in</AlertTitle>
@@ -57,9 +66,23 @@
 		</Alert>
 	{/if}
 
+	<form class="mt-6" method="POST" action="?/github">
+		<Button class="w-full" type="submit" variant="outline">
+			<RiGithubFill aria-hidden="true" />
+			Continue with GitHub
+		</Button>
+	</form>
+
+	<div class="my-5 flex items-center gap-3 text-xs tracking-wide text-ink/40 uppercase">
+		<span class="h-px flex-1 bg-rule"></span>
+		or use email
+		<span class="h-px flex-1 bg-rule"></span>
+	</div>
+
 	<form
-		class="mt-6 space-y-4 border-t-4 border-chalk bg-card p-6"
+		class="space-y-4 border-t-4 border-chalk bg-card p-6"
 		method="POST"
+		action="?/credentials"
 		use:enhance={enhanceSignIn}
 	>
 		<div>
@@ -81,12 +104,11 @@
 					Forgot password?
 				</a>
 			</div>
-			<Input
+			<PasswordInput
 				autocomplete="current-password"
 				id="signin-password"
 				name="password"
 				required
-				type="password"
 			/>
 		</div>
 

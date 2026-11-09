@@ -10,6 +10,7 @@
 	import { resolve } from '$app/paths';
 	import { enhance, type SubmitFunction } from '$app/forms';
 	import { showSuccess } from '#lib/toast.ts';
+	import PasswordInput from '#lib/components/PasswordInput.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
@@ -34,7 +35,7 @@
 	};
 </script>
 
-<section class="max-w-md">
+<section class="mx-auto max-w-md">
 	<h1 class="text-3xl font-extrabold tracking-tight">Create an account</h1>
 	<p class="mt-2 text-ink/70">
 		Students apply for jobs; employers post them. Verify your email before signing in.
@@ -78,13 +79,12 @@
 
 		<div>
 			<Label class="mb-1" for="register-password">Password</Label>
-			<Input
+			<PasswordInput
 				autocomplete="new-password"
 				id="register-password"
 				minlength={8}
 				name="password"
 				required
-				type="password"
 			/>
 			<p class="mt-1 text-xs text-ink/60">At least 8 characters.</p>
 		</div>

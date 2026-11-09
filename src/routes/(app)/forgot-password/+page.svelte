@@ -16,7 +16,7 @@
 	let { form }: PageProps = $props();
 </script>
 
-<section class="max-w-md">
+<section class="mx-auto max-w-md">
 	<a class="text-sm font-medium text-chalk hover:underline" href={resolve('login')}>
 		Back to sign in
 	</a>

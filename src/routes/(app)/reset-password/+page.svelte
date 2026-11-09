@@ -7,16 +7,16 @@
 	 */
 
 	import { resolve } from '$app/paths';
+	import PasswordInput from '#lib/components/PasswordInput.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
-	import { Input } from '#lib/components/ui/input/index.ts';
 	import { Label } from '#lib/components/ui/label/index.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 </script>
 
-<section class="max-w-md">
+<section class="mx-auto max-w-md">
 	<a class="text-sm font-medium text-chalk hover:underline" href={resolve('login')}>
 		Back to sign in
 	</a>
@@ -45,26 +45,26 @@
 
 			<div>
 				<Label class="mb-1" for="reset-password">New password</Label>
-				<Input
+				<PasswordInput
 					autocomplete="new-password"
 					id="reset-password"
+					label="new password"
 					minlength={8}
 					name="password"
 					required
-					type="password"
 				/>
 				<p class="mt-1 text-xs text-ink/60">At least 8 characters.</p>
 			</div>
 
 			<div>
 				<Label class="mb-1" for="reset-confirmation">Confirm new password</Label>
-				<Input
+				<PasswordInput
 					autocomplete="new-password"
 					id="reset-confirmation"
+					label="confirm password"
 					minlength={8}
 					name="confirmation"
 					required
-					type="password"
 				/>
 			</div>
 
