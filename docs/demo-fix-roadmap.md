@@ -52,9 +52,10 @@ Goal: fix the obvious demo gaps without touching the database.
 
 - **Sign out** (implemented): `POST /logout` calls `auth.api.signOut`, then redirects to `/`. The
   header and footer show a sign-out control for signed-in users.
-- **Account details** (implemented): a form on `/me` for name and phone, using the existing
-  `PATCH /me`, with the API message inline. Email and password stay out of this pass; they need the
-  verification and current-password rules that belong on a separate security page.
+- **Account details** (implemented): a form on the student and company profile tabs for name and
+  phone, using the existing `PATCH /me`, with the API message inline. The `/me` overview stays a
+  read-only summary. Email and password stay out of this pass; they need the verification and
+  current-password rules that belong on a separate security page.
 - **Job cards**: add the schedule line and the employer rating/review count. `JobSummary` gains
   `schedule` (additive contract change).
 - **Filters**: add minimum pay and a start-date field. The API already supports both.

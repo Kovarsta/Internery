@@ -7,6 +7,7 @@
 	 */
 
 	import PageHeader from '#lib/components/PageHeader.svelte';
+	import AccountDetailsForm from '#lib/components/profile/AccountDetailsForm.svelte';
 	import CvPanel from '#lib/components/profile/CvPanel.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
@@ -19,19 +20,37 @@
 
 	const profile = $derived(data.profile);
 	const values = $derived(
-		form?.values ?? {
-			university: profile.university,
-			major: profile.major,
-			skills: profile.skills.join(', '),
-			availability: profile.availability ?? '',
-			bio: profile.bio ?? ''
-		}
+		form?.scope === 'profile'
+			? form.values
+			: {
+					university: profile.university,
+					major: profile.major,
+					skills: profile.skills.join(', '),
+					availability: profile.availability ?? '',
+					bio: profile.bio ?? ''
+				}
+	);
+
+	const accountValues = $derived(
+		form?.scope === 'account'
+			? form.values
+			: {
+					fullName: data.me.fullName,
+					phone: data.me.phone ?? ''
+				}
 	);
 </script>
 
 <PageHeader
 	title="Student profile"
-	description="Employers see this when you apply. Keep the skills and availability current."
+	description="Manage your account name and phone, then the details employers see when you apply."
+/>
+
+<AccountDetailsForm
+	action="?/account"
+	message={form?.scope === 'account' ? form.message : undefined}
+	saved={data.accountSaved}
+	values={accountValues}
 />
 
 {#if data.saved}
@@ -41,14 +60,22 @@
 	</Alert>
 {/if}
 
-{#if form?.message}
+{#if form?.scope === 'profile' && form.message}
 	<Alert class="mb-6" variant="destructive">
 		<AlertTitle>Cannot save the profile</AlertTitle>
 		<AlertDescription>{form.message}</AlertDescription>
 	</Alert>
 {/if}
 
-<form class="grid max-w-3xl gap-4 border-t-4 border-chalk bg-card p-6 sm:grid-cols-2" method="POST">
+<form
+	class="grid max-w-3xl gap-4 border-t-4 border-chalk bg-card p-6 sm:grid-cols-2"
+	method="POST"
+	action="?/profile"
+>
+	<div class="sm:col-span-2">
+		<h2 class="text-lg font-semibold">Student details</h2>
+	</div>
+
 	<div>
 		<Label class="mb-1" for="profile-university">University</Label>
 		<Input

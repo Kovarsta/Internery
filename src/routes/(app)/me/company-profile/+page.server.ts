@@ -1,7 +1,12 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { apiGet } from '#lib/api/client.ts';
 import { readErrorMessage } from '#lib/api/error-message.ts';
-import type { EmployerProfile, OrgType } from '#lib/api/types.ts';
+import {
+	findAccountProblem,
+	readAccountValues,
+	saveAccountDetails
+} from '#lib/server/account-details.ts';
+import type { EmployerProfile, OrgType, UserMe } from '#lib/api/types.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 type ProfileFormValues = {
@@ -15,15 +20,21 @@ type ProfileFormValues = {
 /**
  * Loads `/me/company-profile`.
  *
- * The form is filled from `GET /me/employer-profile`. `saved` is the flag left by the form's
- * redirect, so the page can confirm the save once.
+ * The company form is filled from `GET /me/employer-profile` and the personal
+ * details form from `GET /me`. `saved` and `accountSaved` are the flags left by
+ * each form's redirect, so the page can confirm the save once.
  */
 export const load: PageServerLoad = async (event) => {
-	const profile = await apiGet<EmployerProfile>(event, '/api/v1/me/employer-profile');
+	const [profile, me] = await Promise.all([
+		apiGet<EmployerProfile>(event, '/api/v1/me/employer-profile'),
+		apiGet<UserMe>(event, '/api/v1/me')
+	]);
 
 	return {
 		profile,
-		saved: event.url.searchParams.get('saved') === '1'
+		me,
+		saved: event.url.searchParams.get('saved') === '1',
+		accountSaved: event.url.searchParams.get('accountSaved') === '1'
 	};
 };
 
@@ -34,13 +45,30 @@ export const load: PageServerLoad = async (event) => {
  * length limits; the checks here only cover what the person can fix on the form.
  */
 export const actions: Actions = {
-	default: async (event) => {
+	account: async (event) => {
+		const form = await event.request.formData();
+		const values = readAccountValues(form);
+		const problem = findAccountProblem(values);
+
+		if (problem) {
+			return fail(400, { scope: 'account' as const, message: problem, values });
+		}
+
+		const failure = await saveAccountDetails(event, values);
+
+		if (failure) {
+			return failure;
+		}
+
+		redirect(303, '/me/company-profile?accountSaved=1');
+	},
+	company: async (event) => {
 		const form = await event.request.formData();
 		const values = readValues(form);
 		const problem = findProblem(values);
 
 		if (problem) {
-			return fail(400, { message: problem, values });
+			return fail(400, { scope: 'company' as const, message: problem, values });
 		}
 
 		const response = await event.fetch('/api/v1/me/employer-profile', {
@@ -51,6 +79,7 @@ export const actions: Actions = {
 
 		if (!response.ok) {
 			return fail(response.status, {
+				scope: 'company' as const,
 				message: await readErrorMessage(response),
 				values
 			});

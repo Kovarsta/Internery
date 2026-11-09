@@ -7,6 +7,7 @@
 	 */
 
 	import PageHeader from '#lib/components/PageHeader.svelte';
+	import AccountDetailsForm from '#lib/components/profile/AccountDetailsForm.svelte';
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
@@ -21,13 +22,24 @@
 
 	const profile = $derived(data.profile);
 	const values = $derived(
-		form?.values ?? {
-			orgName: profile.orgName,
-			orgType: profile.orgType,
-			description: profile.description ?? '',
-			address: profile.address ?? '',
-			contactPhone: profile.contactPhone ?? ''
-		}
+		form?.scope === 'company'
+			? form.values
+			: {
+					orgName: profile.orgName,
+					orgType: profile.orgType,
+					description: profile.description ?? '',
+					address: profile.address ?? '',
+					contactPhone: profile.contactPhone ?? ''
+				}
+	);
+
+	const accountValues = $derived(
+		form?.scope === 'account'
+			? form.values
+			: {
+					fullName: data.me.fullName,
+					phone: data.me.phone ?? ''
+				}
 	);
 </script>
 
@@ -43,6 +55,13 @@
 	</Badge>
 </div>
 
+<AccountDetailsForm
+	action="?/account"
+	message={form?.scope === 'account' ? form.message : undefined}
+	saved={data.accountSaved}
+	values={accountValues}
+/>
+
 {#if data.saved}
 	<Alert class="mb-6 border-chalk/30 bg-chalk/5">
 		<AlertTitle>Profile saved</AlertTitle>
@@ -50,14 +69,22 @@
 	</Alert>
 {/if}
 
-{#if form?.message}
+{#if form?.scope === 'company' && form.message}
 	<Alert class="mb-6" variant="destructive">
 		<AlertTitle>Cannot save the profile</AlertTitle>
 		<AlertDescription>{form.message}</AlertDescription>
 	</Alert>
 {/if}
 
-<form class="grid max-w-3xl gap-4 border-t-4 border-chalk bg-card p-6 sm:grid-cols-2" method="POST">
+<form
+	class="grid max-w-3xl gap-4 border-t-4 border-chalk bg-card p-6 sm:grid-cols-2"
+	method="POST"
+	action="?/company"
+>
+	<div class="sm:col-span-2">
+		<h2 class="text-lg font-semibold">Company details</h2>
+	</div>
+
 	<div>
 		<Label class="mb-1" for="org-name">Organisation name</Label>
 		<Input id="org-name" maxlength={200} name="orgName" required value={values.orgName} />

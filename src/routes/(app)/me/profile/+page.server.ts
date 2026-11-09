@@ -1,7 +1,12 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { apiGet } from '#lib/api/client.ts';
 import { readErrorMessage } from '#lib/api/error-message.ts';
-import type { StudentProfile } from '#lib/api/types.ts';
+import {
+	findAccountProblem,
+	readAccountValues,
+	saveAccountDetails
+} from '#lib/server/account-details.ts';
+import type { StudentProfile, UserMe } from '#lib/api/types.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 type ProfileFormValues = {
@@ -15,15 +20,21 @@ type ProfileFormValues = {
 /**
  * Loads `/me/profile`.
  *
- * The form is filled from `GET /me/student-profile`. `saved` is the flag left by the form's
- * redirect, so the page can confirm the save once.
+ * The student form is filled from `GET /me/student-profile` and the personal
+ * details form from `GET /me`. `saved` and `accountSaved` are the flags left by
+ * each form's redirect, so the page can confirm the save once.
  */
 export const load: PageServerLoad = async (event) => {
-	const profile = await apiGet<StudentProfile>(event, '/api/v1/me/student-profile');
+	const [profile, me] = await Promise.all([
+		apiGet<StudentProfile>(event, '/api/v1/me/student-profile'),
+		apiGet<UserMe>(event, '/api/v1/me')
+	]);
 
 	return {
 		profile,
-		saved: event.url.searchParams.get('saved') === '1'
+		me,
+		saved: event.url.searchParams.get('saved') === '1',
+		accountSaved: event.url.searchParams.get('accountSaved') === '1'
 	};
 };
 
@@ -34,13 +45,30 @@ export const load: PageServerLoad = async (event) => {
  * field and owns the length limits. A rejected payload comes back with the values still filled in.
  */
 export const actions: Actions = {
-	default: async (event) => {
+	account: async (event) => {
+		const form = await event.request.formData();
+		const values = readAccountValues(form);
+		const problem = findAccountProblem(values);
+
+		if (problem) {
+			return fail(400, { scope: 'account' as const, message: problem, values });
+		}
+
+		const failure = await saveAccountDetails(event, values);
+
+		if (failure) {
+			return failure;
+		}
+
+		redirect(303, '/me/profile?accountSaved=1');
+	},
+	profile: async (event) => {
 		const form = await event.request.formData();
 		const values = readValues(form);
 		const problem = findProblem(values);
 
 		if (problem) {
-			return fail(400, { message: problem, values });
+			return fail(400, { scope: 'profile' as const, message: problem, values });
 		}
 
 		const response = await event.fetch('/api/v1/me/student-profile', {
@@ -51,6 +79,7 @@ export const actions: Actions = {
 
 		if (!response.ok) {
 			return fail(response.status, {
+				scope: 'profile' as const,
 				message: await readErrorMessage(response),
 				values
 			});
