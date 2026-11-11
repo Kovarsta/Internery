@@ -79,16 +79,47 @@ services:
       ]
     restart: 'no'
 
+  # One-shot demo setup. It always applies pending migrations and, when
+  # SEED_DEMO=true, also runs the seed script. Keep SEED_DEMO=false after the
+  # first start: re-seeding resets the fixed demo rows.
+  #
+  #   SEED_DEMO=true docker compose --profile demo up -d --build app
+  demo-setup:
+    profiles: ['demo']
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: tools
+      args:
+        APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        pnpm db:migrate
+        if [ "$$SEED_DEMO" = "true" ]; then
+          node scripts/seed.ts
+        fi
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://internery:internery@db:5432/internery
+      WORK_RECORD_SECRET: '${WORK_RECORD_SECRET:?Set WORK_RECORD_SECRET in .env}'
+      SEED_PASSWORD: ${SEED_PASSWORD:-Password123!}
+      SEED_DEMO: ${SEED_DEMO:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+
   # Production-style app container for a teammate demo. It is behind the
   # `demo` profile, so `pnpm db:start` (plain `docker compose up`) still starts
   # only the database and MinIO for local development.
   #
   #   docker compose --profile demo up -d --build app
   #
-  # The database must already be migrated and seeded:
-  #
-  #   pnpm db:migrate
-  #   pnpm db:seed
+  # The `demo-setup` service runs first and applies migrations. Set
+  # SEED_DEMO=true for the first start if the database is empty.
   #
   # `APP_ORIGIN` must match the address the demo is opened at, because Better
   # Auth uses it for cookies and OAuth callbacks, and SvelteKit trusts it for
@@ -107,6 +138,8 @@ services:
       db:
         condition: service_healthy
       minio-blank-avatar:
+        condition: service_completed_successfully
+      demo-setup:
         condition: service_completed_successfully
     ports:
       - '${APP_PORT:-3000}:3000'

@@ -37,6 +37,12 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
+# One-shot runner for the demo profile. It keeps the source, migrations, seed
+# script and dev dependencies, so compose can run `pnpm db:migrate` and the
+# seed script before the app starts.
+FROM build AS tools
+CMD ["pnpm", "db:migrate"]
+
 # Runtime stage: production dependencies and the compiled output only.
 FROM node:22-bookworm-slim AS runtime
 

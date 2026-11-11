@@ -118,8 +118,10 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - `Dockerfile` builds a production image with adapter-node. The `app` service in
   `docker-compose.yaml` sits behind the `demo` profile, so the normal dev stack is unchanged:
   `docker compose --profile demo up -d --build app` serves the app on `:3000` next to the dev
-  server. `APP_ORIGIN` is both the Better Auth base URL and the trusted SvelteKit origin, so it must
-  match the demo address and requires a rebuild when it changes.
+  server. The `demo-setup` one-shot service applies pending migrations first; set `SEED_DEMO=true`
+  on the first run to seed an empty database. Re-seeding resets the fixed demo rows, so turn it off
+  afterwards. `APP_ORIGIN` is both the Better Auth base URL and the trusted SvelteKit origin, so it
+  must match the demo address and requires a rebuild when it changes.
 
 ## Commands
 
@@ -142,6 +144,7 @@ pnpm auth:schema         # regenerate Better Auth tables into src/lib/server/db/
 
 ```sh
 docker compose --profile demo up -d --build app   # production-style demo on :3000
+SEED_DEMO=true docker compose --profile demo up -d --build app   # first run on an empty database
 docker compose --profile demo logs -f app
 docker compose --profile demo stop app
 ```

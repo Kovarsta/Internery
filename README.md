@@ -123,14 +123,17 @@ The Compose stack exposes:
 adds an `app` service behind the `demo` profile. Plain `docker compose up` still starts only
 PostgreSQL and MinIO for development, so a running dev server on `:5173` is unaffected.
 
-1. Apply migrations and seed data once, if the quick start has not done it yet:
+The `demo` profile includes a one-shot `demo-setup` service. It applies pending migrations before
+the app starts. On an empty database, also seed it on the first start:
 
-   ```sh
-   pnpm db:migrate
-   pnpm db:seed
-   ```
+```sh
+SEED_DEMO=true docker compose --profile demo up -d --build app
+```
 
-2. Build and start the app:
+After the first seed, set `SEED_DEMO=false` (or unset it). Re-seeding resets the fixed demo rows,
+including job statuses and seeded profile edits.
+
+1. Start the app:
 
    ```sh
    docker compose --profile demo up -d --build app
@@ -138,7 +141,10 @@ PostgreSQL and MinIO for development, so a running dev server on `:5173` is unaf
 
    Open <http://localhost:3000>.
 
-3. Follow the logs, or stop the app without stopping the database and MinIO:
+   If `pnpm` is available locally, `pnpm db:migrate` and `pnpm db:seed` still work; the setup
+   service will simply find the migrations already applied.
+
+2. Follow the logs, or stop the app without stopping the database and MinIO:
 
    ```sh
    docker compose --profile demo logs -f app
