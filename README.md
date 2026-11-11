@@ -82,21 +82,24 @@ Not implemented yet:
    pnpm db:seed
    ```
 
-   This creates an admin, three students and an employer, plus categories, jobs, applications and
-   notifications. The accounts share the password from `SEED_PASSWORD`, which defaults to
+   This creates an admin, three students and three employers, plus categories, jobs, applications
+   and notifications. The accounts share the password from `SEED_PASSWORD`, which defaults to
    `Password123!`. The script is safe to rerun and refuses to run when `NODE_ENV=production`.
 
    The seeded accounts are already verified, so they can sign in at `/login` immediately:
 
-   | Name             | Email                      | Role       |
-   | ---------------- | -------------------------- | ---------- |
-   | Internery Admin  | `admin@internery.local`    | `ADMIN`    |
-   | Nguyen Van An    | `student@internery.local`  | `STUDENT`  |
-   | Pham Thu Linh    | `linh@internery.local`     | `STUDENT`  |
-   | Hoang Quang Minh | `minh@internery.local`     | `STUDENT`  |
-   | Tran Thi Binh    | `employer@internery.local` | `EMPLOYER` |
+   | Name             | Email                       | Role       |
+   | ---------------- | --------------------------- | ---------- |
+   | Internery Admin  | `admin@internery.local`     | `ADMIN`    |
+   | Nguyen Van An    | `student@internery.local`   | `STUDENT`  |
+   | Pham Thu Linh    | `linh@internery.local`      | `STUDENT`  |
+   | Hoang Quang Minh | `minh@internery.local`      | `STUDENT`  |
+   | Tran Thi Binh    | `employer@internery.local`  | `EMPLOYER` |
+   | Le Thu Trang     | `studyhub@internery.local`  | `EMPLOYER` |
+   | Vo Ha My         | `eventcrew@internery.local` | `EMPLOYER` |
 
-   Use `student@`, `linh@` or `minh@` for the student side, and `employer@` for the employer side.
+   Use `student@`, `linh@` or `minh@` for the student side. The employer accounts are `employer@`,
+   `studyhub@` and `eventcrew@`.
 
 7. Start the development server:
 
@@ -197,7 +200,9 @@ Better Auth owns authentication under `/api/auth/*`.
 - Roles are `STUDENT`, `EMPLOYER` and `ADMIN`.
 - Account states are `PENDING_VERIFICATION`, `ACTIVE`, `SUSPENDED`, `LOCKED` and `DELETED`.
 - Passwords use Argon2id.
-- GitHub OAuth is configured; GitHub accounts with a verified email start as `ACTIVE`.
+- GitHub OAuth is configured. A GitHub account with a verified email starts as `ACTIVE`; a new
+  account chooses Student or Employer at `/onboarding` before using the app.
+- Password reset uses Better Auth's one-time token and the same Resend sender.
 
 The generated Better Auth schema is `src/lib/server/db/auth.schema.ts`. Regenerate it with:
 
@@ -242,9 +247,9 @@ the repository and must be committed.
 
 ## API
 
-The API lives under `src/routes/api/v1`. The route tree covers 54 paths and 69 operations. The
-request foundation and the first reads and writes are implemented; the rest still return `501`. The
-contract is [`docs/contracts/openapi.yaml`](docs/contracts/openapi.yaml), and
+The API lives under `src/routes/api/v1`. The route tree covers 54 paths and 69 operations. 64 of the
+69 operations are implemented; the AI consent/read operations and the shareable work-record card
+still return `501`. The contract is [`docs/contracts/openapi.yaml`](docs/contracts/openapi.yaml), and
 [`docs/contracts/implementation-status.md`](docs/contracts/implementation-status.md) lists what
 exists.
 

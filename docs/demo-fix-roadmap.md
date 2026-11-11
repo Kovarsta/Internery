@@ -191,5 +191,3 @@ Effort: **S**.
 
 1. Should the home suggestions be opt-in, or automatic when the student profile is complete?
 2. Do we add per-user email preferences before the demo, or after it?
-3. Should a closed job appear in a separate employer filter, or only under “All”? It currently has
-   its own `Closed` filter.

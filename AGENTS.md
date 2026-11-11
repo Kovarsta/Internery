@@ -24,7 +24,7 @@ code; copy what is needed into `src/` when adopting it.
 | `docs/contracts/implementation-status.md` | Per-operation checklist of what exists and what is `501`       |
 | `docs/contracts/invariants.ts`            | Transactional service rules + work-record signing              |
 | `docs/roadmap.md`                         | Phase plan from the API foundation through deployment          |
-| `docs/erd.dbml`                           | Entity-relationship diagram of the 21 tables, in DBML          |
+| `docs/erd.dbml`                           | Entity-relationship diagram of the 22 tables, in DBML          |
 | `src/lib/server/db/product.schema.ts`     | Product tables, enums, constraints and indexes used by the app |
 
 The original design schema has been retired. The product schema above is what the running code uses;
@@ -74,7 +74,8 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   enums.
 - The `/api/v1` route tree exists under `src/routes/api/v1` (54 paths, 69 operations). The account,
   notification, saved-job, application, own-profile, job read/write, review, admin and trust
-  operations are implemented; the AI reads and the shareable work-record card still return `501`.
+  operations are implemented; the AI consent/read operations and the shareable work-record card
+  still return `501`.
   Shared API helpers live in `src/lib/server/api/`; services live in `src/lib/server/services/`.
   Authentication endpoints are Better Auth's `/api/auth/*` and deliberately not duplicated under
   `/api/v1`. See `src/routes/api/README.md` for route conventions and the implementation checklist.
@@ -269,7 +270,7 @@ The product schema therefore no longer matches the original design SQL, which wa
 `casing: 'snake_case'`. Treat the design SQL as a reference for constraints and indexes, not as the
 source of the app migration.
 
-## Known issues to settle before implementation
+## Known issues and follow-ups
 
 See `.agents/schema-review.md` for evidence and proposed patches.
 
@@ -285,10 +286,10 @@ were not ported; every user foreign key points at `users.id` as `uuid`, and `pas
 responsibilities live in `accounts.password`. Common profile fields are in `user_profiles`; lockout
 and admin-lock fields are in `user_moderation`.
 
-Other findings: the student CV check only guards two of four CV columns; rating recalculation can
-race across jobs; a withdrawn application cannot be re-submitted because the uniqueness constraint is
-unconditional; several `text` columns are stricter in the API than in the DB; hidden-state and
-verification-status fields can drift from their status flags.
+Open follow-ups: the student CV check only guards two of four CV columns; several `text` columns are
+stricter in the API than in the DB; hidden-state and verification-status fields can drift from their
+status flags. The rating recalculation race and withdrawn-application re-submission are resolved;
+`.agents/schema-review.md` records the fixes.
 
 ## Working agreements
 

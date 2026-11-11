@@ -58,4 +58,5 @@ design schema that declared them has been retired.
 - `pnpm check` passes.
 - `pnpm db:generate` produced the baseline and the auth type-change migration;
   `pnpm db:migrate` applied both to the local database, creating all 21 tables with `timestamptz`
-  auth timestamps and PostgreSQL enums for role/status.
+  auth timestamps and PostgreSQL enums for role/status. Later migrations added the `locations`
+  table and `user_profiles.onboardedAt`; the current schema has 22 tables.

@@ -11,7 +11,7 @@ The DB contract is internally consistent and valid:
 - Regenerating with `drizzle-kit generate --dialect postgresql --schema <contract schema> --out ... --casing snake_case`
   produces SQL **byte-identical** to the baseline SQL. There is no drift between the Drizzle schema
   and the checked-in migration.
-- All 10 enums exposed by the API have the same values as their DB enums. The 13 notification types
+- All 10 enums exposed by the API have the same values as their DB enums. The 14 notification types
   match exactly. `token_type` and `report_status` exist only in the DB, as expected.
 - Every API `maxLength` that maps to a `varchar` matches the column length (email 255, fullName 120,
   phone 20, university/major 160, orgName 200, address 300, contactPhone 20, category name 100,
@@ -32,7 +32,7 @@ composite primary keys.
 | Profiles    | `student_profiles`, `employer_profiles`                       | 1:1 with users; CV storage keys; denormalised rating                                    |
 | Marketplace | `categories`, `jobs`, `applications`, `saved_jobs`            | Job state, moderation flags, FTS + partial indexes, one application per student per job |
 | Trust       | `reviews`, `reports`, `verification_requests`, `work_records` | Rating 1–5, no self-review, 3-report auto-hide, HMAC-signed records                     |
-| Engagement  | `notifications`                                               | 13 typed events, deep links to job/application                                          |
+| Engagement  | `notifications`                                               | 14 typed events, deep links to job/application                                          |
 | AI          | `ai_consents`, `ai_explanations`, `ai_usage`                  | Consent, cached explanations keyed by CV hash, 10/day quota counter                     |
 | Audit       | `audit_logs`                                                  | Append-only by convention; actor nullable for system actions                            |
 
@@ -52,7 +52,11 @@ rating recalculation, work-record signing, notification fan-out. See `docs/contr
 
 ## Findings
 
-### P0 — Identity model conflicts with the scaffold (resolved 2026-10-21)
+Status update 2026-11-11: the identity conflict, rating recalculation race and withdrawn
+re-submission findings are resolved. The CV integrity check and the hidden-state field checks remain
+open.
+
+### P0 - Identity model conflicts with the scaffold (resolved 2026-10-21)
 
 Resolved in favour of Better Auth; see `docs/decisions/better-auth-identity.md`. The options below
 are kept as the decision record. The product schema has since been ported to
@@ -112,14 +116,17 @@ CHECK (
 
 Service rule: when replacing or deleting a CV, update or null all four columns in one statement.
 
-### P1 — Rating recalculation can lose updates
+### P1 — Rating recalculation can lose updates (resolved 2026-11-11)
 
 `recalcRating` reads `avg(rating)` and `count()` for the reviewee, then updates the profile. It does
 not lock the profile row. Reviews are serialised per job (the job row is locked), but the same student
 can be reviewed in two different jobs concurrently. Both transactions can read the same average
 before either commits; the later update overwrites the earlier one. `rating_count` can also drift.
 
-Proposed fix: lock the target profile row before computing, e.g.
+Resolved: `createReview` and the admin review-removal path lock the reviewee's user row before
+calling `recalculateUserRating`; the lock, read and write run in one transaction.
+
+Proposed fix (kept as the rationale): lock the target profile row before computing, e.g.
 
 ```ts
 await tx.select().from(s.studentProfiles).where(eq(s.studentProfiles.userId, userId)).for('update');
@@ -130,7 +137,10 @@ or compute the average inside a single `UPDATE ... SET rating_avg = (SELECT avg(
 Do this in both `createReview` and the admin hide-review path. A simpler alternative is to serialise
 all rating writes on the user row (`SELECT ... FROM users WHERE id = $1 FOR UPDATE`).
 
-### P2 — Withdrawn applications can never be re-submitted
+### P2 — Withdrawn applications can never be re-submitted (resolved 2026-11-11)
+
+Resolved: `applyToJob` revives a withdrawn row in place, resetting the status, message, CV snapshot
+and decision timestamp instead of inserting a second row.
 
 `UNIQUE(job_id, student_id)` is unconditional, so a student who withdraws cannot apply again to the
 same job. Whether that is correct depends on AC-12.3 ("no duplicate applications"). If re-application

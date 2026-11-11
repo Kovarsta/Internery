@@ -15,16 +15,17 @@ How the SvelteKit app is built and how it gets data. The backend is documented s
 
 ## Route map
 
-| Area     | Routes                                                                           | Guard      |
-| -------- | -------------------------------------------------------------------------------- | ---------- |
-| Public   | `/`, `/jobs`, `/jobs/[jobId]`, `/login`, `/register`                             | none       |
-| Account  | `/me`, `/me/profile`, `/me/applications`, ...                                    | session    |
-| Employer | `/employer/jobs`, `/employer/jobs/new`, `/employer/jobs/[jobId]/applicants`, ... | `EMPLOYER` |
-| Admin    | `/admin`, `/admin/users`, `/admin/moderation`, ...                               | `ADMIN`    |
-| Verify   | `/work-records`, `/work-records/[recordId]/verify`                               | none       |
+| Area     | Routes                                                                                                                                                                             | Guard      |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| Public   | `/`, `/jobs`, `/jobs/[jobId]`, `/login`, `/register`, `/forgot-password`, `/reset-password`                                                                                        | none       |
+| Account  | `/me`, `/me/profile`, `/me/company-profile`, `/me/admin-profile`, `/me/applications`, `/me/saved-jobs`, `/me/work-records`, `/me/notifications`, `/me/verification`, `/onboarding` | session    |
+| Employer | `/employer/jobs`, `/employer/jobs/new`, `/employer/jobs/[jobId]` (Overview, Applicants, Edit)                                                                                      | `EMPLOYER` |
+| Admin    | `/admin`, `/admin/users`, `/admin/moderation`, `/admin/categories`, `/admin/verification`                                                                                          | `ADMIN`    |
+| Verify   | `/work-records`, `/work-records/[recordId]/verify`                                                                                                                                 | none       |
 
 Guards live in `+layout.server.ts` files: signed-out visitors redirect to `/login`, a wrong role gets
-`403` through `+error.svelte`.
+`403` through `+error.svelte`, and a signed-in account without a completed onboarding is sent to
+`/onboarding`. The admin profile page returns `403` for non-admins.
 
 Every page route lives in the `(app)` route group, which does not add a URL segment. It holds the
 shared layout, the error page and the stylesheet, so `src/routes` only has two children:
@@ -132,9 +133,16 @@ grows, generate them from `openapi.yaml` with `openapi-typescript` instead of ma
 
 - `hooks.server.ts` loads the session into `locals.user` (`id`, `name`, `role`).
 - The root layout exposes only `{ id, name, role }` to pages.
-- Sign-in and registration are form actions in `src/routes/(app)/login/+page.server.ts` and
-  `src/routes/(app)/register/+page.server.ts`. They call Better Auth's `auth.api`, and the
-  `sveltekitCookies` plugin writes the session cookie. The server assigns the signup role.
+- Sign-in, registration, forgot-password and reset-password are form actions under
+  `src/routes/(app)/`. They call Better Auth's `auth.api`, and the `sveltekitCookies` plugin writes
+  the session cookie.
+- Email registration assigns the chosen role in the same transaction that marks onboarding
+  complete.
+- GitHub OAuth is a sign-in option. A new OAuth account has no role choice yet, so the root layout
+  sends it to `/onboarding`; the chosen role and `user_profiles.onboardedAt` complete onboarding.
+  Existing accounts with a matching verified email are linked by Better Auth rather than duplicated.
+- Password reset uses Better Auth's one-time token: `/forgot-password` requests the email and
+  `/reset-password?token=...` consumes it.
 - Never render another user's private data from a cached response; the API marks personalised JSON
   `no-store`.
 
@@ -143,13 +151,15 @@ grows, generate them from `openapi.yaml` with `openapi-typescript` instead of ma
 `pnpm db:seed` creates verified accounts with the `SEED_PASSWORD` password (default
 `Password123!`):
 
-| Name             | Email                      | Role       |
-| ---------------- | -------------------------- | ---------- |
-| Internery Admin  | `admin@internery.local`    | `ADMIN`    |
-| Nguyen Van An    | `student@internery.local`  | `STUDENT`  |
-| Pham Thu Linh    | `linh@internery.local`     | `STUDENT`  |
-| Hoang Quang Minh | `minh@internery.local`     | `STUDENT`  |
-| Tran Thi Binh    | `employer@internery.local` | `EMPLOYER` |
+| Name             | Email                       | Role       |
+| ---------------- | --------------------------- | ---------- |
+| Internery Admin  | `admin@internery.local`     | `ADMIN`    |
+| Nguyen Van An    | `student@internery.local`   | `STUDENT`  |
+| Pham Thu Linh    | `linh@internery.local`      | `STUDENT`  |
+| Hoang Quang Minh | `minh@internery.local`      | `STUDENT`  |
+| Tran Thi Binh    | `employer@internery.local`  | `EMPLOYER` |
+| Le Thu Trang     | `studyhub@internery.local`  | `EMPLOYER` |
+| Vo Ha My         | `eventcrew@internery.local` | `EMPLOYER` |
 
 All three students have profiles and pending applications to the barista job, so the employer
 applicant list has several rows for accept/reject demos. The seeded profiles have no CV or avatar
@@ -157,8 +167,8 @@ file yet; `/me` and `/me/profile` accept both, so the demo can upload them live 
 application carries the CV snapshot. One seeded job is completed, with reviews
 and two signed work records: An's record is private and Linh's is public, so the directory, the
 verify page and both states of `/me/work-records` have data, and the publish control works on either.
-The employer has one approved verification request, so `/me/verification` shows a filled-in outcome
-and no submit form.
+Acme Coffee has one approved verification request, so `/me/verification` shows a filled-in outcome
+and no submit form. The other two employers are unverified and can submit a request from that page.
 
 The admin area has data to act on. The retail job carries the scam flag with two open reports, and
 the event job is auto-hidden with three, so `/admin/moderation` shows both causes. An admin can hide,
@@ -169,15 +179,15 @@ is not `VERIFIED`.
 ## Components
 
 ```text
-src/lib/components/            shared across areas
+src/lib/components/            shared across areas (ConfirmDialog, PasswordInput)
 src/lib/components/ui/         generated shadcn-svelte controls
-src/lib/components/home/       landing hero and category shortcuts
+src/lib/components/home/       hero, featured job card, category rail, how-it-works
 src/lib/components/jobs/       job list, row, filters, actions, report control, pagination
 src/lib/components/applications/  one application row with its withdraw action
-src/lib/components/employer/   employer job row and applicant row with accept/reject
-src/lib/components/profile/    avatar cropper, avatar control and CV upload
+src/lib/components/employer/   job row, action toolbar, tabs and applicant row with accept/reject
+src/lib/components/profile/    account details, avatar cropper, avatar control and CV upload
 src/lib/components/reviews/    review form and the reviewed-state block
-src/lib/components/admin/      stats, user row, moderation row, category controls, verification row
+src/lib/components/admin/      stats, searchable rows, moderation, category controls, verification
 src/lib/components/work-records/  public record card and the owner's record row
 ```
 

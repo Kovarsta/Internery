@@ -1,7 +1,7 @@
 # Internery roadmap
 
-Current scope: Phase 0 through Phase 7. Phase 8 (frontend) and Phase 9 (deployment) follow once the
-backend is complete.
+Current scope: phases 0 through 9. Phases 0-6 and 8 are done for the demo. Phase 7 (optional AI)
+and phase 9 (hardening and deployment) remain.
 
 Ordering rule: easiest to hardest, backend before frontend. Core marketplace flows come before the
 optional trust/AI/work-record extras when effort is limited. Every API endpoint is done only when
@@ -24,9 +24,12 @@ Phase 3  done      every straightforward write
 Phase 4  done      transactional core
 Phase 5  done      storage
 Phase 6  done      admin, trust and the demo frontend
+Phase 7  planned   optional AI consent, suggestions and fit
+Phase 8  done      demo frontend, auth pages and onboarding
+Phase 9  open      hardening and deployment
 ```
 
-61 of 66 API operations are implemented. See the checklist in
+64 of 69 API operations are implemented. See the checklist in
 [`contracts/implementation-status.md`](contracts/implementation-status.md).
 
 ## Done
@@ -37,7 +40,7 @@ Phase 6  done      admin, trust and the demo frontend
 - Product schema: profiles, jobs, applications, reviews, notifications, trust, AI, audit
 - Baseline and auth-type migrations applied
 - Eager `user_profiles` creation and lazy `user_moderation`
-- `/api/v1` route tree: 51 paths, 66 operations
+- `/api/v1` route tree: 54 paths, 69 operations
 - Private-storage, avatar, retention and auth-surface decisions recorded
 - Work-record canonical JSON and HMAC helpers, used by the public verify read
 

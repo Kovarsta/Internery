@@ -15,7 +15,7 @@ implementation and review.
 
 | File       | Purpose                                               |
 | ---------- | ----------------------------------------------------- |
-| `erd.dbml` | Entity-relationship diagram of the 21 tables, in DBML |
+| `erd.dbml` | Entity-relationship diagram of the 22 tables, in DBML |
 
 `erd.dbml` mirrors `src/lib/server/db/auth.schema.ts` and `product.schema.ts`. Open it at
 <https://dbdiagram.io> or with a DBML extension in the editor. Update it in the same change that adds
