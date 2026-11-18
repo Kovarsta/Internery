@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { DayOfWeek } from '#lib/schedule.ts';
+import type { DayOfWeek, TimeOfDay } from '#lib/schedule.ts';
 import { formatSchedule, toClockTime } from '#lib/schedule.ts';
 import type { WorkRecordPayload } from '#lib/server/db/product.schema.ts';
 import type { UserRole } from './auth.ts';
@@ -46,6 +46,8 @@ export type StudentProfileSource = {
 	major: string | null;
 	skills: string[];
 	availability: string | null;
+	availableDays: DayOfWeek[];
+	availableTimeOfDay: TimeOfDay[];
 	bio: string | null;
 	cvKey: string | null;
 	cvFileName: string | null;
@@ -62,6 +64,8 @@ export type StudentProfile = {
 	major: string;
 	skills: string[];
 	availability: string | null;
+	availableDays: DayOfWeek[];
+	availableTimeOfDay: TimeOfDay[];
 	bio: string | null;
 	cv: CvInfo | null;
 	ratingAvg: number;
@@ -589,6 +593,8 @@ export function toStudentProfile(
 		major: profile?.major ?? '',
 		skills: profile?.skills ?? [],
 		availability: profile?.availability ?? null,
+		availableDays: profile?.availableDays ?? [],
+		availableTimeOfDay: profile?.availableTimeOfDay ?? [],
 		bio: profile?.bio ?? null,
 		cv: toCvInfo(profile),
 		ratingAvg: profile?.ratingAvg ?? 0,

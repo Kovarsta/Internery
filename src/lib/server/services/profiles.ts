@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import type { DayOfWeek, TimeOfDay } from '#lib/schedule.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import { employerProfiles, studentProfiles } from '#lib/server/db/product.schema.ts';
 
@@ -10,6 +11,9 @@ export type StudentProfileInput = {
 	major: string;
 	skills: string[];
 	availability: string | null;
+	/** Structured free time used to match jobs; empty means no preference. */
+	availableDays: DayOfWeek[];
+	availableTimeOfDay: TimeOfDay[];
 	bio: string | null;
 };
 

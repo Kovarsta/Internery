@@ -14,7 +14,7 @@ import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
 import type { WorkRecordPayload } from '#lib/server/db/product.schema.ts';
 import { normalizeSearchText } from '#lib/search.ts';
-import type { DayOfWeek } from '#lib/schedule.ts';
+import type { DayOfWeek, TimeOfDay } from '#lib/schedule.ts';
 import { hashPassword } from '#lib/server/password.ts';
 import { CURRENT_SIGNATURE_VERSION, signWorkRecord } from '#lib/server/work-record-signature.ts';
 
@@ -92,6 +92,8 @@ type SeedStudentProfile = {
 	major: string;
 	skills: string[];
 	availability: string;
+	availableDays: DayOfWeek[];
+	availableTimeOfDay: TimeOfDay[];
 	bio: string;
 };
 
@@ -102,6 +104,9 @@ const seedStudentProfiles: SeedStudentProfile[] = [
 		major: 'Computer Science',
 		skills: ['TypeScript', 'SQL', 'Customer service'],
 		availability: 'Weekday evenings and weekends',
+		// Weekday evenings plus all weekend, so the matching link has results.
+		availableDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'],
+		availableTimeOfDay: ['EVENING'],
 		bio: 'Second-year student looking for part-time work in Hanoi.'
 	},
 	{
@@ -110,6 +115,8 @@ const seedStudentProfiles: SeedStudentProfile[] = [
 		major: 'English Language',
 		skills: ['Barista', 'Customer service', 'English'],
 		availability: 'Weekday mornings and weekends',
+		availableDays: ['SATURDAY', 'SUNDAY'],
+		availableTimeOfDay: ['MORNING', 'AFTERNOON'],
 		bio: 'Third-year student with two years of café experience.'
 	},
 	{
@@ -118,6 +125,8 @@ const seedStudentProfiles: SeedStudentProfile[] = [
 		major: 'Mechanical Engineering',
 		skills: ['Teamwork', 'Event support', 'Physical work'],
 		availability: 'Weekends and university holidays',
+		availableDays: ['SATURDAY', 'SUNDAY'],
+		availableTimeOfDay: [],
 		bio: 'First-year student looking for weekend event work.'
 	}
 ];

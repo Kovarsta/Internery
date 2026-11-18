@@ -28,6 +28,11 @@ export type JobBrowseFilters = {
 	daysOfWeek: DayOfWeek[];
 	/** Selected time blocks; empty means no time filter. */
 	timeOfDay: TimeOfDay[];
+	/**
+	 * When true, a job must sit inside the selected days and blocks instead of
+	 * overlapping them. The availability link sets it.
+	 */
+	scheduleFit?: boolean;
 	sort: 'newest' | 'salary_desc';
 	verifiedOnly: boolean;
 };
@@ -50,6 +55,7 @@ export function readJobBrowseFilters(params: URLSearchParams): JobBrowseFilters 
 		locationId: readText(params.get('locationId')),
 		daysOfWeek: readDaysOfWeek(params.getAll('dayOfWeek')),
 		timeOfDay: readTimeOfDay(params.getAll('timeOfDay')),
+		scheduleFit: params.get('scheduleFit') === 'true' ? true : undefined,
 		sort: params.get('sort') === 'salary_desc' ? 'salary_desc' : 'newest',
 		verifiedOnly: params.get('verifiedOnly') === 'true'
 	};
@@ -95,6 +101,10 @@ export function toJobSearchQuery(filters: JobBrowseFilters): URLSearchParams {
 
 	if (filters.timeOfDay.length > 0) {
 		query.set('timeOfDay', filters.timeOfDay.join(','));
+	}
+
+	if (filters.scheduleFit) {
+		query.set('scheduleFit', 'true');
 	}
 
 	if (filters.verifiedOnly) {

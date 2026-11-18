@@ -96,6 +96,11 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   page. Env:
   `DEEPSEEK_API_KEY` (empty disables the calls) and `DEEPSEEK_MODEL`. See
   `docs/decisions/ai-features.md`.
+- Student availability matching is a query, not an AI feature. `student_profiles.availableDays`
+  (`day_of_week[]`) and `availableTimeOfDay` (`time_of_day[]`) hold structured free time; the profile
+  page's **See jobs that fit my week** link opens `/jobs` with `scheduleFit=true`, which requires the
+  whole shift to sit inside the selection instead of merely overlapping it. See
+  `docs/decisions/availability-matching.md`.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
   returned as raw storage or presigned URLs. See `docs/decisions/avatar-storage.md`.
 - `.env` exists locally and `node_modules` is installed.

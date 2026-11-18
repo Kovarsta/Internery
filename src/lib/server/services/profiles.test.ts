@@ -72,16 +72,21 @@ describe.skipIf(!testDatabase)('profiles', () => {
 			major: 'Computer Science',
 			skills: ['TypeScript'],
 			availability: 'Evenings',
+			availableDays: ['SATURDAY', 'SUNDAY'],
+			availableTimeOfDay: ['MORNING'],
 			bio: null
 		});
 
 		expect(created.university).toBe('VNU');
+		expect(created.availableDays).toEqual(['SATURDAY', 'SUNDAY']);
 
 		const updated = await saveStudentProfile(testDatabase, testUserId, {
 			university: 'HUST',
 			major: 'Software Engineering',
 			skills: ['SQL', 'Testing'],
 			availability: null,
+			availableDays: [],
+			availableTimeOfDay: [],
 			bio: 'Updated'
 		});
 

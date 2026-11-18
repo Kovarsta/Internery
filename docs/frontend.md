@@ -33,6 +33,11 @@ section, and the **See suggested jobs** button on `/me/ai`. The page is a top-le
 account tab: students return to it, so it should not sit behind the account overview. Consent stays
 separate on `/me/ai`, because suggestions do not read the CV.
 
+Schedule matching is separate and does not use AI. `/me/profile` collects the student's free days
+and time blocks, and its **See jobs that fit my week** link opens `/jobs` with those filters and
+`scheduleFit=true`. That mode requires the whole shift to sit inside the selection, unlike the
+default overlap filter. See [`decisions/availability-matching.md`](decisions/availability-matching.md).
+
 Every page route lives in the `(app)` route group, which does not add a URL segment. It holds the
 shared layout, the error page and the stylesheet, so `src/routes` only has two children:
 

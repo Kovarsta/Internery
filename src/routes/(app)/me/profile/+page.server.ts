@@ -6,6 +6,14 @@ import {
 	readAccountValues,
 	saveAccountDetails
 } from '#lib/server/account-details.ts';
+import {
+	TIME_OF_DAY_VALUES,
+	isDayOfWeek,
+	isTimeOfDay,
+	sortDaysOfWeek,
+	type DayOfWeek,
+	type TimeOfDay
+} from '#lib/schedule.ts';
 import type { StudentProfile, UserMe } from '#lib/api/types.ts';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -14,6 +22,8 @@ type ProfileFormValues = {
 	major: string;
 	skills: string;
 	availability: string;
+	availableDays: DayOfWeek[];
+	availableTimeOfDay: TimeOfDay[];
 	bio: string;
 };
 
@@ -96,8 +106,31 @@ function readValues(form: FormData): ProfileFormValues {
 		major: readText(form.get('major')),
 		skills: readText(form.get('skills')),
 		availability: readText(form.get('availability')),
+		availableDays: readSelectedValues(form.getAll('availableDay'), isDayOfWeek, sortDaysOfWeek),
+		availableTimeOfDay: readSelectedValues(
+			form.getAll('availableTimeOfDay'),
+			isTimeOfDay,
+			(slots) => TIME_OF_DAY_VALUES.filter((slot) => slots.includes(slot))
+		),
 		bio: readText(form.get('bio'))
 	};
+}
+
+/**
+ * Reads repeated checkbox values, keeping only known ones in canonical order.
+ *
+ * The form submits `availableDay=MONDAY&availableDay=SUNDAY`; an unknown value
+ * would otherwise reach the API and fail validation, so it is dropped here.
+ */
+function readSelectedValues<T extends string>(
+	values: FormDataEntryValue[],
+	isKnown: (value: string) => value is T,
+	sort: (values: T[]) => T[]
+): T[] {
+	const selected = values.filter((value): value is string => typeof value === 'string');
+	const known = selected.filter(isKnown);
+
+	return sort(known.filter((value, index) => known.indexOf(value) === index));
 }
 
 function readText(value: FormDataEntryValue | null): string {
@@ -149,6 +182,8 @@ function toPayload(values: ProfileFormValues) {
 		major: values.major,
 		skills: splitSkills(values.skills),
 		availability: values.availability === '' ? null : values.availability,
+		availableDays: values.availableDays,
+		availableTimeOfDay: values.availableTimeOfDay,
 		bio: values.bio === '' ? null : values.bio
 	};
 }

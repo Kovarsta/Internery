@@ -1,7 +1,19 @@
 /**
  * Job reads: public search, job detail and the employer's own job list.
  */
-import { and, arrayOverlaps, count, desc, eq, gte, lte, or, sql, type SQL } from 'drizzle-orm';
+import {
+	and,
+	arrayContained,
+	arrayOverlaps,
+	count,
+	desc,
+	eq,
+	gte,
+	lte,
+	or,
+	sql,
+	type SQL
+} from 'drizzle-orm';
 import { TIME_OF_DAY_RANGES, type TimeOfDay } from '#lib/schedule.ts';
 import type { Database } from '#lib/server/db/types.ts';
 import {
@@ -169,16 +181,29 @@ function buildSearchConditions(filters: JobSearchFilters): SQL[] {
 		conditions.push(lte(jobs.endDate, filters.endTo));
 	}
 
-	// `&&` is array overlap: a job matches when it runs on any selected day.
-	// This is OR across the selection, not an all-days match.
+	// Default: `&&` array overlap, so a job matches when it runs on any selected
+	// day. That is what a student browsing with day filters expects.
+	//
+	// With `scheduleFit`, the test is containment (`<@`): every day the job runs
+	// must be a day the student is free. A weekend-only student must not be
+	// shown a Monday-to-Saturday job just because it includes Saturday.
 	if (filters.daysOfWeek !== undefined && filters.daysOfWeek.length > 0) {
-		conditions.push(arrayOverlaps(jobs.daysOfWeek, filters.daysOfWeek));
+		conditions.push(
+			filters.scheduleFit
+				? arrayContained(jobs.daysOfWeek, filters.daysOfWeek)
+				: arrayOverlaps(jobs.daysOfWeek, filters.daysOfWeek)
+		);
 	}
 
-	// OR across blocks; each block is an overlap test, so a 17:00-20:00 shift
+	// Default: OR across blocks, each an overlap test, so a 17:00-20:00 shift
 	// matches both Afternoon and Evening.
+	//
+	// With `scheduleFit`, the whole shift must sit inside one selected block, so
+	// a 10:00-14:00 job does not fit someone free only in the morning.
 	if (filters.timeOfDay !== undefined && filters.timeOfDay.length > 0) {
-		const timeOfDay = or(...filters.timeOfDay.map(timeOfDayCondition));
+		const timeOfDay = or(
+			...filters.timeOfDay.map(filters.scheduleFit ? timeOfDayInsideCondition : timeOfDayCondition)
+		);
 
 		if (timeOfDay !== undefined) {
 			conditions.push(timeOfDay);
@@ -231,6 +256,21 @@ function timeOfDayCondition(slot: TimeOfDay): SQL {
 	const range = TIME_OF_DAY_RANGES[slot];
 
 	return sql`${jobs.startTime} < ${range.to}::time and ${jobs.endTime} > ${range.from}::time`;
+}
+
+/**
+ * Matches a shift that sits entirely inside one half-open time-of-day block.
+ *
+ * This is the “fits my free time” test: a 10:00-14:00 job does not fit a
+ * student who is free only in the morning, even though the two overlap.
+ *
+ * @param slot - The block the student declared as free.
+ * @returns A boolean SQL expression for a contained shift.
+ */
+function timeOfDayInsideCondition(slot: TimeOfDay): SQL {
+	const range = TIME_OF_DAY_RANGES[slot];
+
+	return sql`${jobs.startTime} >= ${range.from}::time and ${jobs.endTime} <= ${range.to}::time`;
 }
 
 /**

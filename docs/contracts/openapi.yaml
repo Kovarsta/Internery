@@ -476,6 +476,14 @@ paths:
           schema:
             type: array
             items: { $ref: '#/components/schemas/TimeOfDay' }
+        - name: scheduleFit
+          in: query
+          description: |
+            With `dayOfWeek` or `timeOfDay`, require the whole shift to sit inside
+            the selection instead of merely overlapping it: every day the job runs
+            must be selected, and its start and end must fit inside one block. Used
+            by the student availability link.
+          schema: { type: boolean }
         - { name: salaryMin, in: query, schema: { type: integer, minimum: 0 } }
         - { name: salaryMax, in: query, schema: { type: integer, minimum: 0 } }
         - {
@@ -1889,11 +1897,32 @@ components:
           maxItems: 30
           items: { type: string, maxLength: 50 }
         availability: { type: [string, 'null'], maxLength: 500 }
+        availableDays:
+          type: array
+          maxItems: 7
+          items: { $ref: '#/components/schemas/DayOfWeek' }
+        availableTimeOfDay:
+          type: array
+          maxItems: 3
+          items: { $ref: '#/components/schemas/TimeOfDay' }
         bio: { type: [string, 'null'], maxLength: 2000 }
     StudentProfile:
       type: object
       required:
-        [userId, fullName, university, major, skills, availability, bio, cv, ratingAvg, ratingCount]
+        [
+          userId,
+          fullName,
+          university,
+          major,
+          skills,
+          availability,
+          availableDays,
+          availableTimeOfDay,
+          bio,
+          cv,
+          ratingAvg,
+          ratingCount
+        ]
       properties:
         userId: { type: string, format: uuid }
         fullName: { type: string }
@@ -1910,6 +1939,16 @@ components:
           maxItems: 30
           items: { type: string, maxLength: 50 }
         availability: { type: [string, 'null'], maxLength: 500 }
+        availableDays:
+          type: array
+          maxItems: 7
+          items: { $ref: '#/components/schemas/DayOfWeek' }
+          description: Structured free days, used to match open jobs by schedule.
+        availableTimeOfDay:
+          type: array
+          maxItems: 3
+          items: { $ref: '#/components/schemas/TimeOfDay' }
+          description: Structured free time blocks. Empty means no preference.
         bio: { type: [string, 'null'], maxLength: 2000 }
         cv:
           oneOf:

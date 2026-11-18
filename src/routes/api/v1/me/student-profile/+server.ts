@@ -1,5 +1,6 @@
 import type { RequestHandler } from './$types';
 import { z } from 'zod';
+import { DAY_OF_WEEK_VALUES, TIME_OF_DAY_VALUES } from '#lib/schedule.ts';
 import { requireRole } from '#lib/server/api/auth.ts';
 import { handleApiError } from '#lib/server/api/errors.ts';
 import { toStudentProfile } from '#lib/server/api/mappers.ts';
@@ -13,6 +14,8 @@ const bodySchema = z.object({
 	major: z.string().trim().min(1).max(160),
 	skills: z.array(z.string().trim().max(50)).max(30).default([]),
 	availability: z.string().trim().max(500).nullable().default(null),
+	availableDays: z.array(z.enum(DAY_OF_WEEK_VALUES)).max(7).default([]),
+	availableTimeOfDay: z.array(z.enum(TIME_OF_DAY_VALUES)).max(3).default([]),
 	bio: z.string().trim().max(2000).nullable().default(null)
 });
 

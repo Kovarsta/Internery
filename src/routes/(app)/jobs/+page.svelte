@@ -15,12 +15,33 @@
 	import JobRow from '#lib/components/jobs/JobRow.svelte';
 	import JobsHero from '#lib/components/jobs/JobsHero.svelte';
 	import Pagination from '#lib/components/jobs/Pagination.svelte';
+	import { toJobsHref } from '#lib/job-search.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	/** Clears the availability mode and the day/time filters it applied. */
+	const clearAvailabilityHref = $derived(
+		toJobsHref(resolve('jobs'), data.filters, {
+			scheduleFit: undefined,
+			daysOfWeek: [],
+			timeOfDay: []
+		})
+	);
 </script>
 
 <JobsHero />
+
+{#if data.filters.scheduleFit}
+	<div class="mt-6 flex flex-wrap items-center gap-3 border-l-4 border-chalk bg-card px-4 py-3">
+		<p class="text-sm text-ink/80">
+			Showing jobs you can work with the availability saved on your profile.
+		</p>
+		<a class="text-sm font-medium text-chalk hover:underline" href={clearAvailabilityHref}>
+			Show all shifts
+		</a>
+	</div>
+{/if}
 
 <div class="mt-8 grid gap-6 lg:grid-cols-[18rem_1fr] lg:items-start">
 	<aside id="filters" class="scroll-mt-20 lg:sticky lg:top-20 lg:self-start">

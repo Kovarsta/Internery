@@ -6,14 +6,23 @@
 	 * sends `PUT /me/student-profile`. The CV has its own upload panel below the form.
 	 */
 
+	import { resolve } from '$app/paths';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import AccountDetailsForm from '#lib/components/profile/AccountDetailsForm.svelte';
 	import CvPanel from '#lib/components/profile/CvPanel.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
+	import { Checkbox } from '#lib/components/ui/checkbox/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
 	import { Label } from '#lib/components/ui/label/index.ts';
 	import { Textarea } from '#lib/components/ui/textarea/index.ts';
+	import { toJobsHref } from '#lib/job-search.ts';
+	import {
+		DAY_OF_WEEK_LABELS,
+		DAY_OF_WEEK_VALUES,
+		TIME_OF_DAY_LABELS,
+		TIME_OF_DAY_VALUES
+	} from '#lib/schedule.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -27,8 +36,29 @@
 					major: profile.major,
 					skills: profile.skills.join(', '),
 					availability: profile.availability ?? '',
+					availableDays: profile.availableDays,
+					availableTimeOfDay: profile.availableTimeOfDay,
 					bio: profile.bio ?? ''
 				}
+	);
+
+	/** Saved availability, used for the “see matching jobs” link. */
+	const hasAvailability = $derived(
+		profile.availableDays.length > 0 || profile.availableTimeOfDay.length > 0
+	);
+
+	/**
+	 * The `/jobs` link with the saved availability applied.
+	 *
+	 * This is deliberately a normal search link: the job page shows the same
+	 * filters as chips, so the student can see and change them.
+	 */
+	const matchingHref = $derived(
+		toJobsHref(
+			resolve('jobs'),
+			{ daysOfWeek: [], timeOfDay: [], scheduleFit: true, sort: 'newest', verifiedOnly: false },
+			{ daysOfWeek: profile.availableDays, timeOfDay: profile.availableTimeOfDay }
+		)
 	);
 
 	const accountValues = $derived(
@@ -113,7 +143,56 @@
 	</div>
 
 	<div class="sm:col-span-2">
-		<Label class="mb-1" for="profile-availability">Availability</Label>
+		<fieldset>
+			<legend class="text-sm font-medium">When are you free?</legend>
+			<p class="mt-1 text-sm text-ink/60">
+				Pick the days and blocks you can work. We use these to match open shifts, so you do not have
+				to set the filters every time.
+			</p>
+
+			<div class="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+				{#each DAY_OF_WEEK_VALUES as day (day)}
+					<div class="flex items-center gap-2">
+						<Checkbox
+							checked={values.availableDays.includes(day)}
+							id={`profile-day-${day}`}
+							name="availableDay"
+							value={day}
+						/>
+						<Label for={`profile-day-${day}`}>{DAY_OF_WEEK_LABELS[day]}</Label>
+					</div>
+				{/each}
+			</div>
+
+			<div class="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+				{#each TIME_OF_DAY_VALUES as slot (slot)}
+					<div class="flex items-center gap-2">
+						<Checkbox
+							checked={values.availableTimeOfDay.includes(slot)}
+							id={`profile-time-${slot}`}
+							name="availableTimeOfDay"
+							value={slot}
+						/>
+						<Label for={`profile-time-${slot}`}>{TIME_OF_DAY_LABELS[slot]}</Label>
+					</div>
+				{/each}
+			</div>
+
+			{#if hasAvailability}
+				<a
+					class="mt-3 inline-block text-sm font-medium text-chalk hover:underline"
+					href={matchingHref}
+				>
+					See jobs that fit my week
+				</a>
+			{:else}
+				<p class="mt-3 text-xs text-ink/60">Save a day to unlock the matching jobs link.</p>
+			{/if}
+		</fieldset>
+	</div>
+
+	<div class="sm:col-span-2">
+		<Label class="mb-1" for="profile-availability">Anything else about your schedule</Label>
 		<Input
 			id="profile-availability"
 			maxlength={500}
@@ -121,6 +200,9 @@
 			placeholder="Weekday evenings and weekends"
 			value={values.availability}
 		/>
+		<p class="mt-1 text-sm text-ink/60">
+			Free text for notes the day and time pickers cannot express.
+		</p>
 	</div>
 
 	<div class="sm:col-span-2">

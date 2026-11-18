@@ -56,6 +56,8 @@ export const dayOfWeek = pgEnum('day_of_week', [
 	'SATURDAY',
 	'SUNDAY'
 ]);
+/** Coarse free-time blocks a student declares, matching the job time filter. */
+export const timeOfDay = pgEnum('time_of_day', ['MORNING', 'AFTERNOON', 'EVENING']);
 export const jobStatus = pgEnum('job_status', [
 	'HIRING',
 	'CLOSED',
@@ -157,6 +159,16 @@ export const studentProfiles = pgTable(
 			.notNull()
 			.default(sql`ARRAY[]::text[]`),
 		availability: text(), // free text, e.g. "weekday evenings, Sat all day"
+		// Structured free time, used to match jobs by schedule. Empty means the
+		// student has not stated a preference, which must not filter anything.
+		availableDays: dayOfWeek()
+			.array()
+			.notNull()
+			.default(sql`ARRAY[]::day_of_week[]`),
+		availableTimeOfDay: timeOfDay()
+			.array()
+			.notNull()
+			.default(sql`ARRAY[]::time_of_day[]`),
 		bio: text(),
 		// CV (US-08): one current CV per student, max 5 MB, PDF/DOCX
 		cvKey: text(),

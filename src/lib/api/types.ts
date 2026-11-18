@@ -1,6 +1,6 @@
 /** Response shapes the demo pages consume. Keep them aligned with `openapi.yaml`. */
 
-import type { DayOfWeek } from '#lib/schedule.ts';
+import type { DayOfWeek, TimeOfDay } from '#lib/schedule.ts';
 
 export type PageMeta = {
 	page: number;
@@ -157,6 +157,10 @@ export type StudentProfile = {
 	major: string;
 	skills: string[];
 	availability: string | null;
+	/** Structured free days, used to match jobs by schedule. */
+	availableDays: DayOfWeek[];
+	/** Structured free time blocks; empty means no preference. */
+	availableTimeOfDay: TimeOfDay[];
 	bio: string | null;
 	cv: CvInfo | null;
 	ratingAvg: number;

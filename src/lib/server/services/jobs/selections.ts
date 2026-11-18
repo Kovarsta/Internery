@@ -163,6 +163,12 @@ export type JobSearchFilters = {
 	locationId?: string;
 	daysOfWeek?: DayOfWeek[];
 	timeOfDay?: TimeOfDay[];
+	/**
+	 * Match the shift *inside* the requested days and blocks instead of merely
+	 * overlapping them. Used by “fits my availability”: a weekend-only student
+	 * must not be shown a Monday-to-Saturday job.
+	 */
+	scheduleFit?: boolean;
 	salaryMin?: number;
 	salaryMax?: number;
 	startFrom?: string;

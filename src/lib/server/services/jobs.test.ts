@@ -568,6 +568,60 @@ describe.skipIf(!testDatabase)('jobs', () => {
 		expect(noMatch.items).toEqual([]);
 	});
 
+	it('requires the whole shift inside the selection with scheduleFit', async () => {
+		if (!testDatabase) {
+			return;
+		}
+
+		// The barista job runs Saturday and Sunday. Overlap returns it for
+		// Saturday alone; containment does not, because Sunday is missing.
+		const overlapSaturday = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			daysOfWeek: ['SATURDAY']
+		});
+		const containedSaturday = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			daysOfWeek: ['SATURDAY'],
+			scheduleFit: true
+		});
+		const containedWeekend = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			daysOfWeek: ['SATURDAY', 'SUNDAY'],
+			scheduleFit: true
+		});
+
+		expect(overlapSaturday.items.map((job) => job.id)).toEqual([baristaJobId]);
+		expect(containedSaturday.items).toEqual([]);
+		expect(containedWeekend.items.map((job) => job.id)).toEqual([baristaJobId]);
+
+		// The barista shift runs 09:00-18:00: it overlaps the morning block but
+		// does not fit inside it, so a morning-only student is not offered it.
+		const overlappingMorning = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			timeOfDay: ['MORNING']
+		});
+		const containedMorning = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			timeOfDay: ['MORNING'],
+			scheduleFit: true
+		});
+		const containedEvening = await searchOpenJobs(testDatabase, {
+			...defaultFilters,
+			categoryId,
+			timeOfDay: ['EVENING'],
+			scheduleFit: true
+		});
+
+		expect(overlappingMorning.items.map((job) => job.id)).toEqual([baristaJobId]);
+		expect(containedMorning.items).toEqual([]);
+		expect(containedEvening.items.map((job) => job.id)).toEqual([tutorJobId]);
+	});
+
 	it('finds a hidden job by id and reports its state', async () => {
 		if (!testDatabase) {
 			return;

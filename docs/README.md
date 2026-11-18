@@ -44,6 +44,7 @@ change; do not leave the mismatch undocumented.
 | File                                   | Decision                                               |
 | -------------------------------------- | ------------------------------------------------------ |
 | `decisions/avatar-storage.md`          | Application-served avatar URLs and private storage     |
+| `decisions/availability-matching.md`   | Structured availability and containment matching       |
 | `decisions/ai-features.md`             | DeepSeek provider and local CV text extraction         |
 | `decisions/ai-suggestion-retrieval.md` | Suggestion shortlist, limits and production ideas      |
 | `decisions/better-auth-identity.md`    | Better Auth owns the identity tables                   |

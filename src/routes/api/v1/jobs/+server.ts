@@ -40,6 +40,12 @@ const querySchema = z
 		locationId: z.uuid().optional(),
 		dayOfWeek: z.preprocess(commaSeparated, z.array(z.enum(DAY_OF_WEEK_VALUES)).optional()),
 		timeOfDay: z.preprocess(commaSeparated, z.array(z.enum(TIME_OF_DAY_VALUES)).optional()),
+		// `true` means the shift must sit inside the requested days and blocks,
+		// not merely overlap them. Used by the availability link.
+		scheduleFit: z.preprocess(
+			(value) => (value === 'true' ? true : undefined),
+			z.boolean().optional()
+		),
 		salaryMin: optionalAmount,
 		salaryMax: optionalAmount,
 		startFrom: z.iso.date().optional(),
@@ -84,6 +90,7 @@ export const GET: RequestHandler = async (event) => {
 			locationId: query.locationId,
 			daysOfWeek: query.dayOfWeek,
 			timeOfDay: query.timeOfDay,
+			scheduleFit: query.scheduleFit,
 			salaryMin: query.salaryMin,
 			salaryMax: query.salaryMax,
 			startFrom: query.startFrom,
