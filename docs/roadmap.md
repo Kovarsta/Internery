@@ -29,7 +29,7 @@ Phase 8  done      demo frontend, auth pages and onboarding
 Phase 9  open      hardening and deployment
 ```
 
-64 of 69 API operations are implemented. See the checklist in
+68 of 69 API operations are implemented. See the checklist in
 [`contracts/implementation-status.md`](contracts/implementation-status.md).
 
 ## Done

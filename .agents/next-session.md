@@ -4,11 +4,11 @@
 
 Version one is feature-complete for the demo:
 
-- 64 of 69 API operations are implemented. The AI consent/read operations and the shareable
-  work-record card still return `501`.
-- The AI service layer is implemented and tested but not routed yet: CV text extraction, redaction,
-  the DeepSeek provider, consent, the daily budget, fit caching with quote verification and the
-  suggestion fallback. See `docs/decisions/ai-features.md`.
+- 68 of 69 API operations are implemented. The shareable work-record card still returns `501`.
+- The AI service layer is implemented and tested. Consent (`/me/ai`), suggestions (`/for-you`) and fit
+  (the **Why this fits** panel on the job page) are routed and have UI. The layer covers CV text
+  extraction, redaction, the DeepSeek provider, consent, the daily budget, fit caching with quote
+  verification and the suggestion fallback. See `docs/decisions/ai-features.md`.
 - Phases 0-6 and 8 are done. Phase 7 (optional AI) and phase 9 (hardening/deployment) remain.
 - The frontend includes the pitched home page, job browsing, applications, saved jobs, employer
   job workspace, reviews, work records, admin area, GitHub OAuth onboarding and password reset.
@@ -18,7 +18,6 @@ Version one is feature-complete for the demo:
 
 ## Next
 
-- Wire the four AI route handlers to the service layer and remove their `501` skeletons.
 - Finish the remaining UI nitpicks.
 - Add student preferences and the “Fits your week” / “Use my preferences” suggestions.
 - Build the shared `/me/security` page for email and password changes, including current-password

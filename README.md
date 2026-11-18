@@ -255,9 +255,9 @@ the repository and must be committed.
 
 ## API
 
-The API lives under `src/routes/api/v1`. The route tree covers 54 paths and 69 operations. 64 of the
-69 operations are implemented; the AI consent/read operations and the shareable work-record card
-still return `501`. The contract is [`docs/contracts/openapi.yaml`](docs/contracts/openapi.yaml), and
+The API lives under `src/routes/api/v1`. The route tree covers 54 paths and 69 operations. 68 of the
+69 operations are implemented; the shareable work-record card still returns `501`. The contract is
+[`docs/contracts/openapi.yaml`](docs/contracts/openapi.yaml), and
 [`docs/contracts/implementation-status.md`](docs/contracts/implementation-status.md) lists what
 exists.
 

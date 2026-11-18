@@ -15,7 +15,9 @@ This is a deliberate capstone choice. The demo marketplace is small (34 seeded j
 project is not going to production. The current retrieval is simple, readable and testable, which
 matters more here than production-grade relevance.
 
-The implementation lives in `src/lib/server/services/ai/suggestions.ts`.
+The implementation lives in `src/lib/server/services/ai/suggestions.ts`. The route is
+`GET /me/ai/suggestions`; the student page is `/for-you`, a top-level page rather than an account
+tab.
 
 ## Current funnel
 

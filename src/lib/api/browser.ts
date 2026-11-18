@@ -1,7 +1,21 @@
-import { readErrorMessage } from '#lib/api/error-message.ts';
+import { readApiError } from '#lib/api/error-message.ts';
 
 export type ApiResult<T> =
-	{ ok: true; data: T | null } | { ok: false; status: number; message: string };
+	| { ok: true; data: T | null }
+	| { ok: false; status: number; code: string | null; message: string };
+
+/**
+ * Calls a JSON read endpoint from the browser.
+ *
+ * Used for a read that must not block the page render, such as the AI fit
+ * explanation, which can take up to 15 seconds. Returns the error envelope
+ * instead of throwing, so the caller can show the reason inline.
+ */
+export async function apiGetJson<T>(path: string): Promise<ApiResult<T>> {
+	const response = await fetch(path);
+
+	return readResult<T>(response);
+}
 
 /**
  * Calls a JSON write endpoint from the browser.
@@ -39,13 +53,16 @@ export async function apiUpload<T>(
 	return readResult<T>(response);
 }
 
-/** Maps an API response to the shared result shape. */
+/** Reads the API response as the shared result shape. */
 async function readResult<T>(response: Response): Promise<ApiResult<T>> {
 	if (!response.ok) {
+		const error = await readApiError(response);
+
 		return {
 			ok: false,
 			status: response.status,
-			message: await readErrorMessage(response)
+			code: error.code,
+			message: error.message
 		};
 	}
 

@@ -23,12 +23,14 @@ export type AiConsentState = {
 /**
  * Plain-language description of what leaves the server (AC-38.1).
  *
- * It names the provider and the redaction, and it does not promise anonymity:
- * short names and personal details the profile does not know can remain.
+ * It names the redaction and the purpose, and it does not promise anonymity:
+ * short names and personal details the profile does not know can remain. The
+ * provider is described generically, so changing vendors does not require a
+ * new consent.
  */
 export const AI_DATA_NOTICE =
 	'Your CV text, with your name, phone number and email removed, and the job advert you asked about. ' +
-	'The text is sent to DeepSeek to write the explanation.';
+	'The text is sent to an AI provider to write the explanation.';
 
 /** Returns the student's current consent state. */
 export async function getAiConsent(database: Database, studentId: string): Promise<AiConsentState> {

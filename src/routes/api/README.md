@@ -7,8 +7,8 @@ It lives in [`docs/contracts/openapi.yaml`](../../../docs/contracts/openapi.yaml
 operations are listed in
 [`docs/contracts/implementation-status.md`](../../../docs/contracts/implementation-status.md).
 The account, notification, saved-job, application, profile, job, review, admin and trust operations
-are implemented and show the reference pattern for the rest. The AI consent/read operations and the
-shareable work-record card still return `501`.
+are implemented and show the reference pattern for the rest. The shareable work-record card still
+returns `501`.
 
 ## Layout
 

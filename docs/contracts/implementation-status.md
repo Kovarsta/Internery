@@ -9,7 +9,7 @@ endpoint is implemented.
 
 Authentication is provided by Better Auth under `/api/auth/*` and is outside this contract.
 
-**64 of 69 operations implemented.**
+**68 of 69 operations implemented.**
 
 ## Checklist
 
@@ -102,10 +102,10 @@ Authentication is provided by Better Auth under `/api/auth/*` and is outside thi
 
 ### AI
 
-- [ ] `GET /me/ai/consent` — Current AI consent
-- [ ] `PUT /me/ai/consent` — Grant or withdraw consent for AI to read the CV
-- [ ] `GET /me/ai/suggestions` — Up to 5 suggested jobs
-- [ ] `GET /jobs/{jobId}/ai/fit` — Why this job fits (or might fit) my CV
+- [x] `GET /me/ai/consent` - Current AI consent
+- [x] `PUT /me/ai/consent` - Grant or withdraw consent for AI to read the CV
+- [x] `GET /me/ai/suggestions` - Up to 5 suggested jobs
+- [x] `GET /jobs/{jobId}/ai/fit` - Why this job fits (or might fit) my CV
 
 ### WorkRecords
 

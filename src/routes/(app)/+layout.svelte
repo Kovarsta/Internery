@@ -56,6 +56,9 @@
 					>
 						{data.user.name}
 					</a>
+					{#if data.user.role === 'STUDENT'}
+						<a class="text-sm text-ink/70 hover:text-ink" href={resolve('for-you')}>For you</a>
+					{/if}
 					<a
 						class="text-sm text-ink/70 hover:text-ink"
 						href={resolve(dashboardByRole[data.user.role])}
@@ -107,6 +110,15 @@
 							>
 								{data.user.name}
 							</a>
+							{#if data.user.role === 'STUDENT'}
+								<a
+									class="rounded px-3 py-2 text-sm hover:bg-black/5"
+									href={resolve('for-you')}
+									onclick={closeMobileMenu}
+								>
+									For you
+								</a>
+							{/if}
 							<a
 								class="rounded px-3 py-2 text-sm hover:bg-black/5"
 								href={resolve(dashboardByRole[data.user.role])}

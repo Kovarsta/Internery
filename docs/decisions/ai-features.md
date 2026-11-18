@@ -11,7 +11,8 @@ Four operations:
 - `GET /jobs/{jobId}/ai/fit`
 
 The rules live in `contracts/openapi.yaml` (AI section); this file records the implementation
-choices. The service layer exists and is tested; the route handlers are the next step.
+choices. The consent, suggestions and fit routes are implemented, with pages at `/me/ai` for
+consent, `/for-you` for suggestions and a **Why this fits** panel on the job detail page.
 
 ## Provider
 
@@ -71,6 +72,10 @@ Considered and rejected:
 - Granting twice is idempotent and keeps the original `consentedAt`.
 - Withdrawing when consent was never granted does not create a row: `consentedAt` is non-null, and a
   row would claim a grant that never happened.
+- The student page is `/me/ai`: it shows `dataSent`, the current state and the dates, and confirms
+  withdrawal because that deletes the cached explanations.
+- The notice names the redaction and the purpose, not the vendor, so a provider swap does not require
+  a new consent.
 - Withdrawal deletes every `ai_explanations` row for the student in the same transaction
   (AC-38.3).
 - Fit checks consent before reading the CV. Suggestions never read the CV and do not require
@@ -87,7 +92,11 @@ Considered and rejected:
 
 ## Fit
 
-- A hidden or missing job is `404`, a missing or unreadable CV is `422 CV_UNREADABLE`.
+- The student page is the job detail page. The **Why this fits** panel runs the
+  request on demand, not during the page load: a call can take up to 15 seconds
+  and spends one of the ten daily calls.
+- The panel appears only for students on a `HIRING` job.
+- A missing job is `404`, a missing or unreadable CV is `422 CV_UNREADABLE`.
 - A provider failure has no honest fallback: the reserved call is released, the error is logged and
   the request fails as a server error. The client can retry without spending quota.
 - The cache stores the verified reasons and up to three gaps. Two requests for the same CV and job
@@ -121,20 +130,26 @@ Prompts live in `src/lib/server/ai/prompts.ts` so they can be reviewed as copy.
 
 ## Code map
 
-| File                                        | Role                                         |
-| ------------------------------------------- | -------------------------------------------- |
-| `src/lib/server/ai/provider.ts`             | The interface, shared types and timeout      |
-| `src/lib/server/ai/deepseek.ts`             | The DeepSeek client and JSON validation      |
-| `src/lib/server/ai/fake.ts`                 | Deterministic provider for tests and dev     |
-| `src/lib/server/ai/prompts.ts`              | Prompt copy and the JSON instructions        |
-| `src/lib/server/ai/cv-text.ts`              | Extraction, normalisation, hash, quote check |
-| `src/lib/server/ai/redaction.ts`            | Name, phone and email removal                |
-| `src/lib/server/ai/index.ts`                | The configured provider                      |
-| `src/lib/server/services/ai/consent.ts`     | Consent state and withdrawal                 |
-| `src/lib/server/services/ai/usage.ts`       | Daily reservation and release                |
-| `src/lib/server/services/ai/fit.ts`         | Fit flow, cache and quote verification       |
-| `src/lib/server/services/ai/suggestions.ts` | Pre-filter, ranking, fallback                |
-| `src/lib/server/services/ai/context.ts`     | Job row to provider shape                    |
+| File                                         | Role                                         |
+| -------------------------------------------- | -------------------------------------------- |
+| `src/lib/server/ai/provider.ts`              | The interface, shared types and timeout      |
+| `src/lib/server/ai/deepseek.ts`              | The DeepSeek client and JSON validation      |
+| `src/lib/server/ai/fake.ts`                  | Deterministic provider for tests and dev     |
+| `src/lib/server/ai/prompts.ts`               | Prompt copy and the JSON instructions        |
+| `src/lib/server/ai/cv-text.ts`               | Extraction, normalisation, hash, quote check |
+| `src/lib/server/ai/redaction.ts`             | Name, phone and email removal                |
+| `src/lib/server/ai/index.ts`                 | The configured provider                      |
+| `src/lib/server/services/ai/consent.ts`      | Consent state and withdrawal                 |
+| `src/lib/server/services/ai/usage.ts`        | Daily reservation and release                |
+| `src/lib/server/services/ai/fit.ts`          | Fit flow, cache and quote verification       |
+| `src/lib/server/services/ai/suggestions.ts`  | Pre-filter, ranking, fallback                |
+| `src/lib/server/services/ai/context.ts`      | Job row to provider shape                    |
+| `src/routes/api/v1/me/ai/consent`            | Consent route                                |
+| `src/routes/api/v1/me/ai/suggestions`        | Suggestions route                            |
+| `src/routes/api/v1/jobs/[jobId]/ai/fit`      | Fit route                                    |
+| `src/routes/(app)/me/ai`                     | Consent screen                               |
+| `src/routes/(app)/for-you`                   | Suggestion screen                            |
+| `src/lib/components/jobs/JobFitPanel.svelte` | Fit panel on the job page                    |
 
 ## Build order
 
@@ -143,7 +158,7 @@ Prompts live in `src/lib/server/ai/prompts.ts` so they can be reviewed as copy.
 3. `AiProvider`, a DeepSeek implementation and a fake. Done.
 4. `ai/fit`: consent, cache, provider, quote check, daily limit, 15 s timeout. Done.
 5. Suggestions: prefilter and local ranking, then AI ranking with the `FALLBACK` path. Done.
-6. Route handlers, then remove the `501` skeletons. Next.
+6. Consent route/page, suggestions route/page and fit route/panel. Done.
 
 ## Open decisions
 

@@ -11,6 +11,7 @@
 	import EmployerPanel from '#lib/components/jobs/EmployerPanel.svelte';
 	import JobActions from '#lib/components/jobs/JobActions.svelte';
 	import JobFacts from '#lib/components/jobs/JobFacts.svelte';
+	import JobFitPanel from '#lib/components/jobs/JobFitPanel.svelte';
 	import JobReport from '#lib/components/jobs/JobReport.svelte';
 	import ReviewSection from '#lib/components/reviews/ReviewSection.svelte';
 	import type { PageProps } from './$types';
@@ -61,6 +62,10 @@
 		<div class="mt-6 border-t border-rule pt-6">
 			<JobActions {job} role={data.user?.role} />
 		</div>
+
+		{#if data.user?.role === 'STUDENT' && job.status === 'HIRING'}
+			<JobFitPanel jobId={job.id} />
+		{/if}
 
 		{#if canReviewEmployer && job.myApplication}
 			<ReviewSection

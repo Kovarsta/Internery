@@ -22,6 +22,7 @@
 		STUDENT: [
 			{ href: resolve('me'), label: 'Overview' },
 			{ href: resolve('me/profile'), label: 'Student profile' },
+			{ href: resolve('me/ai'), label: 'AI settings' },
 			{ href: resolve('me/notifications'), label: 'Notifications' }
 		],
 		EMPLOYER: [

@@ -276,3 +276,41 @@ export type VerificationRequest = {
 	createdAt: string;
 	reviewedAt: string | null;
 };
+
+/** AI consent state shown on `/me/ai` (US-38). */
+export type AiConsent = {
+	granted: boolean;
+	consentedAt: string | null;
+	withdrawnAt: string | null;
+	dataSent: string;
+};
+
+/** How the suggestion shortlist was ordered. */
+export type AiSuggestionSource = 'AI' | 'FALLBACK';
+
+/** The verdict the contract allows for a CV-to-job comparison. */
+export type AiVerdict = 'FIT' | 'MAYBE_FIT';
+
+/** Response of `GET /jobs/{jobId}/ai/fit`. */
+export type AiFit = {
+	verdict: AiVerdict;
+	reasons: { text: string; cvQuote: string }[];
+	gaps: string[];
+	/** True when the answer came from the stored explanation instead of a new call. */
+	cached: boolean;
+	model: string;
+};
+
+/** One suggested job on `/for-you`. */
+export type AiSuggestion = {
+	job: JobSummary;
+	/** Ranking does not judge fit, so this is null for now. */
+	verdict: AiVerdict | null;
+};
+
+/** Response of `GET /me/ai/suggestions`. */
+export type AiSuggestions = {
+	source: AiSuggestionSource;
+	notice: string | null;
+	items: AiSuggestion[];
+};

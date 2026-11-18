@@ -74,8 +74,7 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   enums.
 - The `/api/v1` route tree exists under `src/routes/api/v1` (54 paths, 69 operations). The account,
   notification, saved-job, application, own-profile, job read/write, review, admin and trust
-  operations are implemented; the AI consent/read operations and the shareable work-record card
-  still return `501`.
+  operations are implemented; the shareable work-record card still returns `501`.
   Shared API helpers live in `src/lib/server/api/`; services live in `src/lib/server/services/`.
   Authentication endpoints are Better Auth's `/api/auth/*` and deliberately not duplicated under
   `/api/v1`. See `src/routes/api/README.md` for route conventions and the implementation checklist.
@@ -90,9 +89,11 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   `src/lib/server/work-record-signature.ts`; the secret is `WORK_RECORD_SECRET`. `createReview`
   signs the employer-to-student record in the same transaction as the review.
 - The AI service layer exists under `src/lib/server/ai/` and
-  `src/lib/server/services/ai/`; the four AI route handlers are still `501`. PDF/DOCX text
-  extraction, redaction, the DeepSeek provider, consent, the daily call budget, fit caching with
-  quote verification and the suggestion fallback are implemented and tested. Env:
+  `src/lib/server/services/ai/`; the consent, suggestions and fit routes are implemented. PDF/DOCX
+  text extraction, redaction, the DeepSeek provider, consent, the daily call budget, fit caching with
+  quote verification and the suggestion fallback are implemented and tested. The student pages are
+  `/me/ai` (consent) and `/for-you` (suggestions), plus the **Why this fits** panel on the job detail
+  page. Env:
   `DEEPSEEK_API_KEY` (empty disables the calls) and `DEEPSEEK_MODEL`. See
   `docs/decisions/ai-features.md`.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never

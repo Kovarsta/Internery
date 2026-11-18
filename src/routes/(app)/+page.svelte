@@ -82,6 +82,21 @@
 	</section>
 {/if}
 
+{#if data.user?.role === 'STUDENT'}
+	<section class="mt-12 border-t-4 border-chalk bg-card p-6">
+		<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+			<div>
+				<h2 class="text-2xl font-bold tracking-tight">Suggested for you</h2>
+				<p class="mt-2 max-w-xl text-sm text-ink/70">
+					Jobs ranked from your major and skills. AI orders a shortlist; you can still browse every
+					shift.
+				</p>
+			</div>
+			<Button class="shrink-0" href={resolve('for-you')} size="lg">See suggestions</Button>
+		</div>
+	</section>
+{/if}
+
 <section class="mt-12">
 	<div class="flex items-baseline justify-between gap-4 border-b border-rule pb-2">
 		<h2 class="text-2xl font-bold tracking-tight">Browse by category</h2>
