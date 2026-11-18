@@ -58,6 +58,9 @@
 					</a>
 					{#if data.user.role === 'STUDENT'}
 						<a class="text-sm text-ink/70 hover:text-ink" href={resolve('for-you')}>For you</a>
+						<a class="text-sm text-ink/70 hover:text-ink" href={resolve('fits-my-week')}>
+							Fits my week
+						</a>
 					{/if}
 					<a
 						class="text-sm text-ink/70 hover:text-ink"
@@ -117,6 +120,13 @@
 									onclick={closeMobileMenu}
 								>
 									For you
+								</a>
+								<a
+									class="rounded px-3 py-2 text-sm hover:bg-black/5"
+									href={resolve('fits-my-week')}
+									onclick={closeMobileMenu}
+								>
+									Fits my week
 								</a>
 							{/if}
 							<a

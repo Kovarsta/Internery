@@ -77,6 +77,27 @@ export function isTimeOfDay(value: string): value is TimeOfDay {
 	return TIME_OF_DAY_VALUES.some((slot) => slot === value);
 }
 
+/**
+ * Renders saved availability for display, for example `Weekends, Morning, Afternoon`.
+ *
+ * Empty inputs read as `Any day` and `Any time`, because an empty list means the
+ * student has not restricted that dimension.
+ */
+export function formatAvailability(
+	days: readonly DayOfWeek[],
+	blocks: readonly TimeOfDay[]
+): string {
+	const dayLabel = days.length > 0 ? formatDays(sortDaysOfWeek(days)) : 'Any day';
+	const blockLabel =
+		blocks.length > 0
+			? TIME_OF_DAY_VALUES.filter((slot) => blocks.includes(slot))
+					.map((slot) => TIME_OF_DAY_LABELS[slot])
+					.join(', ')
+			: 'Any time';
+
+	return `${dayLabel}, ${blockLabel}`;
+}
+
 /** Monday to Friday, reused by the day filters. */
 export const WEEKDAYS: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
 

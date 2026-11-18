@@ -15,8 +15,8 @@ Version one is feature-complete for the demo:
 - The admin area has pagination for users, moderation and verification, title search for moderation,
   category search, and account filters limited to states the app can actually produce.
 - `user_profiles.onboardedAt` is the durable OAuth onboarding flag; migration `0008` backfilled it.
-- Students declare free days and time blocks on `/me/profile`, and the matching link opens `/jobs`
-  with `scheduleFit=true` (containment, not overlap). Migration `0009` added the two columns. See
+- Students declare free days and time blocks on `/me/profile`; `/fits-my-week` lists jobs whose whole
+  shift fits (containment, not overlap). Migration `0009` added the two columns. See
   `docs/decisions/availability-matching.md`.
 
 ## Next

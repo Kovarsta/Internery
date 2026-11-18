@@ -79,13 +79,13 @@ week” would be wrong.
 
 1. `/me/profile` has a **When are you free?** section: seven day checkboxes and three block
    checkboxes, saved with the rest of the profile.
-2. Saving unlocks **See jobs that fit my week**, which opens
-   `/jobs?dayOfWeek=…&timeOfDay=…&scheduleFit=true`.
-3. `/jobs` shows a banner saying the list uses the saved availability, with **Show all shifts** to
-   clear it.
+2. `/fits-my-week` is a student-only page that lists the matching jobs. It shows the saved
+   availability, links to change it, and paginates the results.
+3. The page is reached from the header **Fits my week** tab, the `/me` overview, and the profile
+   form. There is no separate query string to remember.
 
-The link is a normal search URL, so the filters appear as chips and can be changed by hand. There is
-no separate results page and no duplicate list.
+The page calls `GET /jobs` with `scheduleFit=true`. The same parameter still works on `/jobs`, where
+a banner explains why the list is filtered; that keeps shared links honest.
 
 ## API change
 

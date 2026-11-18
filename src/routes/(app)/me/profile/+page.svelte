@@ -16,7 +16,6 @@
 	import { Input } from '#lib/components/ui/input/index.ts';
 	import { Label } from '#lib/components/ui/label/index.ts';
 	import { Textarea } from '#lib/components/ui/textarea/index.ts';
-	import { toJobsHref } from '#lib/job-search.ts';
 	import {
 		DAY_OF_WEEK_LABELS,
 		DAY_OF_WEEK_VALUES,
@@ -42,23 +41,9 @@
 				}
 	);
 
-	/** Saved availability, used for the “see matching jobs” link. */
+	/** Saved availability, used for the “fits my week” link. */
 	const hasAvailability = $derived(
 		profile.availableDays.length > 0 || profile.availableTimeOfDay.length > 0
-	);
-
-	/**
-	 * The `/jobs` link with the saved availability applied.
-	 *
-	 * This is deliberately a normal search link: the job page shows the same
-	 * filters as chips, so the student can see and change them.
-	 */
-	const matchingHref = $derived(
-		toJobsHref(
-			resolve('jobs'),
-			{ daysOfWeek: [], timeOfDay: [], scheduleFit: true, sort: 'newest', verifiedOnly: false },
-			{ daysOfWeek: profile.availableDays, timeOfDay: profile.availableTimeOfDay }
-		)
 	);
 
 	const accountValues = $derived(
@@ -181,12 +166,12 @@
 			{#if hasAvailability}
 				<a
 					class="mt-3 inline-block text-sm font-medium text-chalk hover:underline"
-					href={matchingHref}
+					href={resolve('fits-my-week')}
 				>
 					See jobs that fit my week
 				</a>
 			{:else}
-				<p class="mt-3 text-xs text-ink/60">Save a day to unlock the matching jobs link.</p>
+				<p class="mt-3 text-xs text-ink/60">Save a day to unlock the matching jobs page.</p>
 			{/if}
 		</fieldset>
 	</div>

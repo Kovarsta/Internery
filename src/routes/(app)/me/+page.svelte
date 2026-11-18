@@ -28,6 +28,11 @@
 		STUDENT: [
 			{ href: resolve('me/profile'), label: 'Student profile', hint: 'University, skills, CV' },
 			{
+				href: resolve('fits-my-week'),
+				label: 'Fits my week',
+				hint: 'Jobs that match your free time'
+			},
+			{
 				href: resolve('me/ai'),
 				label: 'AI settings',
 				hint: 'CV consent for fit explanations'
