@@ -41,19 +41,20 @@ change; do not leave the mismatch undocumented.
 
 ## Decisions
 
-| File                                | Decision                                               |
-| ----------------------------------- | ------------------------------------------------------ |
-| `decisions/avatar-storage.md`       | Application-served avatar URLs and private storage     |
-| `decisions/ai-features.md`          | DeepSeek provider and local CV text extraction         |
-| `decisions/better-auth-identity.md` | Better Auth owns the identity tables                   |
-| `decisions/better-auth-surface.md`  | Auth endpoints live under `/api/auth`, not `/api/v1`   |
-| `decisions/camel-case-columns.md`   | Product columns are camelCase, auth columns snake_case |
-| `decisions/data-retention.md`       | Reference-aware file cleanup and retention             |
-| `decisions/drizzle-style.md`        | Table objects, projections and service record types    |
-| `decisions/email-delivery.md`       | Resend sender, shared template and notification mail   |
-| `decisions/locations.md`            | Canonical locations and server-side city search        |
-| `decisions/minio-staging.md`        | MinIO configuration for local and staging              |
-| `decisions/oauth-onboarding.md`     | GitHub OAuth role selection and the onboarding flag    |
+| File                                   | Decision                                               |
+| -------------------------------------- | ------------------------------------------------------ |
+| `decisions/avatar-storage.md`          | Application-served avatar URLs and private storage     |
+| `decisions/ai-features.md`             | DeepSeek provider and local CV text extraction         |
+| `decisions/ai-suggestion-retrieval.md` | Suggestion shortlist, limits and production ideas      |
+| `decisions/better-auth-identity.md`    | Better Auth owns the identity tables                   |
+| `decisions/better-auth-surface.md`     | Auth endpoints live under `/api/auth`, not `/api/v1`   |
+| `decisions/camel-case-columns.md`      | Product columns are camelCase, auth columns snake_case |
+| `decisions/data-retention.md`          | Reference-aware file cleanup and retention             |
+| `decisions/drizzle-style.md`           | Table objects, projections and service record types    |
+| `decisions/email-delivery.md`          | Resend sender, shared template and notification mail   |
+| `decisions/locations.md`               | Canonical locations and server-side city search        |
+| `decisions/minio-staging.md`           | MinIO configuration for local and staging              |
+| `decisions/oauth-onboarding.md`        | GitHub OAuth role selection and the onboarding flag    |
 
 ## Agent workspace
 

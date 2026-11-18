@@ -29,6 +29,8 @@ ENV S3_REGION=us-east-1
 ENV S3_BUCKET=build-placeholder
 ENV S3_ACCESS_KEY_ID=build-placeholder
 ENV S3_SECRET_ACCESS_KEY=build-placeholder
+ENV DEEPSEEK_API_KEY=build-placeholder
+ENV DEEPSEEK_MODEL=deepseek-flash
 
 # Copy the manifests first, so a source-only change reuses the dependency layer.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./

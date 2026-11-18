@@ -32,7 +32,8 @@ export const variables = defineEnvVars({
 		description: 'S3-compatible endpoint, e.g. `http://localhost:9000` for MinIO.'
 	},
 	S3_REGION: {
-		description: 'Signing region. MinIO ignores it; use `us-east-1` unless the provider says otherwise.'
+		description:
+			'Signing region. MinIO ignores it; use `us-east-1` unless the provider says otherwise.'
 	},
 	S3_BUCKET: {
 		description: 'Bucket that holds CVs and avatars. Created by the compose `minio-init` job.'
@@ -42,5 +43,17 @@ export const variables = defineEnvVars({
 	},
 	S3_SECRET_ACCESS_KEY: {
 		description: 'Secret key for the storage bucket. Server-only; never exposed to the browser.'
+	},
+	DEEPSEEK_API_KEY: {
+		description:
+			'DeepSeek API key for CV fit explanations and job suggestions. Leave empty to disable the AI calls: fit reports the service as unavailable and suggestions fall back to local ranking.',
+		// An empty value is a supported state, so the app starts without an AI
+		// account. The provider checks the key only when it is about to call.
+		schema: (value) => value ?? ''
+	},
+	DEEPSEEK_MODEL: {
+		description:
+			'DeepSeek model used for AI features. Defaults to `deepseek-flash`; set `deepseek-v4-pro` to trade latency for quality.',
+		schema: (value) => value ?? 'deepseek-flash'
 	}
 });

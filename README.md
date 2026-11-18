@@ -177,6 +177,8 @@ The application reads these variables through `src/env.ts` and `$app/env/private
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret.                                                                                     |
 | `RESEND_API_KEY`       | Resend API key for verification and transactional email.                                                        |
 | `EMAIL_FROM_ADDRESS`   | Verified Resend sender, for example `Internery <no-reply@example.com>`.                                         |
+| `DEEPSEEK_API_KEY`     | DeepSeek key for CV fit explanations and job suggestions. Empty disables the AI calls.                          |
+| `DEEPSEEK_MODEL`       | DeepSeek model; defaults to `deepseek-flash`.                                                                   |
 
 Generate `BETTER_AUTH_SECRET` with:
 

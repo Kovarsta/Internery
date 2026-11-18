@@ -53,7 +53,11 @@ export type DomainErrorCode =
 	| 'JOB_HAS_ACCEPTED_APPLICANTS'
 	| 'VERIFICATION_PENDING'
 	| 'CATEGORY_IN_USE'
-	| 'NAME_TAKEN';
+	| 'NAME_TAKEN'
+	| 'PROFILE_INCOMPLETE'
+	| 'AI_CONSENT_REQUIRED'
+	| 'AI_RATE_LIMITED'
+	| 'CV_UNREADABLE';
 
 export type ValidationDetail = {
 	field: string;

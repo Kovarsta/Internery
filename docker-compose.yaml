@@ -163,6 +163,9 @@ services:
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM_ADDRESS: '${EMAIL_FROM_ADDRESS:-Internery <no-reply@example.com>}'
+      # Empty disables the AI calls; suggestions still work with local ranking.
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
     healthcheck:
       test:
         [

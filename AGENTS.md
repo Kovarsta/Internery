@@ -89,6 +89,12 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
 - Work-record signatures are HMAC-SHA256 over canonical JSON with sorted keys. The helpers live in
   `src/lib/server/work-record-signature.ts`; the secret is `WORK_RECORD_SECRET`. `createReview`
   signs the employer-to-student record in the same transaction as the review.
+- The AI service layer exists under `src/lib/server/ai/` and
+  `src/lib/server/services/ai/`; the four AI route handlers are still `501`. PDF/DOCX text
+  extraction, redaction, the DeepSeek provider, consent, the daily call budget, fit caching with
+  quote verification and the suggestion fallback are implemented and tested. Env:
+  `DEEPSEEK_API_KEY` (empty disables the calls) and `DEEPSEEK_MODEL`. See
+  `docs/decisions/ai-features.md`.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
   returned as raw storage or presigned URLs. See `docs/decisions/avatar-storage.md`.
 - `.env` exists locally and `node_modules` is installed.
@@ -151,7 +157,7 @@ docker compose --profile demo stop app
 
 Env vars are declared in `src/env.ts` and read from `$app/env/private` in server code:
 `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
-`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `WORK_RECORD_SECRET`.
+`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `WORK_RECORD_SECRET`, `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL`.
 `.env.example` still points at `root:mysecretpassword@.../local`, while `docker-compose.yaml` uses
 `internery:internery@.../internery`; fix the URL in `.env` if it does not match.
 
