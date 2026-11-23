@@ -240,10 +240,12 @@ same design.
 ### Presentation scale
 
 The demo runs on a projector, where Tailwind's default 12–16px text is too small to read from the
-back of the room. The same `@theme` block overrides the `--text-*` and `--spacing` tokens: support
-copy starts at 16px, body copy at 20px, and spacing grows by a quarter. Every `text-*` and spacing
-utility follows those tokens, so pages keep their class names and viewers do not need browser zoom.
-Use `text-xs` for the smallest copy; do not add smaller one-off font sizes.
+back of the room. The same `@theme` block overrides the `--text-*` tokens: support copy starts at
+16px and body copy at 20px, while display sizes grow only a little because a 48px headline is
+already readable. Spacing gains a quarter from the `sm` breakpoint up; phones keep the default so
+the larger text still fits without sideways panning. Every `text-*` and spacing utility follows
+those tokens, so pages keep their class names and viewers do not need browser zoom. Use `text-xs`
+for the smallest copy; do not add smaller one-off font sizes.
 
 ## States
 
