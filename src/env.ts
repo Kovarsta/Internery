@@ -55,5 +55,36 @@ export const variables = defineEnvVars({
 		description:
 			'DeepSeek model used for AI features. Defaults to `deepseek-flash`; set `deepseek-v4-pro` to trade latency for quality.',
 		schema: (value) => value ?? 'deepseek-flash'
+	},
+	AI_DAILY_CALL_LIMIT: {
+		description:
+			'Provider calls allowed per user per day for the AI features. Defaults to 10 (NFR-25); raise it for local testing.',
+		schema: (value) => {
+			const limit = Number(value ?? 10);
+
+			if (!Number.isInteger(limit) || limit <= 0) {
+				throw new Error('AI_DAILY_CALL_LIMIT must be a positive integer.');
+			}
+
+			return limit;
+		}
+	},
+	REDIS_URL: {
+		description:
+			'Redis connection string for the `/api/v1` rate limiter. Defaults to `redis://localhost:6379`.',
+		schema: (value) => value ?? 'redis://localhost:6379'
+	},
+	RATE_LIMIT_PER_SECOND: {
+		description:
+			'Requests allowed per second per client address on `/api/v1`. Defaults to 60. Auth and AI have their own limits.',
+		schema: (value) => {
+			const limit = Number(value ?? 60);
+
+			if (!Number.isFinite(limit) || limit <= 0) {
+				throw new Error('RATE_LIMIT_PER_SECOND must be a positive number.');
+			}
+
+			return limit;
+		}
 	}
 });

@@ -112,6 +112,7 @@ Not implemented yet:
 The Compose stack exposes:
 
 - PostgreSQL on `localhost:5432`
+- Redis on `localhost:6379`, holding the `/api/v1` rate-limit counters
 - MinIO S3 API on `localhost:9000`
 - MinIO console on `localhost:9001`
 
@@ -168,17 +169,20 @@ body limit is raised to 10 MB so CV and verification-licence uploads (up to 5 MB
 
 The application reads these variables through `src/env.ts` and `$app/env/private`:
 
-| Variable               | Purpose                                                                                                         |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`         | PostgreSQL connection string. The Compose default is `postgres://internery:internery@localhost:5432/internery`. |
-| `ORIGIN`               | Application origin, for example `http://localhost:5173`.                                                        |
-| `BETTER_AUTH_SECRET`   | Secret used to sign Better Auth tokens. Use at least 32 random characters.                                      |
-| `GITHUB_CLIENT_ID`     | GitHub OAuth client ID.                                                                                         |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret.                                                                                     |
-| `RESEND_API_KEY`       | Resend API key for verification and transactional email.                                                        |
-| `EMAIL_FROM_ADDRESS`   | Verified Resend sender, for example `Internery <no-reply@example.com>`.                                         |
-| `DEEPSEEK_API_KEY`     | DeepSeek key for CV fit explanations and job suggestions. Empty disables the AI calls.                          |
-| `DEEPSEEK_MODEL`       | DeepSeek model; defaults to `deepseek-flash`.                                                                   |
+| Variable                | Purpose                                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`          | PostgreSQL connection string. The Compose default is `postgres://internery:internery@localhost:5432/internery`. |
+| `ORIGIN`                | Application origin, for example `http://localhost:5173`.                                                        |
+| `BETTER_AUTH_SECRET`    | Secret used to sign Better Auth tokens. Use at least 32 random characters.                                      |
+| `GITHUB_CLIENT_ID`      | GitHub OAuth client ID.                                                                                         |
+| `GITHUB_CLIENT_SECRET`  | GitHub OAuth client secret.                                                                                     |
+| `RESEND_API_KEY`        | Resend API key for verification and transactional email.                                                        |
+| `EMAIL_FROM_ADDRESS`    | Verified Resend sender, for example `Internery <no-reply@example.com>`.                                         |
+| `DEEPSEEK_API_KEY`      | DeepSeek key for CV fit explanations and job suggestions. Empty disables the AI calls.                          |
+| `DEEPSEEK_MODEL`        | DeepSeek model; defaults to `deepseek-flash`.                                                                   |
+| `AI_DAILY_CALL_LIMIT`   | Provider calls per user per day; defaults to `10`. Raise it locally for testing.                                |
+| `REDIS_URL`             | Redis for the `/api/v1` rate limiter; defaults to `redis://localhost:6379`.                                     |
+| `RATE_LIMIT_PER_SECOND` | Requests per client per second on `/api/v1`; defaults to `60`.                                                  |
 
 Generate `BETTER_AUTH_SECRET` with:
 

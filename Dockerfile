@@ -31,6 +31,9 @@ ENV S3_ACCESS_KEY_ID=build-placeholder
 ENV S3_SECRET_ACCESS_KEY=build-placeholder
 ENV DEEPSEEK_API_KEY=build-placeholder
 ENV DEEPSEEK_MODEL=deepseek-flash
+ENV AI_DAILY_CALL_LIMIT=10
+ENV REDIS_URL=redis://localhost:6379
+ENV RATE_LIMIT_PER_SECOND=60
 
 # Copy the manifests first, so a source-only change reuses the dependency layer.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./

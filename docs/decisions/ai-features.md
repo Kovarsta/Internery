@@ -25,7 +25,8 @@ DeepSeek, through its OpenAI-compatible API.
 - `thinking: { type: 'disabled' }`: this is classification, not reasoning, and a reasoning pass
   would eat the 15-second budget.
 - Requests use plain `fetch`; there is no OpenAI SDK dependency.
-- Env: `DEEPSEEK_API_KEY` (empty disables the AI calls) and `DEEPSEEK_MODEL`.
+- Env: `DEEPSEEK_API_KEY` (empty disables the AI calls), `DEEPSEEK_MODEL` and
+  `AI_DAILY_CALL_LIMIT` (default 10).
 
 The provider sits behind the `AiProvider` interface in `src/lib/server/ai/provider.ts`. Tests use
 `createFakeProvider`, so the suite never calls DeepSeek.
@@ -83,7 +84,8 @@ Considered and rejected:
 
 ## Daily limit
 
-- 10 provider calls per user per day (NFR-25), counted in `ai_usage`.
+- `AI_DAILY_CALL_LIMIT` provider calls per user per day (default 10, NFR-25), counted in `ai_usage`.
+  Raise it for local testing; keep 10 in production.
 - The day is the Vietnam calendar day, so the limit resets at local midnight.
 - A call is reserved before the provider is contacted and released again if the provider fails or
   times out, so a failure never costs a student an attempt.
@@ -94,7 +96,7 @@ Considered and rejected:
 
 - The student page is the job detail page. The **Why this fits** panel runs the
   request on demand, not during the page load: a call can take up to 15 seconds
-  and spends one of the ten daily calls.
+  and spends one of the daily calls.
 - The panel appears only for students on a `HIRING` job.
 - A missing job is `404`, a missing or unreadable CV is `422 CV_UNREADABLE`.
 - A provider failure has no honest fallback: the reserved call is released, the error is logged and

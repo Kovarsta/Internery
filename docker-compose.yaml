@@ -16,6 +16,20 @@ services:
       timeout: 5s
       retries: 10
 
+  # Rate-limit counters for /api/v1. The app fails open when this is down, so a
+  # Redis outage slows nothing but removes the ceiling.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   # MinIO stopped publishing community images to Docker Hub and Quay in 2025.
   # Chainguard maintains a public build of the same server. Pin the digest for
   # reproducible staging deploys.
@@ -166,6 +180,9 @@ services:
       # Empty disables the AI calls; suggestions still work with local ranking.
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
+      AI_DAILY_CALL_LIMIT: ${AI_DAILY_CALL_LIMIT:-10}
+      REDIS_URL: redis://redis:6379
+      RATE_LIMIT_PER_SECOND: ${RATE_LIMIT_PER_SECOND:-60}
     healthcheck:
       test:
         [

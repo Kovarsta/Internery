@@ -56,6 +56,7 @@ change; do not leave the mismatch undocumented.
 | `decisions/locations.md`               | Canonical locations and server-side city search        |
 | `decisions/minio-staging.md`           | MinIO configuration for local and staging              |
 | `decisions/oauth-onboarding.md`        | GitHub OAuth role selection and the onboarding flag    |
+| `decisions/rate-limiting.md`           | Redis per-IP ceiling on `/api/v1` and fail-open policy |
 
 ## Agent workspace
 

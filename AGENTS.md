@@ -94,7 +94,8 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   quote verification and the suggestion fallback are implemented and tested. The student pages are
   `/me/ai` (consent) and `/recommendations` (suggestions), plus the **Why this fits** panel on the job detail
   page. Env:
-  `DEEPSEEK_API_KEY` (empty disables the calls) and `DEEPSEEK_MODEL`. See
+  `DEEPSEEK_API_KEY` (empty disables the calls), `DEEPSEEK_MODEL` and
+  `AI_DAILY_CALL_LIMIT` (default 10). See
   `docs/decisions/ai-features.md`.
 - Student availability matching is a query, not an AI feature. `student_profiles.availableDays`
   (`day_of_week[]`) and `availableTimeOfDay` (`time_of_day[]`) hold structured free time, edited in a
@@ -104,8 +105,11 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   `pnpm availability:digest` email. See `docs/decisions/availability-matching.md`.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
   returned as raw storage or presigned URLs. See `docs/decisions/avatar-storage.md`.
+- `/api/v1` is rate limited to 60 requests per second per client address through Redis. The limiter
+  fails open (500 ms cap, logged once a minute) and covers only the JSON API; Better Auth and the AI
+  daily budget own their own limits. See `docs/decisions/rate-limiting.md`.
 - `.env` exists locally and `node_modules` is installed.
-- Docker Compose provides Postgres, MinIO, and a one-shot `minio-init` job that creates the
+- Docker Compose provides Postgres, Redis, MinIO, and a one-shot `minio-init` job that creates the
   `${S3_BUCKET:-internery-staging}` bucket. MinIO uses the Chainguard image because the upstream
   community images were removed from Docker Hub and Quay in 2025.
 - Product services and API handlers cover phases 0 to 3. The frontend lives in the `(app)` route
@@ -165,7 +169,8 @@ docker compose --profile demo stop app
 
 Env vars are declared in `src/env.ts` and read from `$app/env/private` in server code:
 `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
-`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `WORK_RECORD_SECRET`, `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL`.
+`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `WORK_RECORD_SECRET`, `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL`,
+`AI_DAILY_CALL_LIMIT`.
 `.env.example` still points at `root:mysecretpassword@.../local`, while `docker-compose.yaml` uses
 `internery:internery@.../internery`; fix the URL in `.env` if it does not match.
 

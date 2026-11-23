@@ -20,3 +20,6 @@ export const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID ?? '';
 export const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY ?? '';
 export const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY ?? '';
 export const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? 'deepseek-flash';
+export const AI_DAILY_CALL_LIMIT = Number(process.env.AI_DAILY_CALL_LIMIT ?? 10);
+export const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
+export const RATE_LIMIT_PER_SECOND = Number(process.env.RATE_LIMIT_PER_SECOND ?? 60);
