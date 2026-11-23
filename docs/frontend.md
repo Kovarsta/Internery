@@ -237,6 +237,14 @@ The tokens live in `src/routes/(app)/layout.css` under `@theme`, so components u
 `--primary`, `--border`, ...) are mapped onto the same palette, so generated controls sit inside the
 same design.
 
+### Presentation scale
+
+The demo runs on a projector, where Tailwind's default 12–16px text is too small to read from the
+back of the room. The same `@theme` block overrides the `--text-*` and `--spacing` tokens: support
+copy starts at 16px, body copy at 20px, and spacing grows by a quarter. Every `text-*` and spacing
+utility follows those tokens, so pages keep their class names and viewers do not need browser zoom.
+Use `text-xs` for the smallest copy; do not add smaller one-off font sizes.
+
 ## States
 
 - **Empty**: say what is missing and offer the next action (clear filters, post a job).

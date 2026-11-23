@@ -7,6 +7,28 @@
 
 @theme {
 	--font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
+
+	/*
+	 * Presentation scale. The app is demoed on a projector, where Tailwind's
+	 * default 12–16px text is unreadable from the back of the room. Overriding
+	 * the tokens scales every text and spacing utility at once, so pages keep
+	 * their existing class names and visitors do not need browser zoom.
+	 */
+	--spacing: 0.3125rem;
+	--text-xs: 1rem;
+	--text-sm: 1.125rem;
+	--text-base: 1.25rem;
+	--text-lg: 1.375rem;
+	--text-xl: 1.625rem;
+	--text-2xl: 2rem;
+	--text-3xl: 2.5rem;
+	--text-4xl: 3rem;
+	--text-5xl: 3.75rem;
+	--text-6xl: 4.75rem;
+	--text-7xl: 5.75rem;
+	--text-8xl: 7.5rem;
+	--text-9xl: 10rem;
+
 	--color-paper: #f5f6f2;
 	--color-ink: #17211b;
 	--color-chalk: #1e5b43;
@@ -73,5 +95,6 @@
 		background-color: var(--color-paper);
 		color: var(--color-ink);
 		font-family: var(--font-sans);
+		font-size: var(--text-base);
 	}
 }
