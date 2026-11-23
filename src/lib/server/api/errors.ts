@@ -184,7 +184,7 @@ export function handleApiError(error: unknown): Response {
 	);
 }
 
-function createErrorResponse(
+export function createErrorResponse(
 	code: ErrorCode,
 	message: string,
 	details: ValidationDetail[] | undefined,
