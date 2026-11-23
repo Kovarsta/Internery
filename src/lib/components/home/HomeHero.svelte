@@ -84,12 +84,6 @@
 				<Button href={resolve('register')} size="sm" variant="outline">Create an account</Button>
 			{/if}
 		</div>
-
-		<p data-reveal class="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink/60">
-			<span>Pay and hours up front</span>
-			<span>Verified employers</span>
-			<span>Signed work records</span>
-		</p>
 	</div>
 
 	<div data-reveal>
