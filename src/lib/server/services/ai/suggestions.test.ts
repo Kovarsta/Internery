@@ -6,8 +6,9 @@ import postgres from 'postgres';
 import * as schema from '#lib/server/db/schema.ts';
 import { createFakeProvider } from '#lib/server/ai/fake.ts';
 import type { AiProvider } from '#lib/server/ai/provider.ts';
+import { AI_DAILY_CALL_LIMIT } from '$app/env/private';
 import { getJobSuggestions, rankCandidatesLocally } from './suggestions.ts';
-import { currentAiUsageDay, DAILY_AI_CALL_LIMIT } from './usage.ts';
+import { currentAiUsageDay } from './usage.ts';
 
 /** The candidate shape is inferred from the function under test. */
 type Candidate = Parameters<typeof rankCandidatesLocally>[0][number];
@@ -298,7 +299,7 @@ describe.skipIf(!testDatabase)('getJobSuggestions', () => {
 		await testDatabase.insert(schema.aiUsage).values({
 			userId: studentId,
 			day: currentAiUsageDay(),
-			count: DAILY_AI_CALL_LIMIT
+			count: AI_DAILY_CALL_LIMIT
 		});
 
 		const rankJobs = vi.fn<AiProvider['rankJobs']>();

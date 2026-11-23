@@ -1,17 +1,19 @@
 /**
- * The AI call budget (NFR-25: at most 10 calls per user per day).
+ * The AI call budget (NFR-25: 10 calls per user per day by default).
+ *
+ * `AI_DAILY_CALL_LIMIT` can raise or lower it, which is useful for local
+ * testing. Production should keep the default to match the non-functional
+ * requirement.
  *
  * A call is reserved before the provider is contacted and released again if
  * the provider fails, so a timeout or an upstream error never costs a student
- * one of their ten attempts. The reservation is one atomic upsert, which keeps
+ * one of their attempts. The reservation is one atomic upsert, which keeps
  * two simultaneous requests from both seeing "9 used".
  */
 import { and, eq, sql } from 'drizzle-orm';
+import { AI_DAILY_CALL_LIMIT } from '$app/env/private';
 import type { Database } from '#lib/server/db/types.ts';
 import { aiUsage } from '#lib/server/db/product.schema.ts';
-
-/** Daily provider-call budget per user. */
-export const DAILY_AI_CALL_LIMIT = 10;
 
 /**
  * Formats a date as `YYYY-MM-DD` in Vietnam time.
@@ -58,7 +60,7 @@ export async function reserveAiCall(
 		.onConflictDoUpdate({
 			target: [aiUsage.userId, aiUsage.day],
 			set: { count: sql`${aiUsage.count} + 1` },
-			setWhere: sql`${aiUsage.count} < ${DAILY_AI_CALL_LIMIT}`
+			setWhere: sql`${aiUsage.count} < ${AI_DAILY_CALL_LIMIT}`
 		})
 		.returning({ count: aiUsage.count });
 

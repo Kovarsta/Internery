@@ -9,8 +9,9 @@ import * as schema from '#lib/server/db/schema.ts';
 import type { Storage } from '#lib/server/storage/client.ts';
 import { createFakeProvider } from '#lib/server/ai/fake.ts';
 import type { AiProvider } from '#lib/server/ai/provider.ts';
+import { AI_DAILY_CALL_LIMIT } from '$app/env/private';
 import { getJobFit } from './fit.ts';
-import { currentAiUsageDay, DAILY_AI_CALL_LIMIT } from './usage.ts';
+import { currentAiUsageDay } from './usage.ts';
 
 // Set TEST_DATABASE_URL to run the database-backed tests.
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -231,7 +232,7 @@ describe.skipIf(!testDatabase)('getJobFit', () => {
 		await testDatabase.insert(schema.aiUsage).values({
 			userId: studentId,
 			day: currentAiUsageDay(),
-			count: DAILY_AI_CALL_LIMIT
+			count: AI_DAILY_CALL_LIMIT
 		});
 
 		const explainFit = vi.fn<AiProvider['explainFit']>();

@@ -3,7 +3,7 @@
 	 * “Why this fits” panel for a job page.
 	 *
 	 * The request runs in the browser on demand, not during the page load: it can
-	 * take up to 15 seconds and it spends one of the student's ten daily AI calls.
+	 * take up to 15 seconds and it spends one of the student's daily AI calls.
 	 * Loading a job page should never cost either.
 	 *
 	 * The API is the source of truth for the three prerequisites, so the panel
