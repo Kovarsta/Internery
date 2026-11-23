@@ -48,7 +48,7 @@
 {/if}
 
 <form
-	class="mb-6 grid max-w-3xl gap-4 border-t-4 border-chalk bg-card p-6 sm:grid-cols-2"
+	class="mb-6 grid gap-4 border-t-4 border-chalk bg-card p-6 sm:grid-cols-2"
 	method="POST"
 	{action}
 >

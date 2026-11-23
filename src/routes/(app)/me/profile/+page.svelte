@@ -4,7 +4,8 @@
 	 *
 	 * Free time has its own card and action, because it drives recommendations and
 	 * the weekly email. The rest of the page is the account details form, the
-	 * student details form and the CV panel, all at the same width.
+	 * student details form and the CV panel. Every card spans the page column,
+	 * the same width as the cards on `/me/ai`.
 	 */
 
 	import PageHeader from '#lib/components/PageHeader.svelte';
@@ -111,7 +112,7 @@
 {/if}
 
 <form
-	class="grid max-w-3xl gap-4 border-t-4 border-chalk bg-card p-6 sm:grid-cols-2"
+	class="grid gap-4 border-t-4 border-chalk bg-card p-6 sm:grid-cols-2"
 	method="POST"
 	action="?/profile"
 >
@@ -163,6 +164,4 @@
 	</div>
 </form>
 
-<div class="max-w-3xl">
-	<CvPanel cv={profile.cv} />
-</div>
+<CvPanel cv={profile.cv} />

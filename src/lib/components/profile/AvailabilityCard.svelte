@@ -33,7 +33,7 @@
 </script>
 
 <form
-	class="mb-6 max-w-3xl border-2 border-chalk/40 bg-chalk/5 p-6"
+	class="mb-6 border-2 border-chalk/40 bg-chalk/5 p-6"
 	method="POST"
 	action="?/availability"
 	id="availability"
