@@ -92,15 +92,16 @@ schema. `docs/contracts/implementation-status.md` lists what exists.
   `src/lib/server/services/ai/`; the consent, suggestions and fit routes are implemented. PDF/DOCX
   text extraction, redaction, the DeepSeek provider, consent, the daily call budget, fit caching with
   quote verification and the suggestion fallback are implemented and tested. The student pages are
-  `/me/ai` (consent) and `/for-you` (suggestions), plus the **Why this fits** panel on the job detail
+  `/me/ai` (consent) and `/recommendations` (suggestions), plus the **Why this fits** panel on the job detail
   page. Env:
   `DEEPSEEK_API_KEY` (empty disables the calls) and `DEEPSEEK_MODEL`. See
   `docs/decisions/ai-features.md`.
 - Student availability matching is a query, not an AI feature. `student_profiles.availableDays`
-  (`day_of_week[]`) and `availableTimeOfDay` (`time_of_day[]`) hold structured free time; the
-  student-only `/fits-my-week` page lists jobs whose whole shift fits them, via
-  `GET /jobs?scheduleFit=true`, which requires containment instead of overlap. See
-  `docs/decisions/availability-matching.md`.
+  (`day_of_week[]`) and `availableTimeOfDay` (`time_of_day[]`) hold structured free time, edited in a
+  dedicated card on `/me/profile`. `/recommendations` merges **Fits my week** (containment via
+  `GET /jobs?scheduleFit=true`) with **For you** (the AI ordering); `/for-you` and `/fits-my-week`
+  redirect into it. `student_profiles.digestEnabled` and `digestLastSentAt` drive the weekly
+  `pnpm availability:digest` email. See `docs/decisions/availability-matching.md`.
 - Avatar URLs are application-served; uploaded avatars live in the private bucket and are never
   returned as raw storage or presigned URLs. See `docs/decisions/avatar-storage.md`.
 - `.env` exists locally and `node_modules` is installed.
@@ -149,6 +150,7 @@ pnpm db:start            # docker compose up (Postgres :5432, MinIO :9000/:9001)
 pnpm db:generate         # drizzle-kit generate
 pnpm db:migrate          # drizzle-kit migrate
 pnpm db:seed             # insert development data (requires .env)
+pnpm availability:digest # email the weekly "new jobs fit your week" digest (--dry-run to preview)
 pnpm db:push             # drizzle-kit push (prototyping only)
 pnpm db:studio           # drizzle-kit studio
 pnpm auth:schema         # regenerate Better Auth tables into src/lib/server/db/auth.schema.ts

@@ -13,6 +13,25 @@
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
+	
+	import { SplitText } from 'gsap/all';
+	import gsap from 'gsap';
+
+	// SplitText measures text in the DOM, so it must not run during SSR. An
+	// effect runs only in the browser, after the footer is mounted.
+	$effect(() => {
+		const split = SplitText.create('.footerAni', {
+			type: 'chars',
+			onSplit: (self) =>
+				gsap.from(self.chars, {
+					y: 100,
+					opacity: 0,
+					stagger: 0.05
+				})
+		});
+
+		return () => split.revert();
+	});
 
 	let { children, data }: LayoutProps = $props();
 
@@ -57,9 +76,8 @@
 						{data.user.name}
 					</a>
 					{#if data.user.role === 'STUDENT'}
-						<a class="text-sm text-ink/70 hover:text-ink" href={resolve('for-you')}>For you</a>
-						<a class="text-sm text-ink/70 hover:text-ink" href={resolve('fits-my-week')}>
-							Fits my week
+						<a class="text-sm text-ink/70 hover:text-ink" href={resolve('recommendations')}>
+							Recommendations
 						</a>
 					{/if}
 					<a
@@ -116,17 +134,10 @@
 							{#if data.user.role === 'STUDENT'}
 								<a
 									class="rounded px-3 py-2 text-sm hover:bg-black/5"
-									href={resolve('for-you')}
+									href={resolve('recommendations')}
 									onclick={closeMobileMenu}
 								>
-									For you
-								</a>
-								<a
-									class="rounded px-3 py-2 text-sm hover:bg-black/5"
-									href={resolve('fits-my-week')}
-									onclick={closeMobileMenu}
-								>
-									Fits my week
+									Recommendations
 								</a>
 							{/if}
 							<a
@@ -218,6 +229,9 @@
 			<p class="mx-auto max-w-5xl px-4 py-4 text-xs text-ink/50">
 				© {year} Internery. Built for students in Vietnam. By students, for students.
 			</p>
+		</div>
+		<div class="flex flex-col items-center justify-between overflow-hidden border-t border-rule">
+			<p class="footerAni text-9xl font-extrabold text-ink">INTERNERY</p>
 		</div>
 	</footer>
 </div>

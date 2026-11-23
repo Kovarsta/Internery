@@ -21,18 +21,23 @@ type ProfileFormValues = {
 	university: string;
 	major: string;
 	skills: string;
-	availability: string;
-	availableDays: DayOfWeek[];
-	availableTimeOfDay: TimeOfDay[];
 	bio: string;
+};
+
+type AvailabilityFormValues = {
+	days: DayOfWeek[];
+	timeOfDay: TimeOfDay[];
+	notes: string;
+	digestEnabled: boolean;
 };
 
 /**
  * Loads `/me/profile`.
  *
  * The student form is filled from `GET /me/student-profile` and the personal
- * details form from `GET /me`. `saved` and `accountSaved` are the flags left by
- * each form's redirect, so the page can confirm the save once.
+ * details form from `GET /me`. `saved`, `accountSaved` and `availabilitySaved`
+ * are the flags left by each form's redirect, so the page can confirm the save
+ * once.
  */
 export const load: PageServerLoad = async (event) => {
 	const [profile, me] = await Promise.all([
@@ -45,6 +50,7 @@ export const load: PageServerLoad = async (event) => {
 		me,
 		saved: event.url.searchParams.get('saved') === '1',
 		accountSaved: event.url.searchParams.get('accountSaved') === '1',
+		availabilitySaved: event.url.searchParams.get('availabilitySaved') === '1',
 		onboarded: event.url.searchParams.get('onboarded') === '1'
 	};
 };
@@ -73,6 +79,59 @@ export const actions: Actions = {
 
 		redirect(303, '/me/profile?accountSaved=1');
 	},
+
+	/**
+	 * Saves free time and the email preference.
+	 *
+	 * The endpoint replaces the whole student profile, so the action reads the
+	 * current row first and sends it back with the availability fields changed.
+	 * The student form omits these fields, which is why it cannot overwrite them.
+	 */
+	availability: async (event) => {
+		const form = await event.request.formData();
+		const values = readAvailabilityValues(form);
+		const problem = findAvailabilityProblem(values);
+
+		if (problem) {
+			return fail(400, { scope: 'availability' as const, message: problem, values });
+		}
+
+		const profile = await apiGet<StudentProfile>(event, '/api/v1/me/student-profile');
+
+		if (profile.university === '' || profile.major === '') {
+			return fail(400, {
+				scope: 'availability' as const,
+				message: 'Add your university and major in Student details first.',
+				values
+			});
+		}
+
+		const response = await event.fetch('/api/v1/me/student-profile', {
+			method: 'PUT',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				university: profile.university,
+				major: profile.major,
+				skills: profile.skills,
+				availability: values.notes === '' ? null : values.notes,
+				availableDays: values.days,
+				availableTimeOfDay: values.timeOfDay,
+				digestEnabled: values.digestEnabled,
+				bio: profile.bio
+			})
+		});
+
+		if (!response.ok) {
+			return fail(response.status, {
+				scope: 'availability' as const,
+				message: await readErrorMessage(response),
+				values
+			});
+		}
+
+		redirect(303, '/me/profile?availabilitySaved=1');
+	},
+
 	profile: async (event) => {
 		const form = await event.request.formData();
 		const values = readValues(form);
@@ -105,14 +164,18 @@ function readValues(form: FormData): ProfileFormValues {
 		university: readText(form.get('university')),
 		major: readText(form.get('major')),
 		skills: readText(form.get('skills')),
-		availability: readText(form.get('availability')),
-		availableDays: readSelectedValues(form.getAll('availableDay'), isDayOfWeek, sortDaysOfWeek),
-		availableTimeOfDay: readSelectedValues(
-			form.getAll('availableTimeOfDay'),
-			isTimeOfDay,
-			(slots) => TIME_OF_DAY_VALUES.filter((slot) => slots.includes(slot))
-		),
 		bio: readText(form.get('bio'))
+	};
+}
+
+function readAvailabilityValues(form: FormData): AvailabilityFormValues {
+	return {
+		days: readSelectedValues(form.getAll('availableDay'), isDayOfWeek, sortDaysOfWeek),
+		timeOfDay: readSelectedValues(form.getAll('availableTimeOfDay'), isTimeOfDay, (slots) =>
+			TIME_OF_DAY_VALUES.filter((slot) => slots.includes(slot))
+		),
+		notes: readText(form.get('availability')),
+		digestEnabled: form.get('digestEnabled') === 'true'
 	};
 }
 
@@ -165,12 +228,17 @@ function findProblem(values: ProfileFormValues): string | null {
 		return 'Each skill must be 50 characters or fewer.';
 	}
 
-	if (values.availability.length > 500) {
-		return 'Availability must be 500 characters or fewer.';
-	}
-
 	if (values.bio.length > 2000) {
 		return 'About you must be 2000 characters or fewer.';
+	}
+
+	return null;
+}
+
+/** Availability has its own form, so it has its own small check. */
+function findAvailabilityProblem(values: AvailabilityFormValues): string | null {
+	if (values.notes.length > 500) {
+		return 'The schedule note must be 500 characters or fewer.';
 	}
 
 	return null;
@@ -181,9 +249,6 @@ function toPayload(values: ProfileFormValues) {
 		university: values.university,
 		major: values.major,
 		skills: splitSkills(values.skills),
-		availability: values.availability === '' ? null : values.availability,
-		availableDays: values.availableDays,
-		availableTimeOfDay: values.availableTimeOfDay,
 		bio: values.bio === '' ? null : values.bio
 	};
 }

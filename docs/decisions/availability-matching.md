@@ -77,15 +77,31 @@ week” would be wrong.
 
 ## How the student reaches it
 
-1. `/me/profile` has a **When are you free?** section: seven day checkboxes and three block
-   checkboxes, saved with the rest of the profile.
-2. `/fits-my-week` is a student-only page that lists the matching jobs. It shows the saved
-   availability, links to change it, and paginates the results.
-3. The page is reached from the header **Fits my week** tab, the `/me` overview, and the profile
-   form. There is no separate query string to remember.
+1. `/me/profile` opens with a dedicated **When are you free?** card: seven day checkboxes, three
+   block checkboxes, a free-text note and the weekly email toggle. It saves through its own action,
+   so saving the rest of the profile cannot clear it.
+2. `/recommendations` has two tabs. **Fits my week** lists the matching jobs; **For you** holds the
+   AI ordering. Both fetch in the browser and show a skeleton while they load.
+3. The page is reached from the header **Recommendations** link, the `/me` overview and the profile
+   card. `/for-you` and `/fits-my-week` redirect to the matching tab.
 
 The page calls `GET /jobs` with `scheduleFit=true`. The same parameter still works on `/jobs`, where
 a banner explains why the list is filtered; that keeps shared links honest.
+
+## Weekly email
+
+`pnpm availability:digest` emails each eligible student the new jobs that fit since their last
+message. It is a script, not a scheduler, so it can run from cron once a day:
+
+- only active students with saved availability and the email turned on are considered;
+- a student is skipped until `DIGEST_INTERVAL_DAYS` (7) have passed since `digestLastSentAt`;
+- the job query is the same containment test as the page, limited to jobs posted since that time;
+- no matches means no email and no timestamp update, so the next run still covers them;
+- `--dry-run` prints who would be emailed and which jobs, without sending.
+
+The email is on by default because it is what makes saving availability useful; the card on
+`/me/profile` turns it off. `digestEnabled` is optional in `PUT /me/student-profile`, so a payload
+that omits it leaves the stored value alone.
 
 ## API change
 

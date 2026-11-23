@@ -31,6 +31,20 @@
 
 	let state = $state<PanelState>({ name: 'idle' });
 
+	/**
+	 * Shortest time the loading state stays on screen.
+	 *
+	 * The call is often fast on a cache hit, and a response that appears in 80 ms
+	 * reads as if nothing happened. Holding the skeleton briefly makes the action
+	 * legible; it adds no work and never shortens a real call.
+	 */
+	const MIN_LOADING_MS = 1_200;
+
+	/** Waits for a duration, used to hold the loading state. */
+	function wait(milliseconds: number): Promise<void> {
+		return new Promise((resolve) => setTimeout(resolve, milliseconds));
+	}
+
 	const verdictLabel: Record<AiVerdict, string> = {
 		FIT: 'Good fit',
 		MAYBE_FIT: 'Maybe a fit'
@@ -44,7 +58,10 @@
 	async function explainFit() {
 		state = { name: 'loading' };
 
-		const result = await apiGetJson<AiFit>(`/api/v1/jobs/${jobId}/ai/fit`);
+		const [result] = await Promise.all([
+			apiGetJson<AiFit>(`/api/v1/jobs/${jobId}/ai/fit`),
+			wait(MIN_LOADING_MS)
+		]);
 
 		if (!result.ok) {
 			state = { name: 'error', code: result.code, message: result.message };
@@ -70,11 +87,14 @@
 			Check my CV against this job
 		</Button>
 	{:else if state.name === 'loading'}
-		<p class="mt-2 text-sm text-ink/70">
-			Reading your CV and the advert. This can take up to 15 seconds.
-		</p>
+		<div aria-busy="true" aria-live="polite" class="mt-3 space-y-2">
+			<div class="h-5 w-32 animate-pulse rounded bg-ink/10"></div>
+			<div class="h-3 w-full animate-pulse rounded bg-ink/10"></div>
+			<div class="h-3 w-5/6 animate-pulse rounded bg-ink/10"></div>
+			<div class="h-3 w-4/6 animate-pulse rounded bg-ink/10"></div>
+		</div>
 
-		<Button class="mt-3 w-full" disabled type="button" variant="outline">Working.</Button>
+		<p class="mt-3 text-sm text-ink/60">Reading your CV and the advert. This can take a moment.</p>
 	{:else if state.name === 'ready'}
 		<div class="mt-3 flex flex-wrap items-center gap-2">
 			<Badge

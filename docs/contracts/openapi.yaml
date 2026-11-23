@@ -1905,6 +1905,9 @@ components:
           type: array
           maxItems: 3
           items: { $ref: '#/components/schemas/TimeOfDay' }
+        digestEnabled:
+          type: boolean
+          description: Weekly matching-jobs email. Omit to leave the stored value unchanged.
         bio: { type: [string, 'null'], maxLength: 2000 }
     StudentProfile:
       type: object
@@ -1918,6 +1921,7 @@ components:
           availability,
           availableDays,
           availableTimeOfDay,
+          digestEnabled,
           bio,
           cv,
           ratingAvg,
@@ -1949,6 +1953,9 @@ components:
           maxItems: 3
           items: { $ref: '#/components/schemas/TimeOfDay' }
           description: Structured free time blocks. Empty means no preference.
+        digestEnabled:
+          type: boolean
+          description: True when the weekly matching-jobs email is on.
         bio: { type: [string, 'null'], maxLength: 2000 }
         cv:
           oneOf:
@@ -2156,10 +2163,28 @@ components:
       allOf:
         - $ref: '#/components/schemas/JobSummary'
         - type: object
-          required: [description, scheduleNote, acceptingApplications]
+          required:
+            [
+              description,
+              scheduleNote,
+              acceptingApplications,
+              employerDescription,
+              employerAddress,
+              employerContactPhone,
+              locationDisplayName
+            ]
           properties:
             description: { type: string }
             scheduleNote: { type: [string, 'null'] }
+            employerDescription:
+              { type: [string, 'null'], description: Public organisation description. }
+            employerAddress: { type: [string, 'null'], description: Public business address. }
+            employerContactPhone: { type: [string, 'null'], description: Public business phone. }
+            locationDisplayName:
+              {
+                type: string,
+                description: 'Full location label, e.g. District 1, Ho Chi Minh City.'
+              }
             acceptingApplications:
               { type: boolean, description: False when the job is not HIRING (AC-11.2). }
             saved: { type: boolean, description: Present for signed-in students. }

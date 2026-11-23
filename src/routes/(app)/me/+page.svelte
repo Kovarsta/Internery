@@ -28,9 +28,9 @@
 		STUDENT: [
 			{ href: resolve('me/profile'), label: 'Student profile', hint: 'University, skills, CV' },
 			{
-				href: resolve('fits-my-week'),
-				label: 'Fits my week',
-				hint: 'Jobs that match your free time'
+				href: resolve('recommendations'),
+				label: 'Recommendations',
+				hint: 'Jobs that fit your week, plus AI picks'
 			},
 			{
 				href: resolve('me/ai'),

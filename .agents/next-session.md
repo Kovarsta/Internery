@@ -5,7 +5,8 @@
 Version one is feature-complete for the demo:
 
 - 68 of 69 API operations are implemented. The shareable work-record card still returns `501`.
-- The AI service layer is implemented and tested. Consent (`/me/ai`), suggestions (`/for-you`) and fit
+- The AI service layer is implemented and tested. Consent (`/me/ai`), suggestions (`/recommendations`)
+  and fit
   (the **Why this fits** panel on the job page) are routed and have UI. The layer covers CV text
   extraction, redaction, the DeepSeek provider, consent, the daily budget, fit caching with quote
   verification and the suggestion fallback. See `docs/decisions/ai-features.md`.
@@ -15,8 +16,9 @@ Version one is feature-complete for the demo:
 - The admin area has pagination for users, moderation and verification, title search for moderation,
   category search, and account filters limited to states the app can actually produce.
 - `user_profiles.onboardedAt` is the durable OAuth onboarding flag; migration `0008` backfilled it.
-- Students declare free days and time blocks on `/me/profile`; `/fits-my-week` lists jobs whose whole
-  shift fits (containment, not overlap). Migration `0009` added the two columns. See
+- Students declare free days and time blocks in their own card on `/me/profile`; `/recommendations`
+  has **Fits my week** (containment) and **For you** (AI) tabs. Migration `0009` added the two
+  columns; `0010` added the weekly digest flag. `pnpm availability:digest` sends the email. See
   `docs/decisions/availability-matching.md`.
 
 ## Next

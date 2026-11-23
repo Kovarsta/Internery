@@ -337,6 +337,7 @@ describe('toStudentProfile', () => {
 		availability: 'Weekday evenings',
 		availableDays: ['SATURDAY'],
 		availableTimeOfDay: ['MORNING'],
+		digestEnabled: true,
 		bio: null,
 		cvKey: 'cv/student.pdf',
 		cvFileName: 'cv.pdf',
@@ -356,6 +357,7 @@ describe('toStudentProfile', () => {
 			availability: null,
 			availableDays: [],
 			availableTimeOfDay: [],
+			digestEnabled: true,
 			bio: null,
 			cv: null,
 			ratingAvg: 0,
@@ -373,6 +375,7 @@ describe('toStudentProfile', () => {
 			availability: 'Weekday evenings',
 			availableDays: ['SATURDAY'],
 			availableTimeOfDay: ['MORNING'],
+			digestEnabled: true,
 			bio: null,
 			cv: {
 				fileName: 'cv.pdf',
@@ -490,7 +493,11 @@ describe('toJobDetail', () => {
 		...job,
 		description: 'Serve coffee on weekends.',
 		scheduleNote: null,
-		isHidden: false
+		isHidden: false,
+		employerDescription: 'A small coffee chain in Hanoi.',
+		employerAddress: '12 Hang Bai, Hoan Kiem, Hanoi',
+		employerContactPhone: '024 3822 1234',
+		locationDisplayName: 'Hoan Kiem, Hanoi'
 	};
 
 	it('adds the long-form fields and the accepting flag', () => {
@@ -498,7 +505,11 @@ describe('toJobDetail', () => {
 			...toJobSummary(job),
 			description: 'Serve coffee on weekends.',
 			scheduleNote: null,
-			acceptingApplications: true
+			acceptingApplications: true,
+			employerDescription: 'A small coffee chain in Hanoi.',
+			employerAddress: '12 Hang Bai, Hoan Kiem, Hanoi',
+			employerContactPhone: '024 3822 1234',
+			locationDisplayName: 'Hoan Kiem, Hanoi'
 		});
 	});
 

@@ -92,7 +92,9 @@
 					shift.
 				</p>
 			</div>
-			<Button class="shrink-0" href={resolve('for-you')} size="lg">See suggestions</Button>
+			<Button class="shrink-0" href={`${resolve('recommendations')}?tab=ai`} size="lg">
+				See suggestions
+			</Button>
 		</div>
 	</section>
 {/if}

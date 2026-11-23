@@ -97,6 +97,12 @@ export type JobDetail = JobSummary & {
 	description: string;
 	scheduleNote: string | null;
 	acceptingApplications: boolean;
+	/** Public employer details, shown on the job page. */
+	employerDescription: string | null;
+	employerAddress: string | null;
+	employerContactPhone: string | null;
+	/** Full location label, e.g. `District 1, Ho Chi Minh City`. */
+	locationDisplayName: string;
 	saved?: boolean;
 	myApplication?: Application | null;
 };
@@ -161,6 +167,8 @@ export type StudentProfile = {
 	availableDays: DayOfWeek[];
 	/** Structured free time blocks; empty means no preference. */
 	availableTimeOfDay: TimeOfDay[];
+	/** True when the weekly matching-jobs email is on. */
+	digestEnabled: boolean;
 	bio: string | null;
 	cv: CvInfo | null;
 	ratingAvg: number;
@@ -305,7 +313,7 @@ export type AiFit = {
 	model: string;
 };
 
-/** One suggested job on `/for-you`. */
+/** One suggested job on `/recommendations`. */
 export type AiSuggestion = {
 	job: JobSummary;
 	/** Ranking does not judge fit, so this is null for now. */

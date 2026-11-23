@@ -128,7 +128,13 @@ export const jobDetailSelection = {
 	...jobSummarySelection,
 	description: jobs.description,
 	scheduleNote: jobs.scheduleNote,
-	isHidden: jobs.isHidden
+	isHidden: jobs.isHidden,
+	// Public employer and location details for the job page. Kept flat so the
+	// shared JobSummary shape does not grow for every list response.
+	employerDescription: employerProfiles.description,
+	employerAddress: employerProfiles.address,
+	employerContactPhone: employerProfiles.contactPhone,
+	locationDisplayName: locations.displayName
 };
 
 export type MyJobRecord = JobSummaryRecord & {
@@ -141,6 +147,11 @@ export type JobDetailRecord = JobSummaryRecord & {
 	description: string;
 	scheduleNote: string | null;
 	isHidden: boolean;
+	/** Public employer and location details for the job page. */
+	employerDescription: string | null;
+	employerAddress: string | null;
+	employerContactPhone: string | null;
+	locationDisplayName: string;
 };
 
 export type MyJobListOptions = {

@@ -242,6 +242,7 @@ Common commands:
 pnpm db:generate     # generate the next migration after a schema change
 pnpm db:migrate      # apply pending migrations
 pnpm db:seed         # insert the development seed data
+pnpm availability:digest # email the weekly "new jobs fit your week" digest
 pnpm db:studio       # inspect the database
 pnpm db:push         # prototyping only; skips migration history
 ```
@@ -303,23 +304,24 @@ not contain `test`. Set `ALLOW_NON_TEST_DATABASE=1` only when the target is genu
 
 ## Scripts
 
-| Command            | Purpose                                                     |
-| ------------------ | ----------------------------------------------------------- |
-| `pnpm dev`         | Start the Vite development server.                          |
-| `pnpm build`       | Build for production.                                       |
-| `pnpm preview`     | Preview the production build.                               |
-| `pnpm check`       | Run SvelteKit sync and `svelte-check`.                      |
-| `pnpm test`        | Run unit tests; database tests are skipped.                 |
-| `pnpm test:db`     | Run the whole suite against `.env.test` (`internery_test`). |
-| `pnpm test:watch`  | Run Vitest in watch mode.                                   |
-| `pnpm lint`        | Run Prettier check and ESLint.                              |
-| `pnpm format`      | Format the repository with Prettier.                        |
-| `pnpm db:start`    | Start PostgreSQL and MinIO with Docker Compose.             |
-| `pnpm db:generate` | Generate a Drizzle migration.                               |
-| `pnpm db:migrate`  | Apply pending Drizzle migrations.                           |
-| `pnpm db:seed`     | Insert the development seed data.                           |
-| `pnpm db:studio`   | Open Drizzle Studio.                                        |
-| `pnpm auth:schema` | Regenerate and normalise the Better Auth Drizzle schema.    |
+| Command                    | Purpose                                                         |
+| -------------------------- | --------------------------------------------------------------- |
+| `pnpm dev`                 | Start the Vite development server.                              |
+| `pnpm build`               | Build for production.                                           |
+| `pnpm preview`             | Preview the production build.                                   |
+| `pnpm check`               | Run SvelteKit sync and `svelte-check`.                          |
+| `pnpm test`                | Run unit tests; database tests are skipped.                     |
+| `pnpm test:db`             | Run the whole suite against `.env.test` (`internery_test`).     |
+| `pnpm test:watch`          | Run Vitest in watch mode.                                       |
+| `pnpm lint`                | Run Prettier check and ESLint.                                  |
+| `pnpm format`              | Format the repository with Prettier.                            |
+| `pnpm db:start`            | Start PostgreSQL and MinIO with Docker Compose.                 |
+| `pnpm db:generate`         | Generate a Drizzle migration.                                   |
+| `pnpm db:migrate`          | Apply pending Drizzle migrations.                               |
+| `pnpm db:seed`             | Insert the development seed data.                               |
+| `pnpm availability:digest` | Email the weekly matching-jobs digest (`--dry-run` to preview). |
+| `pnpm db:studio`           | Open Drizzle Studio.                                            |
+| `pnpm auth:schema`         | Regenerate and normalise the Better Auth Drizzle schema.        |
 
 ## Project layout
 

@@ -2,31 +2,26 @@
 	/**
 	 * Student profile (`/me/profile`).
 	 *
-	 * Reads the profile through `GET /me/student-profile` and saves it with the form action, which
-	 * sends `PUT /me/student-profile`. The CV has its own upload panel below the form.
+	 * Free time has its own card and action, because it drives recommendations and
+	 * the weekly email. The rest of the page is the account details form, the
+	 * student details form and the CV panel, all at the same width.
 	 */
 
-	import { resolve } from '$app/paths';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import AccountDetailsForm from '#lib/components/profile/AccountDetailsForm.svelte';
+	import AvailabilityCard from '#lib/components/profile/AvailabilityCard.svelte';
 	import CvPanel from '#lib/components/profile/CvPanel.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '#lib/components/ui/alert/index.ts';
 	import { Button } from '#lib/components/ui/button/index.ts';
-	import { Checkbox } from '#lib/components/ui/checkbox/index.ts';
 	import { Input } from '#lib/components/ui/input/index.ts';
 	import { Label } from '#lib/components/ui/label/index.ts';
 	import { Textarea } from '#lib/components/ui/textarea/index.ts';
-	import {
-		DAY_OF_WEEK_LABELS,
-		DAY_OF_WEEK_VALUES,
-		TIME_OF_DAY_LABELS,
-		TIME_OF_DAY_VALUES
-	} from '#lib/schedule.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 
 	const profile = $derived(data.profile);
+
 	const values = $derived(
 		form?.scope === 'profile'
 			? form.values
@@ -34,16 +29,19 @@
 					university: profile.university,
 					major: profile.major,
 					skills: profile.skills.join(', '),
-					availability: profile.availability ?? '',
-					availableDays: profile.availableDays,
-					availableTimeOfDay: profile.availableTimeOfDay,
 					bio: profile.bio ?? ''
 				}
 	);
 
-	/** Saved availability, used for the “fits my week” link. */
-	const hasAvailability = $derived(
-		profile.availableDays.length > 0 || profile.availableTimeOfDay.length > 0
+	const availabilityValues = $derived(
+		form?.scope === 'availability'
+			? form.values
+			: {
+					days: profile.availableDays,
+					timeOfDay: profile.availableTimeOfDay,
+					notes: profile.availability ?? '',
+					digestEnabled: profile.digestEnabled
+				}
 	);
 
 	const accountValues = $derived(
@@ -58,14 +56,7 @@
 
 <PageHeader
 	title="Student profile"
-	description="Manage your account name and phone, then the details employers see when you apply."
-/>
-
-<AccountDetailsForm
-	action="?/account"
-	message={form?.scope === 'account' ? form.message : undefined}
-	saved={data.accountSaved}
-	values={accountValues}
+	description="Set when you can work, then the details employers see when you apply."
 />
 
 {#if data.onboarded}
@@ -76,6 +67,34 @@
 		</AlertDescription>
 	</Alert>
 {/if}
+
+{#if data.availabilitySaved}
+	<Alert class="mb-6 border-chalk/30 bg-chalk/5">
+		<AlertTitle>Free time saved</AlertTitle>
+		<AlertDescription>Fits my week uses these days and blocks.</AlertDescription>
+	</Alert>
+{/if}
+
+{#if form?.scope === 'availability' && form.message}
+	<Alert class="mb-6" variant="destructive">
+		<AlertTitle>Cannot save your free time</AlertTitle>
+		<AlertDescription>{form.message}</AlertDescription>
+	</Alert>
+{/if}
+
+<AvailabilityCard
+	days={availabilityValues.days}
+	digestEnabled={availabilityValues.digestEnabled}
+	notes={availabilityValues.notes}
+	timeOfDay={availabilityValues.timeOfDay}
+/>
+
+<AccountDetailsForm
+	action="?/account"
+	message={form?.scope === 'account' ? form.message : undefined}
+	saved={data.accountSaved}
+	values={accountValues}
+/>
 
 {#if data.saved}
 	<Alert class="mb-6 border-chalk/30 bg-chalk/5">
@@ -128,69 +147,6 @@
 	</div>
 
 	<div class="sm:col-span-2">
-		<fieldset>
-			<legend class="text-sm font-medium">When are you free?</legend>
-			<p class="mt-1 text-sm text-ink/60">
-				Pick the days and blocks you can work. We use these to match open shifts, so you do not have
-				to set the filters every time.
-			</p>
-
-			<div class="mt-3 flex flex-wrap gap-x-4 gap-y-2">
-				{#each DAY_OF_WEEK_VALUES as day (day)}
-					<div class="flex items-center gap-2">
-						<Checkbox
-							checked={values.availableDays.includes(day)}
-							id={`profile-day-${day}`}
-							name="availableDay"
-							value={day}
-						/>
-						<Label for={`profile-day-${day}`}>{DAY_OF_WEEK_LABELS[day]}</Label>
-					</div>
-				{/each}
-			</div>
-
-			<div class="mt-3 flex flex-wrap gap-x-4 gap-y-2">
-				{#each TIME_OF_DAY_VALUES as slot (slot)}
-					<div class="flex items-center gap-2">
-						<Checkbox
-							checked={values.availableTimeOfDay.includes(slot)}
-							id={`profile-time-${slot}`}
-							name="availableTimeOfDay"
-							value={slot}
-						/>
-						<Label for={`profile-time-${slot}`}>{TIME_OF_DAY_LABELS[slot]}</Label>
-					</div>
-				{/each}
-			</div>
-
-			{#if hasAvailability}
-				<a
-					class="mt-3 inline-block text-sm font-medium text-chalk hover:underline"
-					href={resolve('fits-my-week')}
-				>
-					See jobs that fit my week
-				</a>
-			{:else}
-				<p class="mt-3 text-xs text-ink/60">Save a day to unlock the matching jobs page.</p>
-			{/if}
-		</fieldset>
-	</div>
-
-	<div class="sm:col-span-2">
-		<Label class="mb-1" for="profile-availability">Anything else about your schedule</Label>
-		<Input
-			id="profile-availability"
-			maxlength={500}
-			name="availability"
-			placeholder="Weekday evenings and weekends"
-			value={values.availability}
-		/>
-		<p class="mt-1 text-sm text-ink/60">
-			Free text for notes the day and time pickers cannot express.
-		</p>
-	</div>
-
-	<div class="sm:col-span-2">
 		<Label class="mb-1" for="profile-bio">About you</Label>
 		<Textarea
 			class="bg-card"
@@ -207,4 +163,6 @@
 	</div>
 </form>
 
-<CvPanel cv={profile.cv} />
+<div class="max-w-3xl">
+	<CvPanel cv={profile.cv} />
+</div>

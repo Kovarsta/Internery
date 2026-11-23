@@ -16,8 +16,8 @@ project is not going to production. The current retrieval is simple, readable an
 matters more here than production-grade relevance.
 
 The implementation lives in `src/lib/server/services/ai/suggestions.ts`. The route is
-`GET /me/ai/suggestions`; the student page is `/for-you`, a top-level page rather than an account
-tab.
+`GET /me/ai/suggestions`; the student page is the **For you** tab on `/recommendations`, a top-level
+page rather than an account tab.
 
 ## Current funnel
 

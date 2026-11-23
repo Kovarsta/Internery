@@ -155,7 +155,9 @@
 		</div>
 	</dl>
 
-	<Button class="mt-5" href={resolve('for-you')} variant="outline">See suggested jobs</Button>
+	<Button class="mt-5" href={`${resolve('recommendations')}?tab=ai`} variant="outline">
+		See suggested jobs
+	</Button>
 
 	<p class="mt-5 text-sm text-ink/60">
 		To get the most from AI, keep your <a class="underline" href={resolve('me/profile')}

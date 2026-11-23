@@ -15,31 +15,29 @@ How the SvelteKit app is built and how it gets data. The backend is documented s
 
 ## Route map
 
-| Area         | Routes                                                                                                                                                                                       | Guard      |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| Public       | `/`, `/jobs`, `/jobs/[jobId]`, `/login`, `/register`, `/forgot-password`, `/reset-password`                                                                                                  | none       |
-| Account      | `/me`, `/me/profile`, `/me/ai`, `/me/company-profile`, `/me/admin-profile`, `/me/applications`, `/me/saved-jobs`, `/me/work-records`, `/me/notifications`, `/me/verification`, `/onboarding` | session    |
-| For you      | `/for-you`                                                                                                                                                                                   | `STUDENT`  |
-| Fits my week | `/fits-my-week`                                                                                                                                                                              | `STUDENT`  |
-| Employer     | `/employer/jobs`, `/employer/jobs/new`, `/employer/jobs/[jobId]` (Overview, Applicants, Edit)                                                                                                | `EMPLOYER` |
-| Admin        | `/admin`, `/admin/users`, `/admin/moderation`, `/admin/categories`, `/admin/verification`                                                                                                    | `ADMIN`    |
-| Verify       | `/work-records`, `/work-records/[recordId]/verify`                                                                                                                                           | none       |
+| Area            | Routes                                                                                                                                                                                       | Guard      |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| Public          | `/`, `/jobs`, `/jobs/[jobId]`, `/login`, `/register`, `/forgot-password`, `/reset-password`                                                                                                  | none       |
+| Account         | `/me`, `/me/profile`, `/me/ai`, `/me/company-profile`, `/me/admin-profile`, `/me/applications`, `/me/saved-jobs`, `/me/work-records`, `/me/notifications`, `/me/verification`, `/onboarding` | session    |
+| Recommendations | `/recommendations` (tabs: Fits my week, For you); `/for-you` and `/fits-my-week` redirect into it                                                                                            | `STUDENT`  |
+| Employer        | `/employer/jobs`, `/employer/jobs/new`, `/employer/jobs/[jobId]` (Overview, Applicants, Edit)                                                                                                | `EMPLOYER` |
+| Admin           | `/admin`, `/admin/users`, `/admin/moderation`, `/admin/categories`, `/admin/verification`                                                                                                    | `ADMIN`    |
+| Verify          | `/work-records`, `/work-records/[recordId]/verify`                                                                                                                                           | none       |
 
 Guards live in `+layout.server.ts` files: signed-out visitors redirect to `/login`, a wrong role gets
 `403` through `+error.svelte`, and a signed-in account without a completed onboarding is sent to
 `/onboarding`. The admin profile page returns `403` for non-admins.
 
-Students reach suggested jobs from the header **For you** tab, the home page **Suggested for you**
-section, and the **See suggested jobs** button on `/me/ai`. The page is a top-level route, not an
-account tab: students return to it, so it should not sit behind the account overview. Consent stays
-separate on `/me/ai`, because suggestions do not read the CV.
+Students reach both lists from the header **Recommendations** link, the home page **Suggested for
+you** section, the **See suggested jobs** button on `/me/ai`, the `/me` overview and the profile
+card. `/recommendations` holds two tabs: **Fits my week** (the schedule match) and **For you** (the AI
+ordering). `/for-you` and `/fits-my-week` redirect into the matching tab, so old links keep working.
 
-Schedule matching is separate and does not use AI. `/me/profile` collects the student's free days
-and time blocks, and `/fits-my-week` lists the open jobs whose whole shift fits them. The page runs
+Schedule matching does not use AI. `/me/profile` collects the student's free days and time blocks in
+their own card, and the **Fits my week** tab lists the open jobs whose whole shift fits them. It runs
 the normal job query with `scheduleFit=true`, which requires containment rather than overlap, so a
-weekend-only student never sees a Monday-to-Saturday job. It is reached from the header, the account
-overview, and the profile form. See
-[`decisions/availability-matching.md`](decisions/availability-matching.md).
+weekend-only student never sees a Monday-to-Saturday job. The same card holds the weekly email
+toggle. See [`decisions/availability-matching.md`](decisions/availability-matching.md).
 
 Every page route lives in the `(app)` route group, which does not add a URL segment. It holds the
 shared layout, the error page and the stylesheet, so `src/routes` only has two children:

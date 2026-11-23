@@ -48,6 +48,7 @@ export type StudentProfileSource = {
 	availability: string | null;
 	availableDays: DayOfWeek[];
 	availableTimeOfDay: TimeOfDay[];
+	digestEnabled: boolean;
 	bio: string | null;
 	cvKey: string | null;
 	cvFileName: string | null;
@@ -66,6 +67,7 @@ export type StudentProfile = {
 	availability: string | null;
 	availableDays: DayOfWeek[];
 	availableTimeOfDay: TimeOfDay[];
+	digestEnabled: boolean;
 	bio: string | null;
 	cv: CvInfo | null;
 	ratingAvg: number;
@@ -243,12 +245,22 @@ export type JobDetailSource = JobSummarySource & {
 	description: string;
 	scheduleNote: string | null;
 	isHidden: boolean;
+	employerDescription: string | null;
+	employerAddress: string | null;
+	employerContactPhone: string | null;
+	locationDisplayName: string;
 };
 
 export type JobDetail = JobSummary & {
 	description: string;
 	scheduleNote: string | null;
 	acceptingApplications: boolean;
+	/** Public employer details, shown on the job page. */
+	employerDescription: string | null;
+	employerAddress: string | null;
+	employerContactPhone: string | null;
+	/** Full location label, e.g. `District 1, Ho Chi Minh City`. */
+	locationDisplayName: string;
 	saved?: boolean;
 	myApplication?: Application | null;
 };
@@ -469,7 +481,11 @@ export function toJobDetail(
 		...toJobSummary(job),
 		description: job.description,
 		scheduleNote: job.scheduleNote,
-		acceptingApplications: job.status === 'HIRING'
+		acceptingApplications: job.status === 'HIRING',
+		employerDescription: job.employerDescription,
+		employerAddress: job.employerAddress,
+		employerContactPhone: job.employerContactPhone,
+		locationDisplayName: job.locationDisplayName
 	};
 
 	if (student !== null) {
@@ -595,6 +611,7 @@ export function toStudentProfile(
 		availability: profile?.availability ?? null,
 		availableDays: profile?.availableDays ?? [],
 		availableTimeOfDay: profile?.availableTimeOfDay ?? [],
+		digestEnabled: profile?.digestEnabled ?? true,
 		bio: profile?.bio ?? null,
 		cv: toCvInfo(profile),
 		ratingAvg: profile?.ratingAvg ?? 0,

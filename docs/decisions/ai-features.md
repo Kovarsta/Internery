@@ -12,7 +12,7 @@ Four operations:
 
 The rules live in `contracts/openapi.yaml` (AI section); this file records the implementation
 choices. The consent, suggestions and fit routes are implemented, with pages at `/me/ai` for
-consent, `/for-you` for suggestions and a **Why this fits** panel on the job detail page.
+consent, `/recommendations` for suggestions and a **Why this fits** panel on the job detail page.
 
 ## Provider
 
@@ -148,7 +148,7 @@ Prompts live in `src/lib/server/ai/prompts.ts` so they can be reviewed as copy.
 | `src/routes/api/v1/me/ai/suggestions`        | Suggestions route                            |
 | `src/routes/api/v1/jobs/[jobId]/ai/fit`      | Fit route                                    |
 | `src/routes/(app)/me/ai`                     | Consent screen                               |
-| `src/routes/(app)/for-you`                   | Suggestion screen                            |
+| `src/routes/(app)/recommendations`           | Suggestions tab and availability tab         |
 | `src/lib/components/jobs/JobFitPanel.svelte` | Fit panel on the job page                    |
 
 ## Build order

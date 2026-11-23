@@ -169,6 +169,10 @@ export const studentProfiles = pgTable(
 			.array()
 			.notNull()
 			.default(sql`ARRAY[]::time_of_day[]`),
+		// Weekly "new jobs fit your week" email. On by default because the email
+		// is the point of saving availability; the card on /me/profile can turn it off.
+		digestEnabled: boolean().notNull().default(true),
+		digestLastSentAt: ts(),
 		bio: text(),
 		// CV (US-08): one current CV per student, max 5 MB, PDF/DOCX
 		cvKey: text(),

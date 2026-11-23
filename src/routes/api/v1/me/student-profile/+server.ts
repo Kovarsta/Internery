@@ -14,8 +14,10 @@ const bodySchema = z.object({
 	major: z.string().trim().min(1).max(160),
 	skills: z.array(z.string().trim().max(50)).max(30).default([]),
 	availability: z.string().trim().max(500).nullable().default(null),
-	availableDays: z.array(z.enum(DAY_OF_WEEK_VALUES)).max(7).default([]),
-	availableTimeOfDay: z.array(z.enum(TIME_OF_DAY_VALUES)).max(3).default([]),
+	availableDays: z.array(z.enum(DAY_OF_WEEK_VALUES)).max(7).optional(),
+	availableTimeOfDay: z.array(z.enum(TIME_OF_DAY_VALUES)).max(3).optional(),
+	// Optional so a profile save that does not mention it leaves the setting alone.
+	digestEnabled: z.boolean().optional(),
 	bio: z.string().trim().max(2000).nullable().default(null)
 });
 

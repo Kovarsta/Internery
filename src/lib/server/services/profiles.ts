@@ -12,8 +12,13 @@ export type StudentProfileInput = {
 	skills: string[];
 	availability: string | null;
 	/** Structured free time used to match jobs; empty means no preference. */
-	availableDays: DayOfWeek[];
-	availableTimeOfDay: TimeOfDay[];
+	availableDays?: DayOfWeek[];
+	availableTimeOfDay?: TimeOfDay[];
+	/**
+	 * Weekly matching-jobs email. Optional so a payload that does not mention it
+	 * leaves the stored value alone.
+	 */
+	digestEnabled?: boolean;
 	bio: string | null;
 };
 

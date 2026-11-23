@@ -35,7 +35,7 @@
 	<p class="text-sm text-ink/60">{job.category.name}</p>
 	<h1 class="mt-2 max-w-3xl text-3xl font-extrabold tracking-tight sm:text-4xl">{job.title}</h1>
 	<p class="mt-3 text-ink/70">{job.employer.orgName}</p>
-	<p class="text-sm text-ink/60">{job.location}</p>
+	<p class="text-sm text-ink/60">{job.locationDisplayName}</p>
 
 	{#if job.scamWarning}
 		<Alert class="mt-4 border-warning/40 bg-warning/10" variant="destructive">
@@ -57,7 +57,12 @@
 	</section>
 
 	<aside class="border-t border-rule pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
-		<EmployerPanel employer={job.employer} />
+		<EmployerPanel
+			address={job.employerAddress}
+			contactPhone={job.employerContactPhone}
+			description={job.employerDescription}
+			employer={job.employer}
+		/>
 
 		<div class="mt-6 border-t border-rule pt-6">
 			<JobActions {job} role={data.user?.role} />
