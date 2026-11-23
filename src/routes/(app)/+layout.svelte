@@ -13,24 +13,44 @@
 	import { Button } from '#lib/components/ui/button/index.ts';
 	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
-	
-	import { SplitText } from 'gsap/all';
-	import gsap from 'gsap';
 
-	// SplitText measures text in the DOM, so it must not run during SSR. An
-	// effect runs only in the browser, after the footer is mounted.
-	$effect(() => {
-		const split = SplitText.create('.footerAni', {
-			type: 'chars',
-			onSplit: (self) =>
-				gsap.from(self.chars, {
-					y: 100,
-					opacity: 0,
-					stagger: 0.05
-				})
+	import { onMount } from 'svelte';
+	import { reelWords, setupFooterMotion } from '#lib/footer-motion.ts';
+
+	/**
+	 * Starts the footer animation once the footer is mounted.
+	 *
+	 * The animation itself lives in `#lib/footer-motion.ts`; this block only
+	 * handles the browser-only setup: reduced motion, the webfont, and cleanup.
+	 */
+	onMount(() => {
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			return;
+		}
+
+		const section = footerSection;
+		const track = footerTrack;
+
+		if (!section || !track) {
+			return;
+		}
+
+		let teardown: (() => void) | undefined;
+		let isUnmounted = false;
+
+		// SplitText measures characters, so wait for the webfont.
+		document.fonts.ready.then(() => {
+			if (isUnmounted) {
+				return;
+			}
+
+			teardown = setupFooterMotion({ section, track });
 		});
 
-		return () => split.revert();
+		return () => {
+			isUnmounted = true;
+			teardown?.();
+		};
 	});
 
 	let { children, data }: LayoutProps = $props();
@@ -44,6 +64,8 @@
 	const year = new Date().getFullYear();
 
 	let mobileMenu = $state<HTMLDetailsElement>();
+	let footerSection = $state<HTMLElement>();
+	let footerTrack = $state<HTMLElement>();
 
 	/** Closes the mobile menu after a link or the sign-out form is used. */
 	function closeMobileMenu() {
@@ -230,8 +252,43 @@
 				© {year} Internery. Built for students in Vietnam. By students, for students.
 			</p>
 		</div>
-		<div class="flex flex-col items-center justify-between overflow-hidden border-t border-rule">
-			<p class="footerAni text-9xl font-extrabold text-ink">INTERNERY</p>
+		<div
+			class="overflow-hidden border-t border-rule py-4"
+			bind:this={footerSection}
+			aria-hidden="true"
+		>
+			{#snippet reel()}
+				<span
+					class="footer-reel block h-[1em] shrink-0 overflow-hidden px-[3vw] text-[11vw] leading-none font-extrabold whitespace-nowrap text-ink"
+				>
+					<span class="footer-reel-track block will-change-transform">
+						{#each reelWords as word, index (index)}
+							<span
+								class="footer-word block h-[1em] text-center"
+								class:footer-word--lead={index === 0}
+							>
+								{word}
+							</span>
+						{/each}
+					</span>
+				</span>
+			{/snippet}
+
+			<!-- Two identical halves: at -50% the second half sits exactly where the
+			     first one started, so the carousel loops without a seam. -->
+			<div
+				class="footer-track flex w-max flex-nowrap will-change-transform"
+				bind:this={footerTrack}
+			>
+				<div class="flex shrink-0">
+					{@render reel()}
+					{@render reel()}
+				</div>
+				<div class="flex shrink-0">
+					{@render reel()}
+					{@render reel()}
+				</div>
+			</div>
 		</div>
 	</footer>
 </div>
